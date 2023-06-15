@@ -3,15 +3,17 @@ using CardGame.Entities.Shared;
 
 namespace CardGame.Entities.Gameplay;
 
-public record GameId(string Value);
+public record GameId(string Value) : Id<GameId>(Value);
 
 public class Game : Entity<GameId>
 {
-    private readonly Deck[] _decks;
+    public Deck[] Decks { get; private set; }
 
-    public Game(GameId id, Deck[] decks) : base(id)
+    public Game(
+        GameId id, 
+        Deck[] decks) : base(id)
     {
-        _decks = decks;
+        Decks = decks;
     }
 
     public void TakeHalfCardsToCommonPool()

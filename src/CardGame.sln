@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33103.201
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CardGame.Entities", "CardGame.Entities\CardGame.Entities.csproj", "{D3CB25FC-3B38-4BF0-A62A-99D02530A80A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGame.Entities", "CardGame.Entities\CardGame.Entities.csproj", "{D3CB25FC-3B38-4BF0-A62A-99D02530A80A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGame.UseCases", "CardGame.UseCases\CardGame.UseCases.csproj", "{CF6995C3-40C4-488F-9779-4605BCADCEE8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CardGame.Entities.Tests", "CardGame.Entities.Tests\CardGame.Entities.Tests.csproj", "{BB5B1BCA-7C66-468A-A5DC-BEA7385991BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{D3CB25FC-3B38-4BF0-A62A-99D02530A80A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3CB25FC-3B38-4BF0-A62A-99D02530A80A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3CB25FC-3B38-4BF0-A62A-99D02530A80A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF6995C3-40C4-488F-9779-4605BCADCEE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF6995C3-40C4-488F-9779-4605BCADCEE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF6995C3-40C4-488F-9779-4605BCADCEE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF6995C3-40C4-488F-9779-4605BCADCEE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB5B1BCA-7C66-468A-A5DC-BEA7385991BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB5B1BCA-7C66-468A-A5DC-BEA7385991BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB5B1BCA-7C66-468A-A5DC-BEA7385991BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB5B1BCA-7C66-468A-A5DC-BEA7385991BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

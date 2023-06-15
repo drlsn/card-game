@@ -1,29 +1,22 @@
 ﻿namespace CardGame.Entities.Shared
 {
-    public interface IEntity<TId>
-    {
-        TId Id { get; }
-        uint Version { get; set; }
-    }
-
-    public class Entity<TId> : IEntity<TId>
+    public abstract class Entity<TId> : IEntity<TId>
+        where TId : Id<TId>
     {
         public TId Id { get; }
 
-        private uint _version;
+        public uint Version { get; private set; }
 
-        public Entity(TId id)
-        {
-            Id = id;
-        }
+        public Entity() => Id = Id<TId>.New();
+        public Entity(TId id) => Id = id;
 
         public Entity(TId id, uint version)
         {
             Id = id;
-            _version = version;
+            Version = version;
         }
 
-        uint IEntity<TId>.Version { get => _version; set { _version = value; } }
+        uint IEntity<TId>.Version { get => Version; set { Version = value; } }
 
         public static implicit operator bool(Entity<TId> entity) => entity != null;
     }
