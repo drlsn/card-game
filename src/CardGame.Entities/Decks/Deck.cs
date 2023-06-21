@@ -1,16 +1,16 @@
-﻿using CardGame.Entities.Shared;
-using CardGame.Entities.Users;
+﻿using CardGame.Entities.Users;
+using Corelibs.Basic.DDD;
 using System.Text.Json.Serialization;
 
 namespace CardGame.Entities.Decks;
 
-public record HeroCardId(string Value) : Id<HeroCardId>(Value);
-public record UnitCardId(string Value) : Id<UnitCardId>(Value);
-public record SkillCardId(string Value) : Id<SkillCardId>(Value);
-public record ItemCardId(string Value) : Id<ItemCardId>(Value);
-public record SpellCardId(string Value) : Id<SpellCardId>(Value);
+public record HeroCardId(string Value) : EntityId(Value);
+public record UnitCardId(string Value) : EntityId(Value);
+public record SkillCardId(string Value) : EntityId(Value);
+public record ItemCardId(string Value) : EntityId(Value);
+public record SpellCardId(string Value) : EntityId(Value);
 
-public record DeckId(string Value) : Id<DeckId>(Value);
+public record DeckId(string Value) : EntityId(Value);
 
 public class Deck : Entity<DeckId>
 {

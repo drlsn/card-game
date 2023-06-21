@@ -1,9 +1,9 @@
 ﻿using CardGame.Entities.Decks;
-using CardGame.Entities.Shared;
+using Corelibs.Basic.DDD;
 
 namespace CardGame.Entities.Gameplay;
 
-public record GameId(string Value) : Id<GameId>(Value);
+public record GameId(string Value) : EntityId(Value);
 
 public class Game : Entity<GameId>
 {

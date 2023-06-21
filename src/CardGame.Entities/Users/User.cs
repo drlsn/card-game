@@ -1,8 +1,8 @@
-﻿using CardGame.Entities.Shared;
+﻿using Corelibs.Basic.DDD;
 
 namespace CardGame.Entities.Users;
 
-public record UserId(string Value) : Id<UserId>(Value);
+public record UserId(string Value) : EntityId(Value);
 
 public class User : Entity<UserId>
 {
