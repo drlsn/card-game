@@ -11,6 +11,8 @@ public class Game : Entity<GameId>
     public Deck[] Decks { get; private set; }
     public Deck CommonPool { get; private set; }
 
+    public PlayerId[] CurrentRoundMoveOrder { get; private set; }
+
     public Game(
         GameId id, 
         Deck[] decks) : base(id)
@@ -66,4 +68,47 @@ public class Player : Entity<PlayerId>
 {
     public Deck Deck { get; private set; }
     public object HandCards { get; private set; }
+}
+
+public class StatisticPoint
+{
+    public int Value { get; private set; }
+
+    public StatisticPoint(int value)
+    {
+        Value = value;
+    }
+}
+
+public class StatisticPointGroup
+{
+    public StatisticPoint Attack { get; private set; }
+    public StatisticPoint HP { get; private set; }
+    public StatisticPoint Speed { get; private set; }
+    public StatisticPoint Power { get; private set; }
+}
+
+public class HeroCard
+{
+    public StatisticPointGroup Statistics { get; private set; }
+}
+
+public class UnitCard
+{
+    public StatisticPointGroup Statistics { get; private set; }
+}
+
+public class SpellCard
+{
+
+}
+
+public class ItemCard
+{
+
+}
+
+public class SkillCard
+{
+
 }
