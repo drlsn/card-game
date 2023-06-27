@@ -1,14 +1,13 @@
-﻿using CardGame.Entities.Users;
+﻿using CardGame.Entities.HeroCards;
+using CardGame.Entities.ItemCards;
+using CardGame.Entities.SkillCards;
+using CardGame.Entities.UnitCards;
+using CardGame.Entities.SpellCards;
+using CardGame.Entities.Users;
 using Corelibs.Basic.DDD;
 using System.Text.Json.Serialization;
 
 namespace CardGame.Entities.Decks;
-
-public record HeroCardId(string Value) : EntityId(Value);
-public record UnitCardId(string Value) : EntityId(Value);
-public record SkillCardId(string Value) : EntityId(Value);
-public record ItemCardId(string Value) : EntityId(Value);
-public record SpellCardId(string Value) : EntityId(Value);
 
 public record DeckId(string Value) : EntityId(Value);
 
