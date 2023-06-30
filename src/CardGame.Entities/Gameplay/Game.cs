@@ -21,7 +21,7 @@ public class Game : Entity<GameId>
 
     public void TakeCardsToCommonPool(Random random)
     {
-        CommonPool = Players.ShuffleAndGetHalfCards(random);
+        CommonPool = Players.ShuffleAllAndTakeHalfCards(random);
     }
 
     public void DrawCardsToHand()

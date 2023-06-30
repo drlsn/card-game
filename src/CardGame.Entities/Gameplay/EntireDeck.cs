@@ -21,6 +21,6 @@ public class EntireDeck
         FieldCards = fieldCards;
     }
 
-    public FieldDeck ShuffleAndTakeHalfCards(Random random) =>
-        FieldCards.ShuffleAndTakeHalfCards(random);
+    public FieldDeck ShuffleAllAndTakeHalfCards(Random random) =>
+        FieldCards.ShuffleAllAndTakeHalfCards(random);
 }

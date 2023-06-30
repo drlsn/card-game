@@ -26,20 +26,24 @@ public class FieldDeck
         SpellCards = spellCards;
     }
 
-    public FieldDeck ShuffleAndTakeHalfCards(Random random)
+    public FieldDeck ShuffleAllAndTakeHalfCards(Random random) =>
+        TakeAndShuffleNCards(random, CardsCount / 2);
+        
+    public FieldDeck TakeAndShuffleNCards(Random random, int n)
     {
         var unitCards = UnitCards.Shuffle(random).ToRemoveOnlyList();
         var skillCards = SkillCards.Shuffle(random).ToRemoveOnlyList();
         var itemCards = ItemCards.Shuffle(random).ToRemoveOnlyList();
         var spellCards = SpellCards.Shuffle(random).ToRemoveOnlyList();
 
+        int cardsHalfCount = n / 2;
         var cardsCluster = new IRemoveOnlyList<object>[] { unitCards, skillCards, itemCards, spellCards };
-        var cardsClusterSelected = 
+        var cardsClusterSelected =
             Enumerable.Range(0, CardTypesCount)
-                .Select(i => new List<object>(CardsHalfCount))
+                .Select(i => new List<object>(cardsHalfCount))
             .ToArray();
 
-        for (var i = 0; i < CardsHalfCount; i++)
+        for (var i = 0; i < cardsHalfCount; i++)
         {
             var cardGroupIndex = random.Next(CardTypesCount);
             var cardGroup = cardsCluster[cardGroupIndex];
@@ -54,12 +58,12 @@ public class FieldDeck
         SkillCards = skillCards.CastToList<SkillCard>();
         ItemCards = itemCards.CastToList<ItemCard>();
         SpellCards = spellCards.CastToList<SpellCard>();
-        
+
         return new FieldDeck(
-            cardsClusterSelected.CastToList<UnitCard>(),
-            cardsClusterSelected.CastToList<SkillCard>(),
-            cardsClusterSelected.CastToList<ItemCard>(),
-            cardsClusterSelected.CastToList<SpellCard>());
+            cardsClusterSelected[0].CastToList<UnitCard>(),
+            cardsClusterSelected[1].CastToList<SkillCard>(),
+            cardsClusterSelected[2].CastToList<ItemCard>(),
+            cardsClusterSelected[3].CastToList<SpellCard>());
     }
 
     public static FieldDeck operator +(FieldDeck left, FieldDeck right)
