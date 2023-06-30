@@ -5,14 +5,18 @@ namespace CardGame.Entities.Gameplay;
 
 public class FieldDeck
 {
-    public const int CardsCount = 30;
-    public const int CardsHalfCount = CardsCount / 2;
     public const int CardTypesCount = 4;
 
     public List<UnitCard> UnitCards { get; private set; }
     public List<SkillCard> SkillCards { get; private set; }
     public List<ItemCard> ItemCards { get; private set; }
     public List<SpellCard> SpellCards { get; private set; }
+
+    public int Count =>
+        UnitCards.Count + 
+        SkillCards.Count +
+        ItemCards.Count +
+        SpellCards.Count;
 
     public FieldDeck(
         List<UnitCard> unitCards, 
@@ -26,15 +30,67 @@ public class FieldDeck
         SpellCards = spellCards;
     }
 
-    public FieldDeck ShuffleAllAndTakeHalfCards(Random random) =>
-        TakeAndShuffleNCards(random, CardsCount / 2);
-        
+    public void ShuffleAll(Random random)
+    {
+        var deck = ShuffleAll(this, random);
+
+        UnitCards = deck.UnitCards;
+        SkillCards = deck.SkillCards;
+        ItemCards = deck.ItemCards;
+        SpellCards = deck.SpellCards;
+    }
+
+    public static FieldDeck ShuffleAll(FieldDeck deck, Random random)
+    {
+        return new(
+            deck.UnitCards.Shuffle(random).ToList(),
+            deck.SkillCards.Shuffle(random).ToList(),
+            deck.ItemCards.Shuffle(random).ToList(),
+            deck.SpellCards.Shuffle(random).ToList());
+    }
+
+    public FieldDeck TakeNCards(Random random, int n)
+    {
+        var unitCards = UnitCards.ToRemoveOnlyList();
+        var skillCards = SkillCards.ToRemoveOnlyList();
+        var itemCards = ItemCards.ToRemoveOnlyList();
+        var spellCards = SpellCards.ToRemoveOnlyList();
+
+        var cardsCluster = new IRemoveOnlyList<object>[] { unitCards, skillCards, itemCards, spellCards };
+        var cardsClusterSelected =
+            Enumerable.Range(0, CardTypesCount)
+                .Select(i => new List<object>(n))
+            .ToArray();
+
+        for (var i = 0; i < n; i++)
+        {
+            var cardGroupIndex = random.Next(CardTypesCount);
+            var cardGroup = cardsCluster[cardGroupIndex];
+            var cardIndex = random.Next(cardGroup.Count);
+
+            var cardSelected = cardGroup[cardIndex];
+            cardsClusterSelected[cardIndex].Add(cardSelected);
+            cardGroup.RemoveAt(cardIndex);
+        }
+
+        UnitCards = unitCards.CastToList<UnitCard>();
+        SkillCards = skillCards.CastToList<SkillCard>();
+        ItemCards = itemCards.CastToList<ItemCard>();
+        SpellCards = spellCards.CastToList<SpellCard>();
+
+        return new FieldDeck(
+            cardsClusterSelected[0].CastToList<UnitCard>(),
+            cardsClusterSelected[1].CastToList<SkillCard>(),
+            cardsClusterSelected[2].CastToList<ItemCard>(),
+            cardsClusterSelected[3].CastToList<SpellCard>());
+    }
+
     public FieldDeck TakeAndShuffleNCards(Random random, int n)
     {
-        var unitCards = UnitCards.Shuffle(random).ToRemoveOnlyList();
-        var skillCards = SkillCards.Shuffle(random).ToRemoveOnlyList();
-        var itemCards = ItemCards.Shuffle(random).ToRemoveOnlyList();
-        var spellCards = SpellCards.Shuffle(random).ToRemoveOnlyList();
+        var unitCards = UnitCards.ToRemoveOnlyList();
+        var skillCards = SkillCards.ToRemoveOnlyList();
+        var itemCards = ItemCards.ToRemoveOnlyList();
+        var spellCards = SpellCards.ToRemoveOnlyList();
 
         int cardsHalfCount = n / 2;
         var cardsCluster = new IRemoveOnlyList<object>[] { unitCards, skillCards, itemCards, spellCards };

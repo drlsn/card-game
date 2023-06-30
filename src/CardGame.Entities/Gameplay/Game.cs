@@ -1,5 +1,6 @@
 ﻿using CardGame.Entities.Users;
 using Corelibs.Basic.DDD;
+using System;
 
 namespace CardGame.Entities.Gameplay;
 
@@ -24,18 +25,9 @@ public class Game : Entity<GameId>
         CommonPool = Players.ShuffleAllAndTakeHalfCards(random);
     }
 
-    public void DrawCardsToHand()
+    public void DrawCardsToHand(Random random)
     {
-        var deckRandomHalf = Players.Select(player =>
-        {
-            // player.Deck.Shuffle(random);
-            return default(EntireDeck);// player.Deck.TakeHalf(random);
-        });
-
-        // CommonPool = deckRandomHalf;
-
-        // player.Cards.TakeRandomHalf(random)
-        // player.Cards.TakeRandomHalf(random)
+        Players.TakeNCardsToHand(random);
     }
 
     public void CalculateRoundPlayerOrder()

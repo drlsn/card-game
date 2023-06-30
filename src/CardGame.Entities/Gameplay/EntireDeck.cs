@@ -8,7 +8,7 @@ public class EntireDeck
 {
     public DeckId Id { get; private set; }
     public HeroCard HeroCard { get; private set; }
-    public FieldDeck FieldCards { get; private set; }
+    public FieldDeck FieldDeck { get; private set; }
 
     [JsonConstructor]
     public EntireDeck(
@@ -18,9 +18,12 @@ public class EntireDeck
     {
         Id = id;
         HeroCard = heroCard;
-        FieldCards = fieldCards;
+        FieldDeck = fieldCards;
     }
 
-    public FieldDeck ShuffleAllAndTakeHalfCards(Random random) =>
-        FieldCards.ShuffleAllAndTakeHalfCards(random);
+    public void ShuffleAll(Random random) =>
+        FieldDeck.ShuffleAll(random);
+
+    public FieldDeck TakeNCards(Random random, int n) =>
+        FieldDeck.TakeNCards(random, n);
 }
