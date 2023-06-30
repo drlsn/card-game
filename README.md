@@ -1,1 +1,3 @@
-# card-game
+# Trinica
+
+Multiplayer card game.
