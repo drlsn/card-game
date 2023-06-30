@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Trinica.Entities\Trinica.Entities.csproj" />
+  </ItemGroup>
+
 </Project>
