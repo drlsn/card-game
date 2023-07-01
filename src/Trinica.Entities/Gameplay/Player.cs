@@ -4,7 +4,6 @@ using Trinica.Entities.Users;
 using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Maths;
-using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay;
 
@@ -33,7 +32,7 @@ public class Player : Entity<UserId>
         HandDeck = IdleDeck.TakeCards(random, n);
     }
 
-    public bool LayCardsToBattle(CardId[] cards)
+    public bool LayCardsToBattle(CardToLay[] cards)
     {
         var maxCardsCanTakeCount = MaxBattlingCardsCount - cards.Length;
         if (cards.Length > maxCardsCanTakeCount)
