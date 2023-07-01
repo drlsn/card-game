@@ -12,6 +12,7 @@ public class Player : Entity<UserId>
 {
     public const int PlayableCardsPerPlayerCount = 30;
     public const int MaxHandCardsCount = 6;
+    public const int MaxBattlingCardsCount = 6;
 
     public DeckId DeckId { get; private set; }
     public HeroCard HeroCard { get; private set; }
@@ -32,9 +33,15 @@ public class Player : Entity<UserId>
         HandDeck = IdleDeck.TakeCards(random, n);
     }
 
-    public void LayCardsToBattle(CardId[] cards)
+    public bool LayCardsToBattle(CardId[] cards)
     {
-        
+        var maxCardsCanTakeCount = MaxBattlingCardsCount - cards.Length;
+        if (cards.Length > maxCardsCanTakeCount)
+            return false;
+
+        BattlingDeck += HandDeck.TakeCards(cards);
+
+        return true;
     }
 }
 
