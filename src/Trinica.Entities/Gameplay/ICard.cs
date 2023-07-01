@@ -1,4 +1,4 @@
-﻿namespace CardGame.Entities.Gameplay;
+﻿namespace Trinica.Entities.Gameplay;
 
 public interface ICard
 {

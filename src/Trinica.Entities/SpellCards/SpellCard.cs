@@ -1,8 +1,9 @@
 ﻿using Corelibs.Basic.DDD;
+using Trinica.Entities.Shared;
 
-namespace CardGame.Entities.SpellCards;
+namespace Trinica.Entities.SpellCards;
 
-public record SpellCardId(string Value) : EntityId(Value);
+public record SpellCardId(string Value) : CardId(Value);
 
 public class SpellCard : Entity<SpellCardId>
 {

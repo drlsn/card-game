@@ -1,6 +1,6 @@
-﻿using CardGame.Entities.HeroCards;
+﻿using Trinica.Entities.HeroCards;
 
-namespace CardGame.Entities.Gameplay.Cards;
+namespace Trinica.Entities.Gameplay.Cards;
 
 public class HeroCard : ICard
 {

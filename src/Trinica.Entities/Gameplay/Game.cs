@@ -1,7 +1,9 @@
-﻿using CardGame.Entities.Users;
+﻿using Trinica.Entities.Users;
 using Corelibs.Basic.DDD;
+using System.Linq;
+using Trinica.Entities.Shared;
 
-namespace CardGame.Entities.Gameplay;
+namespace Trinica.Entities.Gameplay;
 
 public record GameId(string Value) : EntityId(Value);
 
@@ -9,8 +11,8 @@ public class Game : Entity<GameId>
 {
     public Player[] Players { get; private set; }
     public FieldDeck CommonPool { get; private set; }
-
-    public UserId[] CurrentRoundMoveOrder { get; private set; }
+    public CardId CenterCard { get; private set; }
+    public UserId[] MoveOrder { get; private set; }
 
     public Game(
         GameId id,
@@ -26,14 +28,21 @@ public class Game : Entity<GameId>
 
     public void TakeCardsToHand(Random random)
     {
-        Players.TakeNCardsToHand(random);
+        Players.TakeCardsToHand(random);
     }
 
     public void CalculateRoundPlayerOrder()
     {
-        CurrentRoundMoveOrder = Players
+        MoveOrder = Players
             .GetPlayersOrder()
             .Select(p => p.Id)
             .ToArray();
+    }
+
+    public void LayCardsToBattle(UserId playerId, CardId[] cards)
+    {
+        Players
+            .FirstOrDefault(p => p.Id == playerId)?
+            .LayCardsToBattle(cards);
     }
 }

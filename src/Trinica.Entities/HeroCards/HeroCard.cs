@@ -1,8 +1,9 @@
 ﻿using Corelibs.Basic.DDD;
+using Trinica.Entities.Shared;
 
-namespace CardGame.Entities.HeroCards;
+namespace Trinica.Entities.HeroCards;
 
-public record HeroCardId(string Value) : EntityId(Value);
+public record HeroCardId(string Value) : CardId(Value);
 
 internal class HeroCard : Entity<HeroCardId>
 {

@@ -1,11 +1,12 @@
-﻿using CardGame.Entities.Decks;
-using CardGame.Entities.Gameplay.Cards;
-using CardGame.Entities.Users;
+﻿using Trinica.Entities.Decks;
+using Trinica.Entities.Gameplay.Cards;
+using Trinica.Entities.Users;
 using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Maths;
+using Trinica.Entities.Shared;
 
-namespace CardGame.Entities.Gameplay;
+namespace Trinica.Entities.Gameplay;
 
 public class Player : Entity<UserId>
 {
@@ -21,14 +22,19 @@ public class Player : Entity<UserId>
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
     {
         IdleDeck.ShuffleAll(random);
-        return IdleDeck.TakeNCards(random, PlayableCardsPerPlayerCount / 2);
+        return IdleDeck.TakeCards(random, PlayableCardsPerPlayerCount / 2);
     }
 
-    public void TakeNCardsToHand(Random random, int n)
+    public void TakeCardsToHand(Random random, int n)
     {
         var maxCardsCanTakeCount = MaxHandCardsCount - HandDeck.Count;
         n = n.Clamp(maxCardsCanTakeCount);
-        HandDeck = IdleDeck.TakeNCards(random, n);
+        HandDeck = IdleDeck.TakeCards(random, n);
+    }
+
+    public void LayCardsToBattle(CardId[] cards)
+    {
+        
     }
 }
 
@@ -39,8 +45,8 @@ public static class PlayerExtensions
             .Select(player => player.ShuffleAllAndTakeHalfCards(random))
             .AggregateOrDefault((x, y) => x + y);
 
-    public static void TakeNCardsToHand(this IEnumerable<Player> players, Random random, int n = Player.MaxHandCardsCount) =>
-        players.ForEach(player => player.TakeNCardsToHand(random, n));
+    public static void TakeCardsToHand(this IEnumerable<Player> players, Random random, int n = Player.MaxHandCardsCount) =>
+        players.ForEach(player => player.TakeCardsToHand(random, n));
 
     public static Player[] GetPlayersOrder(this IEnumerable<Player> players) =>
         players.OrderByDescending(p => p.HandDeck.SpeedSum).ToArray();

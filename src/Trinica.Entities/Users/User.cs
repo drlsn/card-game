@@ -1,6 +1,6 @@
 ﻿using Corelibs.Basic.DDD;
 
-namespace CardGame.Entities.Users;
+namespace Trinica.Entities.Users;
 
 public record UserId(string Value) : EntityId(Value);
 

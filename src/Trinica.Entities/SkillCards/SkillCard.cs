@@ -1,9 +1,9 @@
-﻿using CardGame.Entities.ItemCards;
-using Corelibs.Basic.DDD;
+﻿using Corelibs.Basic.DDD;
+using Trinica.Entities.Shared;
 
-namespace CardGame.Entities.SkillCards;
+namespace Trinica.Entities.SkillCards;
 
-public record SkillCardId(string Value) : EntityId(Value);
+public record SkillCardId(string Value) : CardId(Value);
 
 internal class SkillCard : Entity<SkillCardId>
 {

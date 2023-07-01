@@ -1,13 +1,13 @@
-﻿using CardGame.Entities.HeroCards;
-using CardGame.Entities.ItemCards;
-using CardGame.Entities.SkillCards;
-using CardGame.Entities.UnitCards;
-using CardGame.Entities.SpellCards;
-using CardGame.Entities.Users;
+﻿using Trinica.Entities.HeroCards;
+using Trinica.Entities.ItemCards;
+using Trinica.Entities.SkillCards;
+using Trinica.Entities.UnitCards;
+using Trinica.Entities.SpellCards;
+using Trinica.Entities.Users;
 using Corelibs.Basic.DDD;
 using System.Text.Json.Serialization;
 
-namespace CardGame.Entities.Decks;
+namespace Trinica.Entities.Decks;
 
 public record DeckId(string Value) : EntityId(Value);
 

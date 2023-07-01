@@ -1,6 +1,6 @@
-﻿using CardGame.Entities.UnitCards;
+﻿using Trinica.Entities.UnitCards;
 
-namespace CardGame.Entities.Gameplay.Cards;
+namespace Trinica.Entities.Gameplay.Cards;
 
 public class UnitCard : ICard
 {

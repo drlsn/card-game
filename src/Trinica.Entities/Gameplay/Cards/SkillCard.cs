@@ -1,6 +1,6 @@
-﻿using CardGame.Entities.SkillCards;
+﻿using Trinica.Entities.SkillCards;
 
-namespace CardGame.Entities.Gameplay.Cards;
+namespace Trinica.Entities.Gameplay.Cards;
 
 public class SkillCard : ICard
 {

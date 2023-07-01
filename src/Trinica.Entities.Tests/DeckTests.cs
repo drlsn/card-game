@@ -1,7 +1,7 @@
-using CardGame.Entities.Decks;
-using CardGame.Entities.Users;
+using Trinica.Entities.Decks;
+using Trinica.Entities.Users;
 
-namespace CardGame.Entities.Tests
+namespace Trinica.Entities.Tests
 {
     public class DeckTests
     {

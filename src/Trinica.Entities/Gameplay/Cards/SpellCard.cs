@@ -1,6 +1,6 @@
-﻿using CardGame.Entities.SpellCards;
+﻿using Trinica.Entities.SpellCards;
 
-namespace CardGame.Entities.Gameplay.Cards;
+namespace Trinica.Entities.Gameplay.Cards;
 
 public class SpellCard : ICard
 {
