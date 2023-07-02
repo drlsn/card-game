@@ -13,24 +13,26 @@ public class SlotGroup
 
     public List<CardId> OrderedCards { get; private set; }
 
+    public void AddCards(ICard[] cards) =>
+        cards.ForEach(c => AddCard(c));
+
     public bool AddCard(ICard card)
     {
         if (OrderedCards.Count >= MaxSlots)
             return false;
 
         OrderedCards ??= new();
+        OrderedCards.Add(card.Id);
         if (card is ItemCard itemCard)
         {
             ItemCards ??= new();
             ItemCards.Add(itemCard);
-            OrderedCards.Add(itemCard.Id);
         }
         else
         if (card is SkillCard skillCard)
         {
             SkillCards ??= new();
             SkillCards.Add(skillCard);
-            OrderedCards.Add(skillCard.Id);
         }
 
         return true;

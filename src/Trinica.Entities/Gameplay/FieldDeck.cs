@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Collections;
 using Trinica.Entities.Gameplay.Cards;
+using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay;
 
@@ -52,7 +53,7 @@ public class FieldDeck
             deck.SpellCards.Shuffle(random).ToList());
     }
 
-    public FieldDeck TakeCards(CardToLay[] cards)
+    public FieldDeck TakeCards(CardId[] cards)
     {
         var deckToTake = new FieldDeck(
             UnitCards.Where(c => cards.Contains(c.Id)).ToList(),
@@ -123,4 +124,6 @@ public class FieldDeck
             left.ItemCards.Except(right.ItemCards).ToList(),
             left.SpellCards.Except(right.SpellCards).ToList());
     }
+
+    public 
 }

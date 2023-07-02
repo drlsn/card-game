@@ -2,4 +2,4 @@
 
 namespace Trinica.Entities.Gameplay;
 
-public record CardToLay(CardId CardId, CardId TargetCardId = null);
+public record CardToLay(CardId SourceCardId, CardId TargetCardId = null);

@@ -34,11 +34,15 @@ public class Player : Entity<UserId>
 
     public bool LayCardsToBattle(CardToLay[] cards)
     {
-        var maxCardsCanTakeCount = MaxBattlingCardsCount - cards.Length;
-        if (cards.Length > maxCardsCanTakeCount)
+        var maxCardsCanTake = MaxBattlingCardsCount - cards.Length;
+        if (cards.Length > maxCardsCanTake)
             return false;
 
-        BattlingDeck += HandDeck.TakeCards(cards);
+        var cardsForHero = cards.Where(c => c.TargetCardId == HeroCard.Id).Select(c => c.SourceCardId).ToArray();
+        var cardsToAssign = HandDeck.TakeCards(cardsForHero);
+
+        cardsForHero.ForEach(c => HeroCard.Slots.AddCard(c.SourceCardId));
+        BattlingDeck += 
 
         return true;
     }

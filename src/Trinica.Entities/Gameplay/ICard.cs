@@ -1,9 +1,8 @@
-﻿using Corelibs.Basic.DDD;
+﻿using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay;
 
-public interface ICard<TId>
-    where TId : EntityId
+public interface ICard
 {
-    TId Id { get; }
+    CardId Id { get; }
 }
