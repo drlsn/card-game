@@ -19,6 +19,7 @@ public class Player : Entity<UserId>
     public FieldDeck IdleDeck { get; private set; }
     public FieldDeck HandDeck { get; private set; }
     public FieldDeck BattlingDeck { get; private set; }
+    public DiceOption[] DiceOptions { get; private set; }
 
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
     {
@@ -65,6 +66,15 @@ public class Player : Entity<UserId>
 
         return true;
     }
+
+    public void PlayDices(int n, Func<Random> getRandom)
+    {
+        n = n.Clamp(BattlingDeck.Count);
+
+        DiceOptions = Enumerable.Range(0, n)
+            .Select(i => Dice.Play(getRandom()))
+            .ToArray();
+    }
 }
 
 public static class PlayerExtensions
@@ -79,6 +89,9 @@ public static class PlayerExtensions
 
     public static Player[] GetPlayersOrder(this IEnumerable<Player> players) =>
         players.OrderByDescending(p => p.HandDeck.SpeedSum).ToArray();
+
+    public static Player OfId(this IEnumerable<Player> players, UserId id) =>
+        players.First(p => p.Id == id);
 }
 
 public static class CardsExtensions

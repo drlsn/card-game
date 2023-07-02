@@ -1,7 +1,7 @@
-﻿using Trinica.Entities.Users;
-using Corelibs.Basic.DDD;
-using System.Linq;
+﻿using Corelibs.Basic.DDD;
+using Corelibs.Basic.Maths;
 using Trinica.Entities.Shared;
+using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Gameplay;
 
@@ -44,5 +44,11 @@ public class Game : Entity<GameId>
         Players
             .FirstOrDefault(p => p.Id == playerId)?
             .LayCardsToBattle(cards);
+    }
+
+    public void PlayDices(UserId playerId, int n, Func<Random> getRandom)
+    {
+        var player = Players.OfId(playerId);
+        player.PlayDices(n, getRandom);
     }
 }
