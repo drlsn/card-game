@@ -3,7 +3,7 @@ using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay.Cards;
 
-public class HeroCard : ICard
+public class HeroCard : ICard, ICardWithSlots
 {
     public HeroCardId Id { get; private set; }
     public StatisticPointGroup Statistics { get; private set; }

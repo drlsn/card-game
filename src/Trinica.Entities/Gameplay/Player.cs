@@ -4,6 +4,7 @@ using Trinica.Entities.Users;
 using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Maths;
+using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay;
 
@@ -38,11 +39,29 @@ public class Player : Entity<UserId>
         if (cards.Length > maxCardsCanTake)
             return false;
 
-        var cardsForHero = cards.Where(c => c.TargetCardId == HeroCard.Id).Select(c => c.SourceCardId).ToArray();
-        var cardsToAssign = HandDeck.TakeCards(cardsForHero);
+        var cardsIds = cards.ToCardIds();
+        
+        var handCards = HandDeck.TakeCards(cardsIds).GetAllCards().ToIdDict();
+        var battlingCards = BattlingDeck.GetAllCards().Prepend(HeroCard).ToIdDict();
 
-        cardsForHero.ForEach(c => HeroCard.Slots.AddCard(c.SourceCardId));
-        BattlingDeck += 
+        var cardsToAdd = new List<ICard>();
+        cards.ForEach(cardToLay =>
+        {
+            if (!handCards.TryGetValue(cardToLay.SourceCardId, out var handCard))
+                return;
+
+            if (battlingCards.TryGetValue(cardToLay.TargetCardId, out var battlingCard) &&
+                battlingCard is ICardWithSlots cardWithSlots)
+            {
+                cardWithSlots.Slots.AddCard(handCard);
+            }
+            else
+            {
+                cardsToAdd.Add(handCard);
+            }
+        });
+
+        BattlingDeck += cardsToAdd;
 
         return true;
     }
@@ -60,4 +79,13 @@ public static class PlayerExtensions
 
     public static Player[] GetPlayersOrder(this IEnumerable<Player> players) =>
         players.OrderByDescending(p => p.HandDeck.SpeedSum).ToArray();
+}
+
+public static class CardsExtensions
+{
+    public static CardId[] ToCardIds(this IEnumerable<CardToLay> cards) =>
+        cards.Select(c => c.SourceCardId).ToArray();
+
+    public static IDictionary<CardId, ICard> ToIdDict(this IEnumerable<ICard> cards) =>
+        cards.ToDictionary(c => c.Id);
 }

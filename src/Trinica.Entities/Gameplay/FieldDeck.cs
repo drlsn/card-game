@@ -1,4 +1,5 @@
 ﻿using Corelibs.Basic.Collections;
+using System.Linq;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Shared;
 
@@ -116,6 +117,15 @@ public class FieldDeck
             left.SpellCards.Concat(right.SpellCards).ToList());
     }
 
+    public static FieldDeck operator +(FieldDeck left, IEnumerable<ICard> right)
+    {
+        return new(
+            left.UnitCards.Concat(right.OfType<UnitCard>()).ToList(),
+            left.SkillCards.Concat(right.OfType<SkillCard>()).ToList(),
+            left.ItemCards.Concat(right.OfType<ItemCard>()).ToList(),
+            left.SpellCards.Concat(right.OfType<SpellCard>()).ToList());
+    }
+
     public static FieldDeck operator -(FieldDeck left, FieldDeck right)
     {
         return new(
@@ -125,5 +135,7 @@ public class FieldDeck
             left.SpellCards.Except(right.SpellCards).ToList());
     }
 
-    public 
+    public IEnumerable<ICard> GetAllCards() =>
+        EnumerableExtensions.Concat<ICard>(
+            UnitCards, SkillCards, ItemCards, SpellCards);
 }

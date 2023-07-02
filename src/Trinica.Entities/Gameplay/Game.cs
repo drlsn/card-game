@@ -39,7 +39,7 @@ public class Game : Entity<GameId>
             .ToArray();
     }
 
-    public void LayCardsToBattle(UserId playerId, CardId[] cards)
+    public void LayCardsToBattle(UserId playerId, CardToLay[] cards)
     {
         Players
             .FirstOrDefault(p => p.Id == playerId)?
