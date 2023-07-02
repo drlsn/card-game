@@ -19,7 +19,7 @@ public class Player : Entity<UserId>
     public FieldDeck IdleDeck { get; private set; }
     public FieldDeck HandDeck { get; private set; }
     public FieldDeck BattlingDeck { get; private set; }
-    public DiceOption[] DiceOptions { get; private set; }
+    public DiceOptionPerCard[] DiceOptions { get; private set; }
 
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
     {
@@ -72,7 +72,14 @@ public class Player : Entity<UserId>
         n = n.Clamp(BattlingDeck.Count);
 
         DiceOptions = Enumerable.Range(0, n)
-            .Select(i => Dice.Play(getRandom()))
+            .Select(i => new DiceOptionPerCard(Dice.Play(getRandom())))
+            .ToArray();
+    }
+
+    public void AssignDicesToCards(DiceOptionIndexPerCard[] assigns)
+    {
+        DiceOptions = assigns
+            .Select(a => new DiceOptionPerCard(DiceOptions[a.DiceIndex].Option, a.CardId))
             .ToArray();
     }
 }
