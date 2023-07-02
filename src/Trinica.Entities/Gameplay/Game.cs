@@ -1,5 +1,5 @@
-﻿using Corelibs.Basic.DDD;
-using Corelibs.Basic.Maths;
+﻿using Corelibs.Basic.Collections;
+using Corelibs.Basic.DDD;
 using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
@@ -11,7 +11,7 @@ public class Game : Entity<GameId>
 {
     public Player[] Players { get; private set; }
     public FieldDeck CommonPool { get; private set; }
-    public CardId CenterCard { get; private set; }
+    public ICard CenterCard { get; private set; }
     public UserId[] MoveOrder { get; private set; }
 
     public Game(
@@ -26,6 +26,7 @@ public class Game : Entity<GameId>
         CommonPool = Players.ShuffleAllAndTakeHalfCards(random);
     }
 
+    // TO DO: by amount and source (common pool or own)
     public void TakeCardsToHand(Random random)
     {
         Players.TakeCardsToHand(random);
@@ -33,17 +34,26 @@ public class Game : Entity<GameId>
 
     public void CalculateRoundPlayerOrder()
     {
+        // TO DO: order by speed of heroes only?
         MoveOrder = Players
             .GetPlayersOrder()
-            .Select(p => p.Id)
-            .ToArray();
+            .ToIds();
     }
 
     public void LayCardsToBattle(UserId playerId, CardToLay[] cards)
     {
-        Players
-            .FirstOrDefault(p => p.Id == playerId)?
-            .LayCardsToBattle(cards);
+        var player = Players.OfId(playerId);
+        if (CenterCard is not null)
+        {
+            var cardToCenter = cards.FirstOrDefault(c => c.ToCenter);
+            if (cardToCenter is not null)
+            {
+                CenterCard = player.TakeCardFromHand(cardToCenter.SourceCardId);
+                cards = cards.Except(cardToCenter).ToArray();
+            }
+        }
+
+        player.LayCardsToBattle(cards);
     }
 
     public void PlayDices(UserId playerId, int n, Func<Random> getRandom)
@@ -52,7 +62,13 @@ public class Game : Entity<GameId>
         player.PlayDices(n, getRandom);
     }
 
-    public void AssignDicesToCardsAndSetActionOrder(UserId playerId, DiceOptionIndexPerCard[] assigns)
+    public void AssignDicesToCards(UserId playerId, DiceOutcomeIndexPerCard[] assigns)
+    {
+        var player = Players.OfId(playerId);
+        player.AssignDicesToCards(assigns);
+    }
+
+    public void AssignCardsTargets(UserId playerId, CardTarget[] targets)
     {
         var player = Players.OfId(playerId);
         player.AssignDicesToCards(assigns);
@@ -60,6 +76,13 @@ public class Game : Entity<GameId>
 
     public void PerformRound()
     {
+        MoveOrder.ForEach(playerId =>
+        {
+            var player = Players.OfId(playerId);
+            player.DiceOutcomesPerCard.ForEach(outcomePerCard =>
+            {
+                var card = player.GetBattlingCard(outcomePerCard.CardId);
+            });
+        });
     }
 }
-

@@ -2,7 +2,6 @@
 
 namespace Trinica.Entities.Gameplay;
 
-public record CardToLay(
+public record CardTarget(
     CardId SourceCardId, 
-    CardId TargetCardId = null,
-    bool ToCenter = false);
+    CardId TargetCardId);

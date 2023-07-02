@@ -5,12 +5,13 @@ using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Maths;
 using Trinica.Entities.Shared;
+using System.Linq;
 
 namespace Trinica.Entities.Gameplay;
 
 public class Player : Entity<UserId>
 {
-    public const int PlayableCardsPerPlayerCount = 30;
+    public const int TotalCardsPerPlayerCount = 30;
     public const int MaxHandCardsCount = 6;
     public const int MaxBattlingCardsCount = 6;
 
@@ -19,12 +20,25 @@ public class Player : Entity<UserId>
     public FieldDeck IdleDeck { get; private set; }
     public FieldDeck HandDeck { get; private set; }
     public FieldDeck BattlingDeck { get; private set; }
-    public DiceOptionPerCard[] DiceOptions { get; private set; }
+    public DiceOutcomePerCard[] DiceOutcomesPerCard { get; private set; }
 
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
     {
         IdleDeck.ShuffleAll(random);
-        return IdleDeck.TakeCards(random, PlayableCardsPerPlayerCount / 2);
+        return IdleDeck.TakeCards(random, TotalCardsPerPlayerCount / 2);
+    }
+
+    public ICard GetBattlingCard(CardId cardId)
+    {
+        if (HeroCard.Id == cardId)
+            return HeroCard;
+
+        return BattlingDeck.GetCard(cardId);
+    }
+
+    public ICard TakeCardFromHand(CardId cardId)
+    {
+        return HandDeck.TakeCard(cardId);
     }
 
     public void TakeCardsToHand(Random random, int n)
@@ -71,15 +85,26 @@ public class Player : Entity<UserId>
     {
         n = n.Clamp(BattlingDeck.Count);
 
-        DiceOptions = Enumerable.Range(0, n)
-            .Select(i => new DiceOptionPerCard(Dice.Play(getRandom())))
+        DiceOutcomesPerCard = Enumerable.Range(0, n)
+            .Select(i => new DiceOutcomePerCard(Dice.Play(getRandom())))
             .ToArray();
     }
 
-    public void AssignDicesToCards(DiceOptionIndexPerCard[] assigns)
+    public void AssignDicesToCards(DiceOutcomeIndexPerCard[] assigns)
     {
-        DiceOptions = assigns
-            .Select(a => new DiceOptionPerCard(DiceOptions[a.DiceIndex].Option, a.CardId))
+        DiceOutcomesPerCard = assigns
+            .Select(a => new DiceOutcomePerCard(DiceOutcomesPerCard[a.DiceIndex].Outcome, a.CardId))
+            .ToArray();
+    }
+
+    public void AssignCardsTargets(CardTarget[] targets)
+    {
+        DiceOutcomesPerCard = targets
+            .Select(target => 
+            {
+                var assign = DiceOutcomesPerCard.First(c => c.SourceCardId == target.SourceCardId);
+                return new DiceOutcomePerCard(assign.Outcome, assign.SourceCardId, target.TargetCardId);
+            })
             .ToArray();
     }
 }
@@ -99,6 +124,9 @@ public static class PlayerExtensions
 
     public static Player OfId(this IEnumerable<Player> players, UserId id) =>
         players.First(p => p.Id == id);
+
+    public static UserId[] ToIds(this IEnumerable<Player> players) =>
+        players.Select(c => c.Id).ToArray();
 }
 
 public static class CardsExtensions

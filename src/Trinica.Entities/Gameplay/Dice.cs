@@ -4,20 +4,20 @@ namespace Trinica.Entities.Gameplay;
 
 public class Dice
 {
-    public static DiceOption Play(Random random) =>
-        DiceOption.Options[random.Next(DiceOption.Options.Length)];
+    public static DiceOutcome Play(Random random) =>
+        DiceOutcome.Outcomes[random.Next(DiceOutcome.Outcomes.Length)];
 }
 
-public record DiceOption(string Value)
+public record DiceOutcome(string Value)
 {
-    public static readonly DiceOption Fire = new("fire");
-    public static readonly DiceOption Ice = new("ice");
-    public static readonly DiceOption Storm = new("storm");
-    public static readonly DiceOption Earth = new("earth");
-    public static readonly DiceOption Attack = new("attack");
+    public static readonly DiceOutcome Fire = new("fire");
+    public static readonly DiceOutcome Ice = new("ice");
+    public static readonly DiceOutcome Storm = new("storm");
+    public static readonly DiceOutcome Earth = new("earth");
+    public static readonly DiceOutcome Attack = new("attack");
 
-    public static readonly DiceOption[] Options = new DiceOption[] { Fire, Ice, Storm, Earth, Attack, Attack };
+    public static readonly DiceOutcome[] Outcomes = new DiceOutcome[] { Fire, Ice, Storm, Earth, Attack, Attack };
 }
 
-public record DiceOptionIndexPerCard(int DiceIndex, CardId CardId);
-public record DiceOptionPerCard(DiceOption Option, CardId CardId = null);
+public record DiceOutcomeIndexPerCard(int DiceIndex, CardId CardId);
+public record DiceOutcomePerCard(DiceOutcome Outcome, CardId SourceCardId = null, CardId TargetCardId = null);

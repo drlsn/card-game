@@ -54,6 +54,12 @@ public class FieldDeck
             deck.SpellCards.Shuffle(random).ToList());
     }
 
+    public ICard GetCard(CardId cardId) =>
+        GetAllCards().First(c => c.Id == cardId);
+
+    public ICard TakeCard(CardId cardId) =>
+        TakeCards(new[] { cardId }).GetAllCards().First();
+
     public FieldDeck TakeCards(CardId[] cards)
     {
         var deckToTake = new FieldDeck(
