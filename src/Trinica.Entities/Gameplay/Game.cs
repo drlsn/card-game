@@ -52,10 +52,14 @@ public class Game : Entity<GameId>
         player.PlayDices(n, getRandom);
     }
 
-    public void AssignDicesToCards(UserId playerId, DiceOptionIndexPerCard[] assigns)
+    public void AssignDicesToCardsAndSetActionOrder(UserId playerId, DiceOptionIndexPerCard[] assigns)
     {
         var player = Players.OfId(playerId);
         player.AssignDicesToCards(assigns);
+    }
+
+    public void PerformRound()
+    {
     }
 }
 
