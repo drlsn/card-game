@@ -2,8 +2,8 @@
 
 public class StatisticPointGroup
 {
-    public StatisticPoint Attack { get; private set; }
-    public StatisticPoint HP { get; private set; }
-    public StatisticPoint Speed { get; private set; }
-    public StatisticPoint Power { get; private set; }
+    public StatisticPoint Attack { get; init; }
+    public StatisticPoint HP { get; init; }
+    public StatisticPoint Speed { get; init; }
+    public StatisticPoint Power { get; init; }
 }

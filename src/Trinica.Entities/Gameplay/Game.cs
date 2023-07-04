@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
+using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
@@ -68,27 +69,54 @@ public class Game : Entity<GameId>
         player.PlayDices(n, getRandom);
     }
 
-    public void AssignDicesToCards(UserId playerId, DiceOutcomeIndexPerCard[] assigns)
+    public void AssignDiceToCard(UserId playerId, int diceIndex, CardId cardId)
     {
         var player = Players.OfId(playerId);
-        player.AssignDicesToCards(assigns);
+        player.AssignDiceToCard(diceIndex, cardId);
     }
 
-    public void AssignCardsTargets(UserId playerId, CardTarget[] targets)
+    public void ChooseCardSkill(UserId playerId, CardId cardId, int skillIndex)
     {
         var player = Players.OfId(playerId);
-        player.AssignCardsTargets(targets);
+        player.ChooseCardSkill(cardId, skillIndex);
     }
 
-    public void PerformRound()
+    public void AssignCardsTargets(UserId playerId, CardId cardId, CardId targetCardId)
     {
-        CardsLayOrderPerPlayer.ForEach(playerId =>
+        var player = Players.OfId(playerId);
+        player.AssignCardsTargets(cardId, targetCardId);
+    }
+
+    public void PerformRound(Random random)
+    {
+        var cards = Players.GetBattlingCardsBySpeed(random);
+
+        cards.ForEach(card =>
         {
-            var player = Players.OfId(playerId);
-            player.DiceOutcomesPerCard.ForEach(outcomePerCard =>
+            var player = Players.GetPlayerWithCard(card.Id);
+            var cardAssignments = player.CardAssignments[card.Id];
+            var targetCard = cards.First(c => c.Id == cardAssignments.TargetCardId);
+
+            if (card is SpellCard spellCard)
             {
-                var card = player.GetBattlingCard(outcomePerCard.SourceCardId);
-            });
+
+            }
+            else
+            if (card is UnitCard unitCard)
+            {
+                if (cardAssignments.DiceOutcome == DiceOutcome.Attack)
+                    ;
+                else
+                    ;
+            }
+            else
+            if (card is HeroCard heroCard)
+            {
+                if (cardAssignments.DiceOutcome == DiceOutcome.Attack)
+                    ;
+                else
+                    ;
+            }
         });
     }
 }

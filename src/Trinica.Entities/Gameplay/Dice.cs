@@ -1,6 +1,4 @@
-﻿using Trinica.Entities.Shared;
-
-namespace Trinica.Entities.Gameplay;
+﻿namespace Trinica.Entities.Gameplay;
 
 public class Dice
 {
@@ -17,7 +15,7 @@ public record DiceOutcome(string Value)
     public static readonly DiceOutcome Attack = new("attack");
 
     public static readonly DiceOutcome[] Outcomes = new DiceOutcome[] { Fire, Ice, Storm, Earth, Attack, Attack };
-}
 
-public record DiceOutcomeIndexPerCard(int DiceIndex, CardId CardId);
-public record DiceOutcomePerCard(DiceOutcome Outcome, CardId SourceCardId = null, CardId TargetCardId = null);
+    public bool IsElement() =>
+        this != Attack;
+}

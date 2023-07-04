@@ -3,7 +3,7 @@ using Trinica.Entities.UnitCards;
 
 namespace Trinica.Entities.Gameplay.Cards;
 
-public class UnitCard : ICard, ICardWithSlots
+public class UnitCard : ICard, ICardWithSlots, ICardWithStats
 {
     public UnitCardId Id { get; private set; }
     public StatisticPointGroup Statistics { get; private set; }

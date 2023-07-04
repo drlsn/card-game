@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
+using Corelibs.Basic.Functional;
 using Corelibs.Basic.Maths;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay.Cards;
@@ -20,7 +21,8 @@ public class Player : Entity<UserId>
     public FieldDeck HandDeck { get; private set; }
     public FieldDeck BattlingDeck { get; private set; }
     public FieldDeck DeadDeck { get; private set; }
-    public DiceOutcomePerCard[] DiceOutcomesPerCard { get; private set; }
+    public DiceOutcome[] FreeDiceOutcomes { get; private set; }
+    public Dictionary<CardId, CardAssignment> CardAssignments { get; private set; }
 
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
     {
@@ -36,12 +38,16 @@ public class Player : Entity<UserId>
         return BattlingDeck.GetCard(cardId);
     }
 
-    public ICard GetBattlingCardsBySpeed()
+    public FieldDeck GetBattlingCardsBySpeed(Random random)
     {
-        if (HeroCard.Id == cardId)
-            return HeroCard;
-
-        return BattlingDeck.GetCard(cardId);
+        var spellCards = BattlingDeck.SpellCards.Shuffle(random).ToList();
+        var unitCards = BattlingDeck.UnitCards.Shuffle(random).OrderBy(c => c.Statistics.Speed).ToList();
+        
+        return new(
+            unitCards,  
+            skillCards: new(), 
+            itemCards: new(), 
+            spellCards);
     }
 
     public ICard TakeCardFromHand(CardId cardId)
@@ -101,27 +107,24 @@ public class Player : Entity<UserId>
     {
         n = n.Clamp(BattlingDeck.Count);
 
-        DiceOutcomesPerCard = Enumerable.Range(0, n)
-            .Select(i => new DiceOutcomePerCard(Dice.Play(getRandom())))
+        FreeDiceOutcomes = Enumerable.Range(0, n)
+            .Select(i => Dice.Play(getRandom()))
             .ToArray();
     }
 
-    public void AssignDicesToCards(DiceOutcomeIndexPerCard[] assigns)
+    public void AssignDiceToCard(int diceIndex, CardId cardId)
     {
-        DiceOutcomesPerCard = assigns
-            .Select(a => new DiceOutcomePerCard(DiceOutcomesPerCard[a.DiceIndex].Outcome, a.CardId))
-            .ToArray();
+        CardAssignments.TryGetOrAddValue(cardId).DiceOutcome = FreeDiceOutcomes[diceIndex];
     }
 
-    public void AssignCardsTargets(CardTarget[] targets)
+    public void ChooseCardSkill(CardId cardId, int skillIndex)
     {
-        DiceOutcomesPerCard = targets
-            .Select(target => 
-            {
-                var assign = DiceOutcomesPerCard.First(c => c.SourceCardId == target.SourceCardId);
-                return new DiceOutcomePerCard(assign.Outcome, assign.SourceCardId, target.TargetCardId);
-            })
-            .ToArray();
+        CardAssignments.TryGetOrAddValue(cardId).SkillIndex = skillIndex;
+    }
+
+    public void AssignCardsTargets(CardId cardId, CardId targetCardId)
+    {
+        CardAssignments.TryGetOrAddValue(cardId).TargetCardId = targetCardId;
     }
 }
 
@@ -143,6 +146,16 @@ public static class PlayerExtensions
 
     public static UserId[] ToIds(this IEnumerable<Player> players) =>
         players.Select(c => c.Id).ToArray();
+
+    public static ICard[] GetBattlingCardsBySpeed(this IEnumerable<Player> players, Random random) =>
+        players
+            .Select(c => c.BattlingDeck)
+            .Aggregate((x, y) => x + y)
+            .ThenSelect(deck => deck.SpellCards.Shuffle().Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed).Cast<ICard>()))
+            .ToArray();
+
+    public static Player GetPlayerWithCard(this IEnumerable<Player> players, CardId cardId) =>
+        players.First(p => p.BattlingDeck.GetAllCards().Contains(c => c.Id == cardId));
 }
 
 public static class CardsExtensions
