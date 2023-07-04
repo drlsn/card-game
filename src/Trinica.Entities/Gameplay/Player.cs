@@ -19,6 +19,7 @@ public class Player : Entity<UserId>
     public FieldDeck IdleDeck { get; private set; }
     public FieldDeck HandDeck { get; private set; }
     public FieldDeck BattlingDeck { get; private set; }
+    public FieldDeck DeadDeck { get; private set; }
     public DiceOutcomePerCard[] DiceOutcomesPerCard { get; private set; }
 
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
@@ -28,6 +29,14 @@ public class Player : Entity<UserId>
     }
 
     public ICard GetBattlingCard(CardId cardId)
+    {
+        if (HeroCard.Id == cardId)
+            return HeroCard;
+
+        return BattlingDeck.GetCard(cardId);
+    }
+
+    public ICard GetBattlingCardsBySpeed()
     {
         if (HeroCard.Id == cardId)
             return HeroCard;
@@ -126,7 +135,7 @@ public static class PlayerExtensions
     public static void TakeCardsToHand(this IEnumerable<Player> players, Random random, int n = Player.MaxHandCardsCount) =>
         players.ForEach(player => player.TakeCardsToHand(random, n));
 
-    public static Player[] GetPlayersOrder(this IEnumerable<Player> players) =>
+    public static Player[] GetPlayersOrderedByHeroSpeed(this IEnumerable<Player> players) =>
         players.OrderByDescending(p => p.HeroCard.Statistics.Speed).ToArray();
 
     public static Player OfId(this IEnumerable<Player> players, UserId id) =>

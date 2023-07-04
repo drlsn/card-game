@@ -12,7 +12,7 @@ public class Game : Entity<GameId>
     public Player[] Players { get; private set; }
     public FieldDeck CommonPool { get; private set; }
     public ICard CenterCard { get; private set; }
-    public UserId[] MoveOrder { get; private set; }
+    public UserId[] CardsLayOrderPerPlayer { get; private set; }
 
     public Game(
         GameId id,
@@ -39,10 +39,10 @@ public class Game : Entity<GameId>
         });
     }
 
-    public void CalculateRoundPlayerOrder()
+    public void CalculateLayDownOrderPerPlayer()
     {
-        MoveOrder = Players
-            .GetPlayersOrder()
+        CardsLayOrderPerPlayer = Players
+            .GetPlayersOrderedByHeroSpeed()
             .ToIds();
     }
 
@@ -82,7 +82,7 @@ public class Game : Entity<GameId>
 
     public void PerformRound()
     {
-        MoveOrder.ForEach(playerId =>
+        CardsLayOrderPerPlayer.ForEach(playerId =>
         {
             var player = Players.OfId(playerId);
             player.DiceOutcomesPerCard.ForEach(outcomePerCard =>
