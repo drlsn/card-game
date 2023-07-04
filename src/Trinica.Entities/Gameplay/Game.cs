@@ -26,15 +26,21 @@ public class Game : Entity<GameId>
         CommonPool = Players.ShuffleAllAndTakeHalfCards(random);
     }
 
-    // TO DO: by amount and source (common pool or own)
-    public void TakeCardsToHand(Random random)
+    public void TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random)
     {
-        Players.TakeCardsToHand(random);
+        var player = Players.OfId(playerId);
+        cards.ForEach(card =>
+        {
+            if (card.Source == CardSource.CommonPool)
+                player.AddCardToHand(CommonPool.TakeCard(random));
+            else
+            if (card.Source == CardSource.Own)
+                player.TakeCardToHand(random);
+        });
     }
 
     public void CalculateRoundPlayerOrder()
     {
-        // TO DO: order by speed of heroes only?
         MoveOrder = Players
             .GetPlayersOrder()
             .ToIds();
@@ -71,7 +77,7 @@ public class Game : Entity<GameId>
     public void AssignCardsTargets(UserId playerId, CardTarget[] targets)
     {
         var player = Players.OfId(playerId);
-        player.AssignDicesToCards(assigns);
+        player.AssignCardsTargets(targets);
     }
 
     public void PerformRound()
@@ -81,7 +87,7 @@ public class Game : Entity<GameId>
             var player = Players.OfId(playerId);
             player.DiceOutcomesPerCard.ForEach(outcomePerCard =>
             {
-                var card = player.GetBattlingCard(outcomePerCard.CardId);
+                var card = player.GetBattlingCard(outcomePerCard.SourceCardId);
             });
         });
     }

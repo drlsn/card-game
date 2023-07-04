@@ -78,6 +78,9 @@ public class FieldDeck
         return deckToTake;
     }
 
+    public ICard TakeCard(Random random) =>
+        TakeCards(random, 1).GetAllCards().First();
+
     public FieldDeck TakeCards(Random random, int n)
     {
         var unitCards = UnitCards.ToRemoveOnlyList();
@@ -121,6 +124,12 @@ public class FieldDeck
             left.SkillCards.Concat(right.SkillCards).ToList(),
             left.ItemCards.Concat(right.ItemCards).ToList(),
             left.SpellCards.Concat(right.SpellCards).ToList());
+    }
+
+    public static FieldDeck operator +(FieldDeck left, ICard card)
+    {
+        var array = new[] { card };
+        return left + array;
     }
 
     public static FieldDeck operator +(FieldDeck left, IEnumerable<ICard> right)

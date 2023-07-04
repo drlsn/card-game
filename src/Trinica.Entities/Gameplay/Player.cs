@@ -1,11 +1,10 @@
-﻿using Trinica.Entities.Decks;
-using Trinica.Entities.Gameplay.Cards;
-using Trinica.Entities.Users;
-using Corelibs.Basic.Collections;
+﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Maths;
+using Trinica.Entities.Decks;
+using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Shared;
-using System.Linq;
+using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Gameplay;
 
@@ -40,6 +39,14 @@ public class Player : Entity<UserId>
     {
         return HandDeck.TakeCard(cardId);
     }
+
+    public void AddCardToHand(ICard card)
+    {
+        HandDeck += card;
+    }
+
+    public void TakeCardToHand(Random random) =>
+        TakeCardsToHand(random, 1);
 
     public void TakeCardsToHand(Random random, int n)
     {
@@ -120,7 +127,7 @@ public static class PlayerExtensions
         players.ForEach(player => player.TakeCardsToHand(random, n));
 
     public static Player[] GetPlayersOrder(this IEnumerable<Player> players) =>
-        players.OrderByDescending(p => p.HandDeck.SpeedSum).ToArray();
+        players.OrderByDescending(p => p.HeroCard.Statistics.Speed).ToArray();
 
     public static Player OfId(this IEnumerable<Player> players, UserId id) =>
         players.First(p => p.Id == id);
