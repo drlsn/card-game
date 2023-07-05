@@ -7,6 +7,18 @@ public class StatisticPointGroup
     public StatisticPoint Speed { get; init; }
     public StatisticPoint Power { get; init; }
 
+    public StatisticPointGroup(
+        StatisticPoint attack, 
+        StatisticPoint hp, 
+        StatisticPoint speed, 
+        StatisticPoint power)
+    {
+        Attack = attack;
+        HP = hp;
+        Speed = speed;
+        Power = power;
+    }
+
     public void Modify(StatisticPointGroup statisticPointGroup, string id)
     {
         var attack = statisticPointGroup.Attack.CalculateValue();

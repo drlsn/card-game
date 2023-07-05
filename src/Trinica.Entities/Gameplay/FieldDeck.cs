@@ -24,15 +24,15 @@ public class FieldDeck
         UnitCards.Select(c => c.Statistics.Speed.Value).Sum();
 
     public FieldDeck(
-        List<UnitCard> unitCards, 
-        List<SkillCard> skillCards, 
-        List<ItemCard> itemCards, 
-        List<SpellCard> spellCards)
+        List<UnitCard> unitCards = null,
+        List<SkillCard> skillCards = null, 
+        List<ItemCard> itemCards = null, 
+        List<SpellCard> spellCards = null)
     {
-        UnitCards = unitCards;
-        SkillCards = skillCards;
-        ItemCards = itemCards;
-        SpellCards = spellCards;
+        UnitCards = unitCards ?? new();
+        SkillCards = skillCards ?? new();
+        ItemCards = itemCards ?? new();
+        SpellCards = spellCards ?? new();
     }
 
     public void ShuffleAll(Random random)

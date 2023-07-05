@@ -13,6 +13,14 @@ public class UnitCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICar
 
     public List<ItemCard> ItemCards => Slots.ItemCards;
 
+    public UnitCard(
+        UnitCardId id,
+        StatisticPointGroup statistics) 
+    {
+        Id = id;
+        Statistics = statistics;
+    }
+
     CardId ICard.Id => Id;
     CardId ICombatCard.Id => Id;
 

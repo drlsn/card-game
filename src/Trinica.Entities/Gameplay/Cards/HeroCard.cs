@@ -9,7 +9,15 @@ public class HeroCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICar
     public StatisticPointGroup Statistics { get; private set; }
     public SlotGroup Slots { get; private set; }
 
-    public List<IEffect> Effects { get; private set; }
+    public List<IEffect> Effects { get; private set; } = new();
+
+    public HeroCard(
+       HeroCardId id,
+       StatisticPointGroup statistics)
+    {
+        Id = id;
+        Statistics = statistics;
+    }
 
     public List<ItemCard> ItemCards => Slots.ItemCards;
 

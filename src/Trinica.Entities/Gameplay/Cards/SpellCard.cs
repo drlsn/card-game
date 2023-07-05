@@ -11,10 +11,23 @@ public class SpellCard : ICard, ICombatCard
 
     public List<IEffect> Effects { get; private set; }
 
+    public SpellCard(
+       SpellCardId id,
+       StatisticPointGroup statistics,
+       IEnumerable<IEffect> effects, 
+       int? damage = null)
+    {
+        Id = id;
+        Statistics = statistics;
+        Effects = effects.ToList();
+        Damage = damage;
+    }
+
     CardId ICard.Id => Id;
     CardId ICombatCard.Id => Id;
 
-    public bool DoesDamage { get; init; }
+    public bool DoesDamage => Damage is not null && Damage > 0;
+    public int? Damage { get; init; }
 
     public bool DoesPowerDamage(int skillIndex) => DoesDamage;
 

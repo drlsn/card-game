@@ -16,13 +16,24 @@ public class Player : Entity<UserId>
     public const int MaxBattlingCardsCount = 6;
 
     public DeckId DeckId { get; private set; }
-    public HeroCard HeroCard { get; private set; }
     public FieldDeck IdleDeck { get; private set; }
+
+    public HeroCard HeroCard { get; private set; }
     public FieldDeck HandDeck { get; private set; }
     public FieldDeck BattlingDeck { get; private set; }
     public FieldDeck DeadDeck { get; private set; }
     public List<DiceOutcome> FreeDiceOutcomes { get; private set; }
     public Dictionary<CardId, CardAssignment> CardAssignments { get; private set; }
+
+    public Player(
+        DeckId deckId,
+        HeroCard heroCard,
+        FieldDeck idleDeck)
+    {
+        DeckId = deckId;
+        HeroCard = heroCard;
+        IdleDeck = idleDeck;
+    }
 
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
     {
