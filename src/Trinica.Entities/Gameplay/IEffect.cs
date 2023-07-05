@@ -30,6 +30,13 @@ public record MoveActors(
     ICombatCard[] AllEnemies,
     ICombatCard[] AllAllies);
 
+public class Move
+{
+    public MoveType Type { get; init; }
+    public int Damage { get; set; }
+    public bool IsFrozen { get; set; }
+}
+
 public abstract class Effect
 {
     public abstract string Name { get; }
@@ -39,12 +46,12 @@ public abstract class Effect
 
     public virtual void OnEffectStart(ICombatCard effectOwner) {}
     public virtual void OnRoundStart(ICombatCard effectOwner) {}
-    public virtual void BeforeReceive(ICombatCard effectOwner, ReceiveActors actors) {}
-    public virtual void AfterReceive(ICombatCard effectOwner, ReceiveActors actors) { }
-    public virtual void BeforeMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, MoveType moveType) { }
-    public virtual void AfterMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, MoveType moveType) { }
-    public virtual void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, MoveType moveType) { }
-    public virtual void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, MoveType moveType) { }
+    public virtual void BeforeReceive(ICombatCard effectOwner, ReceiveActors actors, Move move) {}
+    public virtual void AfterReceive(ICombatCard effectOwner, ReceiveActors actors, Move move) { }
+    public virtual void BeforeMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move) { }
+    public virtual void AfterMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move) { }
+    public virtual void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move) { }
+    public virtual void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move) { }
     public virtual void OnRoundFinish(ICombatCard effectOwner) {}
 
     public void RemoveEffects(StatisticPointGroup statistics)
@@ -103,7 +110,7 @@ public class BleedingEffect : Effect, IEffect
     public bool IsStacking => false;
     public int DamageInflict { get; }
 
-    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, MoveType moveType)
+    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
     {
         effectOwner.Statistics.HP.Modify(DamageInflict, Name);
     }
@@ -115,9 +122,9 @@ public class ElectrificationEffect : Effect, IEffect
     public bool IsStacking => false;
     public int DamageInflict { get; }
 
-    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, MoveType moveType)
+    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
     {
-        if (moveType is not MoveType.Skill)
+        if (move.Type is not MoveType.Skill)
             return;
         
         effectOwner.Statistics.HP.Modify(DamageInflict, Name);
@@ -133,12 +140,15 @@ public class ShieldEffect : Effect, IEffect
 
     public int DamageAbsorption { get; } = 300;
 
-    public override void BeforeReceive(ICombatCard effectOwner, ReceiveActors actors)
+    public override void BeforeReceive(ICombatCard effectOwner, ReceiveActors actors, Move move)
     {
+        if (move.Type is not MoveType.Attack) 
+            return;
+
         actors.MoveActor.Statistics.Attack.Modify(-DamageAbsorption, Name);
     }
 
-    public override void AfterReceive(ICombatCard effectOwner, ReceiveActors actors)
+    public override void AfterReceive(ICombatCard effectOwner, ReceiveActors actors, Move move)
     {
         RemoveEffects(actors.MoveActor.Statistics);
     }
@@ -152,9 +162,9 @@ public class PiercingDamageEffect : Effect, IEffect
 
     private ShieldEffect[] _targetShieldEffects;
 
-    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, MoveType moveType)
+    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
     {
-        if (moveType is not MoveType.Attack)
+        if (move.Type is not MoveType.Attack)
             return;
 
         _targetShieldEffects = actors.Targets
@@ -166,9 +176,9 @@ public class PiercingDamageEffect : Effect, IEffect
         _targetShieldEffects.ForEach(e => e.Enabled = false);
     }
 
-    public override void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, MoveType moveType)
+    public override void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
     {
-        if (moveType is not MoveType.Attack)
+        if (move.Type is not MoveType.Attack)
             return;
 
         _targetShieldEffects.ForEach(e => e.Enabled = true);
@@ -182,18 +192,18 @@ public class CrushingDamageEffect : Effect, IEffect
     public bool IsStacking => false;
     public int DamageFactor { get; } = 2;
 
-    public override void BeforeMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, MoveType moveType)
+    public override void BeforeMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move)
     {
-        if (moveType is not MoveType.Attack)
+        if (move.Type is not MoveType.Attack)
             return;
 
         if (target.Effects.OfType<ShieldEffect>().Count() > 0)
             effectOwner.Statistics.Attack.Modify(DamageFactor, Name, isFactor: true);
     }
 
-    public override void AfterMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, MoveType moveType)
+    public override void AfterMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move)
     {
-        if (moveType is not MoveType.Attack)
+        if (move.Type is not MoveType.Attack)
             return;
 
         RemoveEffects(target);
@@ -205,14 +215,85 @@ public class CriticEffect : Effect, IEffect
     public override string Name => "Critical Damage";
     public bool IsStacking => false;
 
-    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, MoveType moveType)
+    public int DamageFactor { get; } = 2;
+
+    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
     {
-        effectOwner.Statistics.Attack.Modify(2, Name, isFactor: true);
+        effectOwner.Statistics.Attack.Modify(DamageFactor, Name, isFactor: true);
+        effectOwner.Statistics.Power.Modify(DamageFactor, Name, isFactor: true);
     }
 
-    public override void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, MoveType moveType)
+    public override void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
     {
         RemoveEffects(effectOwner);
+    }
+}
+
+public class CounterattackEffect : Effect, IEffect
+{
+    public override string Name => "Counterattack";
+    public bool IsStacking => false;
+
+    public override void AfterReceive(ICombatCard effectOwner, ReceiveActors actors, Move move)
+    {
+        if (move.Type is not MoveType.Attack)
+            return;
+
+        var counterAttackValue = effectOwner.Statistics.Attack.CalculateValue();
+        actors.MoveActor.Statistics.HP.Modify(counterAttackValue);
+    }
+}
+
+public class BlockEffect : Effect, IEffect
+{
+    public override string Name => "Block";
+    public bool IsStacking => false;
+
+    public override void BeforeReceive(ICombatCard effectOwner, ReceiveActors actors, Move move)
+    {
+        actors.MoveActor.Statistics.Attack.ModifyLate(0, Name, isFactor: true);
+        actors.MoveActor.Statistics.Power.ModifyLate(0, Name, isFactor: true);
+    }
+
+    public override void AfterReceive(ICombatCard effectOwner, ReceiveActors actors, Move move)
+    {
+        RemoveEffects(actors.MoveActor);
+    }
+}
+
+public class DamageReflectionEffect : Effect, IEffect
+{
+    public override string Name => "Damage Reflection";
+    public bool IsStacking => false;
+
+    public override void AfterReceive(ICombatCard effectOwner, ReceiveActors actors, Move move)
+    {
+        if (move.Type is not MoveType.Attack)
+            return;
+
+        actors.MoveActor.Statistics.HP.Modify(move.Damage);
+    }
+}
+
+public class StunEffect : Effect, IEffect
+{
+    public override string Name => "Stun";
+    public bool IsStacking => false;
+
+    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
+    {
+        move.IsFrozen = true;
+    }
+}
+
+public class SilenceEffect : Effect, IEffect
+{
+    public override string Name => "Silence";
+    public bool IsStacking => false;
+
+    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
+    {
+        move.IsFrozen = true;
     }
 }
 

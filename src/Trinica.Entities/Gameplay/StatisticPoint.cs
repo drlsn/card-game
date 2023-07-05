@@ -28,6 +28,9 @@ public class StatisticPoint
         return value;
     }
 
+    public void Modify(double value, bool isFactor = false) =>
+        Modifiers.Add(new(value, isFactor));
+
     public void Modify(double value, string id, bool isFactor = false) =>
         Modifiers.Add(new(value, isFactor, id));
 
@@ -38,6 +41,18 @@ public class StatisticPoint
     {
         Modifiers.RemoveIf(v => v.Id == id);
         ModifiersLate.RemoveIf(v => v.Id == id);
+    }
+
+    public void RemoveAllWithId()
+    {
+        Modifiers.RemoveIf(v => !v.Id.IsNullOrEmpty());
+        ModifiersLate.RemoveIf(v => !v.Id.IsNullOrEmpty());
+    }
+
+    public void RemoveAll()
+    {
+        Modifiers = new();
+        ModifiersLate = new();
     }
 }
 
