@@ -1,4 +1,5 @@
 ﻿using Corelibs.Basic.Collections;
+using Corelibs.Basic.Maths;
 
 namespace Trinica.Entities.Gameplay;
 
@@ -22,10 +23,20 @@ public class StatisticPoint
         );
 
         ModifiersLate.ForEach(m =>
-            value = m.IsFactor ? value = (int)(value * m.Value) : (int)(value + m.Value)
+            value = m.IsFactor ? value = (int) (value * m.Value) : (int) (value + m.Value)
         );
 
         return value;
+    }
+
+    public void ModifyClamped(double value)
+    {
+        var currentValue = CalculateValue();
+        value = value.Clamp(OriginalValue - currentValue);
+        if (value == 0)
+            return;
+
+        Modifiers.Add(new(value));
     }
 
     public void Modify(double value, bool isFactor = false) =>

@@ -157,6 +157,9 @@ public static class PlayerExtensions
     public static Player OfId(this IEnumerable<Player> players, UserId id) =>
         players.First(p => p.Id == id);
 
+    public static Player[] NotOfId(this IEnumerable<Player> players, UserId id) =>
+        players.Where(p => p.Id != id).ToArray();
+
     public static UserId[] ToIds(this IEnumerable<Player> players) =>
         players.Select(c => c.Id).ToArray();
 
@@ -165,6 +168,13 @@ public static class PlayerExtensions
             .Select(c => c.BattlingDeck)
             .Aggregate((x, y) => x + y)
             .ThenSelect(deck => deck.SpellCards.Shuffle().Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed).Cast<ICard>()))
+            .ToArray();
+
+    public static ICard[] GetBattlingCards(this IEnumerable<Player> players) =>
+        players
+            .Select(c => c.BattlingDeck)
+            .Aggregate((x, y) => x + y)
+            .GetAllCards()
             .ToArray();
 
     public static Player GetPlayerWithCard(this IEnumerable<Player> players, CardId cardId) =>

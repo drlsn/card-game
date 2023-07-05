@@ -12,4 +12,11 @@ public class SpellCard : ICard, ICombatCard
     public List<IEffect> Effects { get; private set; }
 
     CardId ICard.Id => Id;
+    CardId ICombatCard.Id => Id;
+
+    public bool DoesDamage { get; init; }
+
+    public bool DoesPowerDamage(int skillIndex) => DoesDamage;
+
+    public IEffect[] GetEffects(int skillIndex) => Effects.ToArray();
 }

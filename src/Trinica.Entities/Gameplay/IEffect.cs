@@ -1,5 +1,5 @@
 ﻿using Corelibs.Basic.Collections;
-using Corelibs.Basic.Functional;
+using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay;
 
@@ -11,6 +11,17 @@ public interface IEffect
     bool Enabled { get; set; }
 
     public void RemoveEffects(StatisticPointGroup statistics);
+
+    void OnEffectStart(ICombatCard effectOwner, RoundSettings roundSettings);
+    void OnRoundStart(ICombatCard effectOwner, ICombatCard[] allEnemies, ICombatCard[] allAllies, RoundSettings roundSettings);
+    void BeforeReceive(ICombatCard effectOwner, ReceiveActors actors, Move move);
+    void AfterReceive(ICombatCard effectOwner, ReceiveActors actors, Move move);
+    void BeforeMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move);
+    void AfterMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move);
+    void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move);
+    void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move);
+    void OnRoundFinish(ICombatCard effectOwner);
+    void OnEffectEnd(ICombatCard effectOwner, RoundSettings roundSettings);
 }
 
 public class RoundInfo
@@ -19,6 +30,7 @@ public class RoundInfo
     public int RoundsPassed { get; }
     public int RoundsLeft => RoundsTotal - RoundsPassed;
 }
+
 
 public record ReceiveActors(
     ICombatCard MoveActor,
@@ -34,25 +46,33 @@ public class Move
 {
     public MoveType Type { get; init; }
     public int Damage { get; set; }
-    public bool IsFrozen { get; set; }
+    public ICombatCard PrioritizedTarget { get; set; } = null;
+    public bool MoveEnabled { get; set; } = true;
+    public bool AttackEnabled { get; set; } = true;
+    public bool ItemsEnabled { get; set; } = true;
+    public bool SkillsEnabled { get; set; } = true;
+    public bool EffectsEnabled { get; set; } = true;
 }
 
 public abstract class Effect
 {
     public abstract string Name { get; }
 
+    public string Id => Name + GetHashCode();
+
     public RoundInfo RoundInfo { get; }
     public bool Enabled { get; set; } = true;
 
-    public virtual void OnEffectStart(ICombatCard effectOwner) {}
-    public virtual void OnRoundStart(ICombatCard effectOwner) {}
+    public virtual void OnEffectStart(ICombatCard effectOwner, RoundSettings roundSettings) {}
+    public virtual void OnRoundStart(ICombatCard effectOwner, ICombatCard[] allEnemies, ICombatCard[] allAllies, RoundSettings roundSettings) { }
     public virtual void BeforeReceive(ICombatCard effectOwner, ReceiveActors actors, Move move) {}
-    public virtual void AfterReceive(ICombatCard effectOwner, ReceiveActors actors, Move move) { }
-    public virtual void BeforeMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move) { }
-    public virtual void AfterMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move) { }
-    public virtual void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move) { }
-    public virtual void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move) { }
+    public virtual void AfterReceive(ICombatCard effectOwner, ReceiveActors actors, Move move) {}
+    public virtual void BeforeMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move) {}
+    public virtual void AfterMoveAtSingleTarget(ICombatCard effectOwner, ICombatCard target, Move move) {}
+    public virtual void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move) {}
+    public virtual void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move) {}
     public virtual void OnRoundFinish(ICombatCard effectOwner) {}
+    public virtual void OnEffectEnd(ICombatCard effectOwner, RoundSettings roundSettings) {}
 
     public void RemoveEffects(StatisticPointGroup statistics)
     {
@@ -82,7 +102,7 @@ public class BurningEffect : Effect, IEffect
 
     public int DamageInflict { get; }
 
-    public override void OnRoundStart(ICombatCard effectOwner)
+    public override void OnRoundStart(ICombatCard effectOwner, ICombatCard[] allEnemies, ICombatCard[] allAllies, RoundSettings roundSettings)
     {
         effectOwner.Statistics.HP.Modify(DamageInflict, Name);
 
@@ -239,6 +259,12 @@ public class CounterattackEffect : Effect, IEffect
         if (move.Type is not MoveType.Attack)
             return;
 
+        if (effectOwner.Effects.Contains<StunEffect>())
+            return;
+
+        if (effectOwner.Effects.Contains<DazzleEffect>())
+            return;
+
         var counterAttackValue = effectOwner.Statistics.Attack.CalculateValue();
         actors.MoveActor.Statistics.HP.Modify(counterAttackValue);
     }
@@ -282,7 +308,7 @@ public class StunEffect : Effect, IEffect
 
     public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
     {
-        move.IsFrozen = true;
+        move.MoveEnabled = false;
     }
 }
 
@@ -293,12 +319,136 @@ public class SilenceEffect : Effect, IEffect
 
     public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
     {
-        move.IsFrozen = true;
+        move.ItemsEnabled = false;
+        move.SkillsEnabled = false;
+    }
+}
+
+public class CleanseEffect : Effect, IEffect
+{
+    public override string Name => "Cleanse";
+    public bool IsStacking => false;
+
+    private readonly Random _random;
+    public CleanseEffect(Random random)
+    {
+        _random = random;
+    }
+
+    public override void OnEffectStart(ICombatCard effectOwner, RoundSettings roundSettings)
+    {
+        if (effectOwner.Effects.Count == 0)
+            return;
+
+        var index = _random.Next(effectOwner.Effects.Count);
+        effectOwner.Effects.RemoveAt(index);
+    }
+}
+
+public class ProvocationEffect : Effect, IEffect
+{
+    public override string Name => "Provocation";
+    public bool IsStacking => false;
+
+    public override void OnEffectStart(ICombatCard effectOwner, RoundSettings roundSettings)
+    {
+        roundSettings.PrioritizedToAttackCards.Add(Id, effectOwner.Id);
+    }
+
+    public override void OnEffectEnd(ICombatCard effectOwner, RoundSettings roundSettings)
+    {
+        roundSettings.PrioritizedToAttackCards.Remove(Id);
+    }
+}
+
+public class HidingEffect : Effect, IEffect
+{
+    public override string Name => "Hiding";
+    public bool IsStacking => false;
+
+    public override void OnEffectStart(ICombatCard effectOwner, RoundSettings roundSettings)
+    {
+        roundSettings.NotAllowedAsTargetCards.Add(Id, effectOwner.Id);
+    }
+
+    public override void OnEffectEnd(ICombatCard effectOwner, RoundSettings roundSettings)
+    {
+        roundSettings.NotAllowedAsTargetCards.Remove(Id);
+    }
+}
+
+public class FreezeEffect : Effect, IEffect
+{
+    public override string Name => "Freeze";
+    public bool IsStacking => false;
+
+    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
+    {
+        move.MoveEnabled = false;
+    }
+}
+
+public class DazzleEffect : Effect, IEffect
+{
+    public override string Name => "Dazzle";
+    public bool IsStacking => false;
+
+    public override void BeforeMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
+    {
+        move.AttackEnabled = false;
+    }
+}
+
+public class VampirismEffect : Effect, IEffect
+{
+    public override string Name => "Vampirism";
+    public bool IsStacking => false;
+
+    public override void AfterMoveAtAll(ICombatCard effectOwner, MoveActors actors, Move move)
+    {
+        effectOwner.Statistics.HP.ModifyClamped(move.Damage);
+    }
+}
+
+public class HealEffect : Effect, IEffect
+{
+    public override string Name => "Heal";
+    public bool IsStacking => false;
+
+    public override void OnRoundStart(ICombatCard effectOwner, ICombatCard[] allEnemies, ICombatCard[] allAllies, RoundSettings roundSettings)
+    {
+        effectOwner.Statistics.HP.ModifyClamped(int.MaxValue);
+    }
+}
+
+public class InviolabilityEffect : Effect, IEffect
+{
+    public override string Name => "Inviolability";
+    public bool IsStacking => false;
+
+    public override void OnEffectStart(ICombatCard effectOwner, RoundSettings roundSettings)
+    {
+        roundSettings.NotAllowedAsTargetCards.Add(Id, effectOwner.Id);
+    }
+
+    public override void OnEffectEnd(ICombatCard effectOwner, RoundSettings roundSettings)
+    {
+        roundSettings.NotAllowedAsTargetCards.Remove(Id);
     }
 }
 
 public interface ICombatCard
 {
-    public StatisticPointGroup Statistics { get; }
-    public List<IEffect> Effects { get; }
+    CardId Id { get; }
+    StatisticPointGroup Statistics { get; }
+    List<IEffect> Effects { get; }
+
+    bool DoesPowerDamage(int skillIndex);
+    IEffect[] GetEffects(int skillIndex);
+}
+
+public class RoundSettings
+{
+    public Dictionary<string, CardId> PrioritizedToAttackCards = new();
+    public Dictionary<string, CardId> NotAllowedAsTargetCards = new();
 }

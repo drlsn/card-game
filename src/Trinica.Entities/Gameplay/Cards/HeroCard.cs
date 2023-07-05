@@ -3,7 +3,7 @@ using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay.Cards;
 
-public class HeroCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard
+public class HeroCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICardWithItems
 {
     public HeroCardId Id { get; private set; }
     public StatisticPointGroup Statistics { get; private set; }
@@ -11,5 +11,20 @@ public class HeroCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard
 
     public List<IEffect> Effects { get; private set; }
 
+    public List<ItemCard> ItemCards => Slots.ItemCards;
+
     CardId ICard.Id => Id;
+    CardId ICombatCard.Id => Id;
+
+    public bool DoesPowerDamage(int skillIndex)
+    {
+        var skillCard = Slots.SkillCards[skillIndex];
+        return skillCard.DoesDamage;
+    }
+
+    public IEffect[] GetEffects(int skillIndex)
+    {
+        var skillCard = Slots.SkillCards[skillIndex];
+        return skillCard.Effects;
+    }
 }
