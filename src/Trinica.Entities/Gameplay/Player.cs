@@ -21,7 +21,7 @@ public class Player : Entity<UserId>
     public FieldDeck HandDeck { get; private set; }
     public FieldDeck BattlingDeck { get; private set; }
     public FieldDeck DeadDeck { get; private set; }
-    public DiceOutcome[] FreeDiceOutcomes { get; private set; }
+    public List<DiceOutcome> FreeDiceOutcomes { get; private set; }
     public Dictionary<CardId, CardAssignment> CardAssignments { get; private set; }
 
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
@@ -109,12 +109,20 @@ public class Player : Entity<UserId>
 
         FreeDiceOutcomes = Enumerable.Range(0, n)
             .Select(i => Dice.Play(getRandom()))
-            .ToArray();
+            .ToList();
     }
 
     public void AssignDiceToCard(int diceIndex, CardId cardId)
     {
         CardAssignments.TryGetOrAddValue(cardId).DiceOutcome = FreeDiceOutcomes[diceIndex];
+        FreeDiceOutcomes.RemoveAt(diceIndex);
+    }
+
+    public void RemoveDiceFromCard(CardId cardId)
+    {
+        var card = CardAssignments.TryGetOrAddValue(cardId);
+        FreeDiceOutcomes.Add(card.DiceOutcome);
+        card.DiceOutcome = null;
     }
 
     public void ChooseCardSkill(CardId cardId, int skillIndex)
@@ -122,9 +130,14 @@ public class Player : Entity<UserId>
         CardAssignments.TryGetOrAddValue(cardId).SkillIndex = skillIndex;
     }
 
-    public void AssignCardsTargets(CardId cardId, CardId targetCardId)
+    public void AssignCardTarget(CardId cardId, CardId targetCardId)
     {
-        CardAssignments.TryGetOrAddValue(cardId).TargetCardId = targetCardId;
+        CardAssignments.TryGetOrAddValue(cardId).TargetCardIds.Add(targetCardId);
+    }
+
+    public void RemoveCardTarget(CardId cardId, CardId targetCardId)
+    {
+        CardAssignments.TryGetOrAddValue(cardId).TargetCardIds.Remove(targetCardId);
     }
 }
 

@@ -75,16 +75,28 @@ public class Game : Entity<GameId>
         player.AssignDiceToCard(diceIndex, cardId);
     }
 
+    public void RemoveDiceFromCard(UserId playerId, CardId cardId)
+    {
+        var player = Players.OfId(playerId);
+        player.RemoveDiceFromCard(cardId);
+    }
+
     public void ChooseCardSkill(UserId playerId, CardId cardId, int skillIndex)
     {
         var player = Players.OfId(playerId);
         player.ChooseCardSkill(cardId, skillIndex);
     }
 
-    public void AssignCardsTargets(UserId playerId, CardId cardId, CardId targetCardId)
+    public void AssignCardTarget(UserId playerId, CardId cardId, CardId targetCardId)
     {
         var player = Players.OfId(playerId);
-        player.AssignCardsTargets(cardId, targetCardId);
+        player.AssignCardTarget(cardId, targetCardId);
+    }
+
+    public void RemoveCardTarget(UserId playerId, CardId cardId, CardId targetCardId)
+    {
+        var player = Players.OfId(playerId);
+        player.RemoveCardTarget(cardId, targetCardId);
     }
 
     public void PerformRound(Random random)
@@ -95,7 +107,7 @@ public class Game : Entity<GameId>
         {
             var player = Players.GetPlayerWithCard(card.Id);
             var cardAssignments = player.CardAssignments[card.Id];
-            var targetCard = cards.First(c => c.Id == cardAssignments.TargetCardId);
+            var targetCards = cards.Select(c => cardAssignments.TargetCardIds.Contains(c.Id));
 
             if (card is SpellCard spellCard)
             {
@@ -104,10 +116,8 @@ public class Game : Entity<GameId>
             else
             if (card is UnitCard unitCard)
             {
-                if (cardAssignments.DiceOutcome == DiceOutcome.Attack)
-                    ;
-                else
-                    ;
+                var move = new Move();
+
             }
             else
             if (card is HeroCard heroCard)
