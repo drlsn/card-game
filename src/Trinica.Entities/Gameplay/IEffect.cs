@@ -5,6 +5,7 @@ public interface IEffect
     string Name { get; }
     RoundInfo RoundInfo { get; }
     bool IsStacking { get; }
+    bool Enabled { get; set; }
 
     public void RemoveEffects(StatisticPointGroup statistics);
 }
@@ -21,11 +22,14 @@ public abstract class Effect
     public abstract string Name { get; }
 
     public RoundInfo RoundInfo { get; }
+    public bool Enabled { get; set; } = true;
 
     public virtual void OnEffectStart(ICombatCard effectOwner) {}
     public virtual void OnRoundStart(ICombatCard effectOwner) {}
-    public virtual void OnDefend(ICombatCard effectOwner, ICombatCard attacker) {}
-    public virtual void OnMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType) { }
+    public virtual void BeforeDefend(ICombatCard effectOwner, ICombatCard attacker) {}
+    public virtual void AfterDefend(ICombatCard effectOwner, ICombatCard attacker) { }
+    public virtual void BeforeMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType) { }
+    public virtual void AfterMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType) { }
     public virtual void OnRoundFinish(ICombatCard effectOwner) {}
 
     public void RemoveEffects(StatisticPointGroup statistics)
@@ -78,7 +82,7 @@ public class BleedingEffect : Effect, IEffect
     public bool IsStacking => false;
     public int DamageInflict { get; }
 
-    public override void OnMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType)
+    public override void BeforeMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType)
     {
         effectOwner.Statistics.HP.Modify(DamageInflict, Name);
     }
@@ -90,7 +94,7 @@ public class ElectrificationEffect : Effect, IEffect
     public bool IsStacking => false;
     public int DamageInflict { get; }
 
-    public override void OnMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType)
+    public override void BeforeMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType)
     {
         if (moveType is not MoveType.Skill)
             return;
@@ -107,7 +111,15 @@ public class PiercingDamageEffect : Effect, IEffect
     public bool IsStacking => false;
     public int DamageInflict { get; }
 
-    public override void OnMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType)
+    public override void BeforeMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType)
+    {
+        if (moveType is not MoveType.Attack)
+            return;
+
+        //defender.Statistics
+    }
+
+    public override void AfterMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType)
     {
         if (moveType is not MoveType.Attack)
             return;
@@ -116,7 +128,36 @@ public class PiercingDamageEffect : Effect, IEffect
     }
 }
 
+public class ShieldEffect : Effect, IEffect
+{
+    public override string Name => "Shield";
+    public bool IsStacking => true;
+    public int DamageInflict { get; }
+
+    public override void BeforeDefend(ICombatCard effectOwner, ICombatCard attacker)
+    {
+        attacker.Statistics.Attack.ModifyLate(0, Name, isFactor: true);
+    }
+
+    public override void AfterDefend(ICombatCard effectOwner, ICombatCard attacker)
+    {
+        RemoveEffects(attacker.Statistics);
+    }
+}
+
+public class CriticEffect : Effect, IEffect
+{
+    public override string Name => "Critical Damage";
+    public bool IsStacking => false;
+
+    public override void BeforeMove(ICombatCard effectOwner, ICombatCard defender, MoveType moveType)
+    {
+        effectOwner.Statistics.Attack.Modify(2, Name, isFactor: true);
+    }
+}
+
 public interface ICombatCard
 {
     public StatisticPointGroup Statistics { get; }
+    public List<IEffect> Effects { get; }
 }
