@@ -21,7 +21,7 @@ public class Player : Entity<UserId>
     public HeroCard HeroCard { get; private set; }
     public FieldDeck HandDeck { get; private set; } = new();
     public FieldDeck BattlingDeck { get; private set; } = new();
-    public FieldDeck DeadDeck { get; private set; }
+    public FieldDeck DeadDeck { get; private set; } = new();
     public List<DiceOutcome> FreeDiceOutcomes { get; private set; }
     public Dictionary<CardId, CardAssignment> CardAssignments { get; private set; } = new();
 
@@ -65,6 +65,17 @@ public class Player : Entity<UserId>
     public ICard TakeCardFromHand(CardId cardId)
     {
         return HandDeck.TakeCard(cardId);
+    }
+
+    public ICard TakeCardFromBattling(CardId cardId)
+    {
+        if (HeroCard.Id == cardId)
+        {
+            var heroCard = HeroCard; HeroCard = null;
+            return heroCard;
+        }
+
+        return BattlingDeck.TakeCard(cardId);
     }
 
     public void AddCardToHand(ICard card)
@@ -157,6 +168,25 @@ public class Player : Entity<UserId>
     {
         CardAssignments.TryGetOrAddValue(cardId).TargetCardIds.Remove(targetCardId);
     }
+
+    public void InflictDamage(int damage, CardId cardId)
+    {
+        var card = GetBattlingCard(cardId);
+        if (card is ICombatCard combatCard)
+        {
+            combatCard.Statistics.HP.ModifyClamped(-damage);
+            var hp = combatCard.Statistics.HP.CalculateValue();
+            if (hp > 0)
+                return;
+        }
+
+        card = TakeCardFromBattling(cardId);
+        DeadDeck += card;
+    }
+
+    public bool IsCardDead(ICard card) =>
+        card is HeroCard && HeroCard is null ||
+        DeadDeck.Contains(card);
 }
 
 public static class PlayerExtensions

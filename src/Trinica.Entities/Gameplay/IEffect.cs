@@ -437,7 +437,7 @@ public class InviolabilityEffect : Effect, IEffect
     }
 }
 
-public interface ICombatCard
+public interface ICombatCard : ICard
 {
     CardId Id { get; }
     StatisticPointGroup Statistics { get; }

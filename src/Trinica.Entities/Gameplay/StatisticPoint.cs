@@ -32,7 +32,7 @@ public class StatisticPoint
     public void ModifyClamped(double value)
     {
         var currentValue = CalculateValue();
-        value = value.Clamp(OriginalValue - currentValue);
+        value = value.Clamp(-currentValue, OriginalValue - currentValue);
         if (value == 0)
             return;
 

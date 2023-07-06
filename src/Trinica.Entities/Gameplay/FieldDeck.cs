@@ -54,6 +54,9 @@ public class FieldDeck
             deck.SpellCards.Shuffle(random).ToList());
     }
 
+    public bool Contains(ICard card) => Contains(card.Id);
+    public bool Contains(CardId cardId) => GetAllCards().FirstOrDefault(c => c.Id == cardId) is not null;
+
     public ICard GetCard(CardId cardId) =>
         GetAllCards().First(c => c.Id == cardId);
 

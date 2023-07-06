@@ -8,6 +8,7 @@ public class GameActionController
     private Action _expectedAction = new();
 
     public GameActionController(Delegate @delegate) => SetNextExpectedAction(@delegate.Method.Name);
+    public GameActionController(Delegate @delegate, UserId[] expectedPlayers) => SetNextExpectedAction(@delegate.Method.Name, expectedPlayers);
     public GameActionController(string type) => SetNextExpectedAction(type);
 
     public bool CanDo(Delegate @delegate, UserId userId = null) =>

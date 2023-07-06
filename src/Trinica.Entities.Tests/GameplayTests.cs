@@ -1,4 +1,3 @@
-using System.Xml.Linq;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
@@ -9,14 +8,8 @@ namespace Trinica.Entities.Tests;
 
 public class GameplayTests
 {
-    [SetUp]
-    public void Setup()
-    {
-
-    }
-
     [Test]
-    public void Test()
+    public void PlayOnlyHeroesAndCheckControl()
     {
         // Player 1
         var hero1Stats = new StatisticPointGroup(
@@ -48,12 +41,25 @@ public class GameplayTests
         var player2Id = new UserId("player-2");
         var player2 = new Player(player2Id, deck2Id, hero2Card, player2Deck);
 
+        var random = new Random(1);
+
         // Game
         var gameId = new GameId("game");
         var game = new Game(gameId, new[] { player1, player2 });
 
+        // StartGame
+        Assert.IsFalse(game.CanDo(game.StartGame));
+        Assert.IsTrue(game.CanDo(game.StartGame, player1Id));
+        Assert.IsTrue(game.CanDo(game.StartGame, player2Id));
+        {
+            Assert.IsTrue(game.StartGame(player1Id, random));
+            Assert.IsTrue(game.StartGame(player2Id, random));
+        }
+        Assert.IsFalse(game.CanDo(game.StartGame));
+        Assert.IsFalse(game.CanDo(game.StartGame, player1Id));
+        Assert.IsFalse(game.CanDo(game.StartGame, player2Id));
+
         // TakeCardsToCommonPool
-        var random = new Random(1);
         Assert.IsTrue(game.TakeCardsToCommonPool(random));
         {
             Assert.That(game.CommonPool.Count, Is.EqualTo(0));
@@ -178,6 +184,7 @@ public class GameplayTests
         Assert.That(game.Players[0].CardAssignments[hero1CardId].TargetCardIds.Count, Is.EqualTo(1));
         Assert.That(game.Players[1].CardAssignments[hero2CardId].TargetCardIds.Count, Is.EqualTo(1));
 
+        // StartRound and PerformMove
         Assert.IsTrue(game.StartRound(random));
         Assert.IsTrue(game.CanDo(game.PerformRound));
         Assert.IsTrue(game.CanDo(game.PerformMove));
@@ -195,14 +202,47 @@ public class GameplayTests
         Assert.IsFalse(game.IsRoundOngoing());
         Assert.IsFalse(game.CanDo(game.PerformMove));
 
+        // FinishRound
         Assert.IsTrue(game.CanDo(game.FinishRound));
         Assert.IsTrue(game.FinishRound(random));
         Assert.IsFalse(game.CanDo(game.FinishRound));
 
-        Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
-        Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player2Id));
-        Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
+        Assert.IsFalse(game.IsGameOver());
 
-        game.FinishRound(random);
+        // TakeCardsToHand
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
+        Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
+        Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player2Id));
+        {
+            Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
+            Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
+        }
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player1Id));
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player2Id));
+
+        // Repeat Process in 2nd Round
+        Assert.IsTrue(game.CalculateLayDownOrderPerPlayer());
+        Assert.IsTrue(game.LayCardsToBattle(player1Id, Array.Empty<CardToLay>()));
+        Assert.IsTrue(game.LayCardsToBattle(player2Id, Array.Empty<CardToLay>()));
+        Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
+        Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
+        Assert.IsTrue(game.PassReplayDices(player1Id));
+        Assert.IsTrue(game.PassReplayDices(player2Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, hero1CardId));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, hero2CardId));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player1Id));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, hero1CardId, hero2CardId));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, hero2CardId, hero1CardId));
+        Assert.IsTrue(game.ConfirmAll(player1Id));
+        Assert.IsTrue(game.ConfirmAll(player2Id));
+        Assert.IsTrue(game.StartRound(random));
+
+        Assert.IsTrue(game.IsRoundOngoing());
+        Assert.IsTrue(game.PerformMove(random));
+        Assert.IsTrue(game.Players[1].IsCardDead(hero2Card));
+
+        Assert.IsTrue(game.IsGameOver());
     }
 }

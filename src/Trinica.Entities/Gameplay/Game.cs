@@ -12,6 +12,7 @@ public class Game : Entity<GameId>
     public Player[] Players { get; private set; }
     public FieldDeck CommonPool { get; private set; }
     public ICard CenterCard { get; private set; }
+    public int CenterCardRoundsAlive { get; private set; }
     public UserId[] CardsLayOrderPerPlayer { get; private set; }
 
     public RoundSettings RoundSettings { get; private set; } = new();
@@ -23,7 +24,15 @@ public class Game : Entity<GameId>
         Player[] players) : base(id)
     {
         Players = players;
-        ActionController = new(TakeCardsToCommonPool);
+        ActionController = new(StartGame, Players.ToIds());
+    }
+
+    public bool StartGame(UserId playerId, Random random)
+    {
+        if (!ActionController.CanDo(StartGame, playerId))
+            return false;
+
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardsToCommonPool);
     }
 
     public bool TakeCardsToCommonPool(Random random)
@@ -40,6 +49,13 @@ public class Game : Entity<GameId>
     {
         if (!ActionController.CanDo(StartRound))
             return false;
+
+        if (CenterCard is not null)
+        {
+            CenterCardRoundsAlive++;
+            if (CenterCardRoundsAlive >= 6)
+                return FinishGame(random, Players.GetPlayerWithCard(CenterCard.Id));
+        }
 
         _cardIndex = 0;
         _cards = Players.GetBattlingCardsBySpeed(random);
@@ -98,6 +114,7 @@ public class Game : Entity<GameId>
             {
                 CenterCard = player.TakeCardFromHand(cardToCenter.SourceCardId);
                 cards = cards.Except(cardToCenter).ToArray();
+                CenterCardRoundsAlive = 0;
             }
         }
 
@@ -289,7 +306,12 @@ public class Game : Entity<GameId>
                 targetCards.ForEach(targetCard =>
                 {
                     var move = movesAtSingle[targetCard.Id];
-                    targetCard.Statistics.HP.Modify(-move.Damage);
+                    
+                    var targetPlayer = Players.GetPlayerWithCard(targetCard.Id);
+                    targetPlayer.InflictDamage(move.Damage, targetCard.Id);
+                    if (targetPlayer.IsCardDead(targetCard))
+                        if (CenterCard == targetCard)
+                            CenterCardRoundsAlive = 0;
                 });
             }
             else
@@ -387,6 +409,21 @@ public class Game : Entity<GameId>
 
         return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds());
     }
+
+    public bool IsGameOver() =>
+        IsGameOverByHeroElimination() ||
+        IsGameOverByCenterOccupied();
+
+    public bool FinishGame(Random random, Player winner)
+    {
+        if (!ActionController.CanDo(FinishGame))
+            return false;
+
+        return ActionController.SetNextExpectedAction("None");
+    }
+
+    public bool IsGameOverByHeroElimination() => Players.Any(p => p.HeroCard is null);
+    public bool IsGameOverByCenterOccupied() => CenterCardRoundsAlive >= 6;
 
     public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanDo(@delegate, userId);
 
