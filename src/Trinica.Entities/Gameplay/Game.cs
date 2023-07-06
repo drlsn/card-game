@@ -36,8 +36,11 @@ public class Game : Entity<GameId>
         return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds());
     }
 
-    public void StartRound(Random random)
+    public bool StartRound(Random random)
     {
+        if (!ActionController.CanDo(StartRound))
+            return false;
+
         _cardIndex = 0;
         _cards = Players.GetBattlingCardsBySpeed(random);
         _cards.ForEach(card =>
@@ -48,6 +51,8 @@ public class Game : Entity<GameId>
             combatCard.Effects.ForEach(effect =>
                 effect.OnRoundStart(combatCard, null, null, RoundSettings));
         });
+
+        return ActionController.SetNextExpectedAction(PerformRound);
     }
 
     public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random)
@@ -65,7 +70,7 @@ public class Game : Entity<GameId>
                 player.TakeCardToHand(random);
         });
 
-        return ActionController.SetNextUserOrExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
     }
 
     public bool CalculateLayDownOrderPerPlayer()
@@ -99,7 +104,7 @@ public class Game : Entity<GameId>
         if (!player.LayCardsToBattle(cards))
             return false;
 
-        return ActionController.SetNextUserOrExpectedAction(playerId, PlayDices, Players.ToIds());
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, PlayDices, Players.ToIds());
     }
 
     public bool PlayDices(UserId playerId, Func<Random> getRandom)
@@ -110,54 +115,94 @@ public class Game : Entity<GameId>
         var player = Players.OfId(playerId);
         player.PlayDices(getRandom);
 
-        return ActionController.SetNextUserOrExpectedAction(playerId, ReplayDices, PassReplayDices);
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), ReplayDices, PassReplayDices);
     }
 
-    public bool PassReplayDices(UserId playerId, int n, Func<Random> getRandom)
+    public bool PassReplayDices(UserId playerId)
     {
         if (!ActionController.CanDo(PassReplayDices, playerId))
+            return false;
+
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), AssignDiceToCard, ConfirmAssignDicesToCards);
+    }
+
+    public bool ReplayDices(UserId playerId, int n, Func<Random> getRandom)
+    {
+        if (!ActionController.CanDo(ReplayDices, playerId))
             return false;
 
         var player = Players.OfId(playerId);
         player.PlayDices(n, getRandom);
 
-        return ActionController.SetNextUserOrExpectedAction(playerId, AssignDiceToCard);
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), AssignDiceToCard, ConfirmAssignDicesToCards);
     }
 
-    public void ReplayDices(UserId playerId, int n, Func<Random> getRandom)
+    public bool AssignDiceToCard(UserId playerId, int diceIndex, CardId cardId)
     {
-        var player = Players.OfId(playerId);
-        player.PlayDices(n, getRandom);
-    }
+        if (!ActionController.CanDo(AssignDiceToCard, playerId))
+            return false;
 
-    public void AssignDiceToCard(UserId playerId, int diceIndex, CardId cardId)
-    {
         var player = Players.OfId(playerId);
         player.AssignDiceToCard(diceIndex, cardId);
+
+        return true;
     }
 
-    public void RemoveDiceFromCard(UserId playerId, CardId cardId)
+    public bool RemoveDiceFromCard(UserId playerId, CardId cardId)
     {
+        if (!ActionController.CanDo(RemoveDiceFromCard, playerId))
+            return false;
+
         var player = Players.OfId(playerId);
         player.RemoveDiceFromCard(cardId);
+
+        return true;
     }
 
-    public void ChooseCardSkill(UserId playerId, CardId cardId, int skillIndex)
+    public bool ConfirmAssignDicesToCards(UserId playerId)
     {
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), ChooseCardSkill, AssignCardTarget, RemoveCardTarget, ConfirmAll);
+    }
+
+    public bool ChooseCardSkill(UserId playerId, CardId cardId, int skillIndex)
+    {
+        if (!ActionController.CanDo(ChooseCardSkill, playerId))
+            return false;
+
         var player = Players.OfId(playerId);
         player.ChooseCardSkill(cardId, skillIndex);
+
+        return true;
     }
 
-    public void AssignCardTarget(UserId playerId, CardId cardId, CardId targetCardId)
+    public bool AssignCardTarget(UserId playerId, CardId cardId, CardId targetCardId)
     {
+        if (!ActionController.CanDo(AssignCardTarget, playerId))
+            return false;
+
         var player = Players.OfId(playerId);
         player.AssignCardTarget(cardId, targetCardId);
+
+        return true;
     }
 
-    public void RemoveCardTarget(UserId playerId, CardId cardId, CardId targetCardId)
+    public bool RemoveCardTarget(UserId playerId, CardId cardId, CardId targetCardId)
     {
+        if (!ActionController.CanDo(RemoveCardTarget, playerId))
+            return false;
+
         var player = Players.OfId(playerId);
         player.RemoveCardTarget(cardId, targetCardId);
+
+        return true;
+    }
+
+    public bool ConfirmAll(UserId playerId)
+    {
+        if (!ActionController.CanDo(ConfirmAll, playerId))
+            return false;
+
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, StartRound);
     }
 
     private ICard[] _cards;

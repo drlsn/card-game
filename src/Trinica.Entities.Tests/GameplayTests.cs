@@ -103,18 +103,78 @@ public class GameplayTests
             Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
             Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
         }
+        Assert.IsFalse(game.CanDo(game.PlayDices));
+        Assert.IsFalse(game.CanDo(game.PlayDices, player1Id));
+        Assert.IsFalse(game.CanDo(game.PlayDices, player2Id));
         Assert.That(game.Players[0].FreeDiceOutcomes.Count, Is.EqualTo(1));
         Assert.That(game.Players[1].FreeDiceOutcomes.Count, Is.EqualTo(1));
 
-        game.AssignDiceToCard(player1Id, diceIndex: 0, hero1CardId);
-        game.AssignDiceToCard(player2Id, diceIndex: 0, hero2CardId);
+        // PassReplayDices or ReplayDices
+        Assert.IsTrue(game.CanDo(game.PassReplayDices, player1Id));
+        Assert.IsTrue(game.CanDo(game.PassReplayDices, player2Id));
+        Assert.IsTrue(game.CanDo(game.ReplayDices, player1Id));
+        Assert.IsTrue(game.CanDo(game.ReplayDices, player2Id));
+        {
+            Assert.IsTrue(game.ReplayDices(player1Id, 1, () => new Random(2)));
+        }
+        Assert.IsFalse(game.CanDo(game.PassReplayDices, player1Id));
+        Assert.IsFalse(game.CanDo(game.ReplayDices, player1Id));
+
+        Assert.IsTrue(game.CanDo(game.PassReplayDices, player2Id));
+        Assert.IsTrue(game.CanDo(game.ReplayDices, player2Id));
+        {
+            Assert.IsTrue(game.PassReplayDices(player2Id));
+        }
+        Assert.IsFalse(game.CanDo(game.PassReplayDices, player2Id));
+        Assert.IsFalse(game.CanDo(game.ReplayDices, player2Id));
+
+        // AssignDiceToCard or ConfirmAssignDicesToCards
+        Assert.IsFalse(game.CanDo(game.AssignDiceToCard));
+        Assert.IsTrue(game.CanDo(game.AssignDiceToCard, player1Id));
+        Assert.IsTrue(game.CanDo(game.AssignDiceToCard, player2Id));
+        Assert.IsTrue(game.CanDo(game.ConfirmAssignDicesToCards, player1Id));
+        Assert.IsTrue(game.CanDo(game.ConfirmAssignDicesToCards, player2Id));
+        {
+            Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, hero1CardId));
+            Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, hero2CardId));
+            Assert.IsTrue(game.ConfirmAssignDicesToCards(player1Id));
+            Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
+        }
+        Assert.IsFalse(game.CanDo(game.AssignDiceToCard));
+        Assert.IsFalse(game.CanDo(game.AssignDiceToCard, player1Id));
+        Assert.IsFalse(game.CanDo(game.AssignDiceToCard, player2Id));
+        Assert.IsFalse(game.CanDo(game.ConfirmAssignDicesToCards, player1Id));
+        Assert.IsFalse(game.CanDo(game.ConfirmAssignDicesToCards, player2Id));
         Assert.That(game.Players[0].FreeDiceOutcomes.Count, Is.EqualTo(0));
         Assert.That(game.Players[1].FreeDiceOutcomes.Count, Is.EqualTo(0));
         Assert.That(game.Players[0].CardAssignments.Count, Is.EqualTo(1));
         Assert.That(game.Players[1].CardAssignments.Count, Is.EqualTo(1));
 
-        game.AssignCardTarget(player1Id, hero1CardId, hero2CardId);
-        game.AssignCardTarget(player2Id, hero2CardId, hero1CardId);
+        // ChooseCardSkill or AssignCardTarget or RemoveCardTarget or ConfirmAll
+        Assert.IsTrue(game.CanDo(game.ConfirmAll, player1Id));
+        Assert.IsTrue(game.CanDo(game.ConfirmAll, player2Id));
+        Assert.IsTrue(game.CanDo(game.ChooseCardSkill, player1Id));
+        Assert.IsTrue(game.CanDo(game.ChooseCardSkill, player2Id));
+        Assert.IsTrue(game.CanDo(game.AssignCardTarget, player1Id));
+        Assert.IsTrue(game.CanDo(game.AssignCardTarget, player2Id));
+        Assert.IsTrue(game.CanDo(game.RemoveCardTarget, player1Id));
+        Assert.IsTrue(game.CanDo(game.RemoveCardTarget, player2Id));
+        {
+            Assert.IsTrue(game.AssignCardTarget(player1Id, hero1CardId, hero2CardId));
+            Assert.IsTrue(game.CanDo(game.RemoveCardTarget, player1Id));
+            Assert.IsTrue(game.AssignCardTarget(player2Id, hero2CardId, hero1CardId));
+            Assert.IsTrue(game.CanDo(game.RemoveCardTarget, player2Id));
+            Assert.IsTrue(game.ConfirmAll(player1Id));
+            Assert.IsTrue(game.ConfirmAll(player2Id));
+        }
+        Assert.IsFalse(game.CanDo(game.ConfirmAll, player1Id));
+        Assert.IsFalse(game.CanDo(game.ConfirmAll, player2Id));
+        Assert.IsFalse(game.CanDo(game.ChooseCardSkill, player1Id));
+        Assert.IsFalse(game.CanDo(game.ChooseCardSkill, player2Id));
+        Assert.IsFalse(game.CanDo(game.AssignCardTarget, player1Id));
+        Assert.IsFalse(game.CanDo(game.AssignCardTarget, player2Id));
+        Assert.IsFalse(game.CanDo(game.RemoveCardTarget, player1Id));
+        Assert.IsFalse(game.CanDo(game.RemoveCardTarget, player2Id));
         Assert.That(game.Players[0].CardAssignments[hero1CardId].TargetCardIds.Count, Is.EqualTo(1));
         Assert.That(game.Players[1].CardAssignments[hero2CardId].TargetCardIds.Count, Is.EqualTo(1));
 
