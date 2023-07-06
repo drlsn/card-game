@@ -200,7 +200,7 @@ public static class PlayerExtensions
         players
             .First(p => p.BattlingDeck
                 .GetAllCards()
-                .Concat(players.Select(p => p.HeroCard))
+                .Append(p.HeroCard)
                 .Contains(c => c.Id == cardId));
 }
 

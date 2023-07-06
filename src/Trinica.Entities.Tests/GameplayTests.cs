@@ -1,8 +1,8 @@
+using System.Xml.Linq;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.HeroCards;
-using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Tests;
@@ -21,7 +21,7 @@ public class GameplayTests
         // Player 1
         var hero1Stats = new StatisticPointGroup(
             attack: new(10),
-            hp:     new(10),
+            hp:     new(25),
             speed:  new(11),
             power:  new(10));
 
@@ -36,7 +36,7 @@ public class GameplayTests
         // Player 2
         var hero2Stats = new StatisticPointGroup(
             attack: new(10),
-            hp: new(10),
+            hp: new(20),
             speed: new(10),
             power: new(10));
 
@@ -52,15 +52,24 @@ public class GameplayTests
         var gameId = new GameId("game");
         var game = new Game(gameId, new[] { player1, player2 });
 
+        // TakeCardsToCommonPool
         var random = new Random(1);
-        game.TakeCardsToCommonPool(random);
+        Assert.IsTrue(game.TakeCardsToCommonPool(random));
         Assert.That(game.CommonPool.Count, Is.EqualTo(0));
+        Assert.IsFalse(game.CanDo(game.TakeCardsToCommonPool));
 
-        game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random);
-        game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random);
+        // TakeCardsToHand
+        Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player2Id));
+
+        Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
+        Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
+
         Assert.That(game.Players[0].HandDeck.Count, Is.EqualTo(0));
         Assert.That(game.Players[1].HandDeck.Count, Is.EqualTo(0));
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
 
+        // CalculateLayDownOrderPerPlayer
         game.CalculateLayDownOrderPerPlayer();
         Assert.That(game.CardsLayOrderPerPlayer[0], Is.EqualTo(player1Id));
         Assert.That(game.CardsLayOrderPerPlayer[1], Is.EqualTo(player2Id));
@@ -89,8 +98,15 @@ public class GameplayTests
 
         game.StartRound(random);
 
+        Assert.IsTrue(game.IsRoundOngoing());
         game.PerformMove(random);
-        Assert.That(game.Players[0].CardAssignments[hero1CardId].TargetCardIds.Count, Is.EqualTo(1));
+        Assert.That(game.Players[1].HeroCard.Statistics.HP.CalculateValue(), Is.EqualTo(10));
+
+        Assert.IsTrue(game.IsRoundOngoing());
+        game.PerformMove(random);
+        Assert.That(game.Players[0].HeroCard.Statistics.HP.CalculateValue(), Is.EqualTo(15));
+
+        Assert.IsFalse(game.IsRoundOngoing());
 
         game.FinishRound(random);
     }

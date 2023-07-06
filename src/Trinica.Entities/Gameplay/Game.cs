@@ -16,20 +16,29 @@ public class Game : Entity<GameId>
 
     public RoundSettings RoundSettings { get; private set; } = new();
 
+    public GameActionController ActionController { get; private set; }
+
     public Game(
         GameId id,
         Player[] players) : base(id)
     {
         Players = players;
+        ActionController = new(TakeCardsToCommonPool);
     }
 
-    public void TakeCardsToCommonPool(Random random)
+    public bool TakeCardsToCommonPool(Random random)
     {
+        if (!ActionController.CanDo(TakeCardsToCommonPool))
+            return false;
+
         CommonPool = Players.ShuffleAllAndTakeHalfCards(random);
+
+        return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds(), mustObeyOrder: true);
     }
 
     public void StartRound(Random random)
     {
+        _cardIndex = 0;
         _cards = Players.GetBattlingCardsBySpeed(random);
         _cards.ForEach(card =>
         {
@@ -41,8 +50,11 @@ public class Game : Entity<GameId>
         });
     }
 
-    public void TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random)
+    public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random)
     {
+        if (!ActionController.CanDo(TakeCardsToHand, playerId))
+            return false;
+
         var player = Players.OfId(playerId);
         cards.ForEach(card =>
         {
@@ -52,6 +64,8 @@ public class Game : Entity<GameId>
             if (card.Source == CardSource.Own)
                 player.TakeCardToHand(random);
         });
+
+        return ActionController.SetNextUserOrExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
     }
 
     public void CalculateLayDownOrderPerPlayer()
@@ -200,7 +214,7 @@ public class Game : Entity<GameId>
                 targetCards.ForEach(targetCard =>
                 {
                     var move = movesAtSingle[targetCard.Id];
-                    targetCard.Statistics.HP.Modify(move.Damage);
+                    targetCard.Statistics.HP.Modify(-move.Damage);
                 });
             }
             else
@@ -285,6 +299,10 @@ public class Game : Entity<GameId>
                 effect.OnRoundFinish(combatCard));
         });
     }
+
+    public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanDo(@delegate, userId);
+
+    public bool IsRoundOngoing() => _cards is not null && _cardIndex < _cards.Length;
 
     public static int CalculateDamage(ICombatCard attacker, ICombatCard defender, MoveType moveType) =>
         CalculateDamage(attacker.Statistics, defender?.Statistics, moveType);
