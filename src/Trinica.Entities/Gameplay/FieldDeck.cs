@@ -91,7 +91,12 @@ public class FieldDeck
         var itemCards = ItemCards.ToRemoveOnlyList();
         var spellCards = SpellCards.ToRemoveOnlyList();
 
-        var cardsCluster = new IRemoveOnlyList<object>[] { unitCards, skillCards, itemCards, spellCards };
+        var cardsCluster = new List<IRemoveOnlyList<object>>();
+        cardsCluster.AddIfNotEmpty(unitCards);
+        cardsCluster.AddIfNotEmpty(skillCards);
+        cardsCluster.AddIfNotEmpty(itemCards);
+        cardsCluster.AddIfNotEmpty(spellCards);
+
         var cardsClusterSelected =
             Enumerable.Range(0, CardTypesCount)
                 .Select(i => new List<object>(n))
@@ -99,7 +104,7 @@ public class FieldDeck
 
         for (var i = 0; i < n; i++)
         {
-            var cardGroupIndex = random.Next(CardTypesCount);
+            var cardGroupIndex = random.Next(cardsCluster.Count());
             var cardGroup = cardsCluster[cardGroupIndex];
             var cardIndex = random.Next(cardGroup.Count);
 
@@ -113,11 +118,21 @@ public class FieldDeck
         ItemCards = itemCards.CastToList<ItemCard>();
         SpellCards = spellCards.CastToList<SpellCard>();
 
+        var unitCardsToReturn = cardsClusterSelected.Where(c => c.Contains<UnitCard>()).FirstOrDefault();
+        var skillCardsToReturn = cardsClusterSelected.Where(c => c.Contains<SkillCard>()).FirstOrDefault();
+        var itemCardsToReturn = cardsClusterSelected.Where(c => c.Contains<ItemCard>()).FirstOrDefault();
+        var spellCardsToReturn = cardsClusterSelected.Where(c => c.Contains<SpellCard>()).FirstOrDefault();
+
+        var unitCardsToReturnForReal = unitCardsToReturn is not null ? unitCardsToReturn.OfTypeToList<UnitCard>() : new();
+        var skillCardsToReturnForReal = skillCardsToReturn is not null ? skillCardsToReturn.OfTypeToList<SkillCard>() : new();
+        var itemCardsToReturnForReal = itemCardsToReturn is not null ? itemCardsToReturn.OfTypeToList<ItemCard>() : new();
+        var spellCardsToReturnForReal = spellCardsToReturn is not null ? spellCardsToReturn.OfTypeToList<SpellCard>() : new();
+
         return new FieldDeck(
-            cardsClusterSelected[0].CastToList<UnitCard>(),
-            cardsClusterSelected[1].CastToList<SkillCard>(),
-            cardsClusterSelected[2].CastToList<ItemCard>(),
-            cardsClusterSelected[3].CastToList<SpellCard>());
+            unitCardsToReturnForReal,
+            skillCardsToReturnForReal,
+            itemCardsToReturnForReal,
+            spellCardsToReturnForReal);
     }
 
     public static FieldDeck operator +(FieldDeck left, FieldDeck right)

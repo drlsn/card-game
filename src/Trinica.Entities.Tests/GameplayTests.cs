@@ -2,6 +2,10 @@ using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.HeroCards;
+using Trinica.Entities.ItemCards;
+using Trinica.Entities.SkillCards;
+using Trinica.Entities.SpellCards;
+using Trinica.Entities.UnitCards;
 using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Tests;
@@ -244,5 +248,135 @@ public class GameplayTests
         Assert.IsTrue(game.Players[1].IsCardDead(hero2Card));
 
         Assert.IsTrue(game.IsGameOver());
+        Assert.IsTrue(game.FinishGame(random));
     }
+
+    [Test]
+    public void CheckUnits()
+    {
+        // Player 1
+        var hero1Card = CreateHeroCard();
+        var unitCards1 = CreateUnitCards();
+        var deck1 = new FieldDeck(unitCards1.ToList());
+        var deck1Id = new DeckId("deck-1");
+        var player1Id = new UserId("player-1");
+        var player1 = new Player(player1Id, deck1Id, hero1Card, deck1);
+
+        // Player 2
+        var hero2Card = CreateHeroCard();
+        var unitCards2 = CreateUnitCards();
+        var deck2 = new FieldDeck(unitCards2.ToList());
+        var deck2Id = new DeckId("deck-2");
+        var player2Id = new UserId("player-2");
+        var player2 = new Player(player2Id, deck2Id, hero2Card, deck2);
+
+        var random = new Random(1);
+
+        // Game
+        var gameId = new GameId("game");
+        var game = new Game(gameId, new[] { player1, player2 });
+
+        var cardsToTake = new[] { 
+            new CardToTake(CardSource.Own), new CardToTake(CardSource.Own), new CardToTake(CardSource.CommonPool) };
+
+        var cardsToLay1 = new CardToLay[] { new(unitCards1[0].Id), new(unitCards1[1].Id), new(unitCards2[2].Id) }; 
+        var cardsToLay2 = new CardToLay[] { new(unitCards2[0].Id), new(unitCards2[1].Id), new(unitCards1[2].Id) };
+
+        Assert.IsTrue(game.StartGame(player1Id, random));
+        Assert.IsTrue(game.StartGame(player2Id, random));
+        Assert.IsTrue(game.TakeCardsToCommonPool(random));
+        Assert.IsTrue(game.TakeCardsToHand(player1Id, cardsToTake, random));
+        Assert.IsTrue(game.TakeCardsToHand(player2Id, cardsToTake, random));
+        Assert.IsTrue(game.CalculateLayDownOrderPerPlayer());
+        Assert.IsTrue(game.LayCardsToBattle(player1Id, cardsToLay1));
+        Assert.IsTrue(game.LayCardsToBattle(player2Id, cardsToLay2));
+        Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
+        Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
+        Assert.IsTrue(game.PassReplayDices(player1Id));
+        Assert.IsTrue(game.PassReplayDices(player2Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, hero1Card.Id));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, hero2Card.Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 1, unitCards1[0].Id));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 1, unitCards2[0].Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 2, unitCards1[1].Id));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 2, unitCards2[1].Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 3, unitCards1[2].Id));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 3, unitCards2[2].Id));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player1Id));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, hero1Card.Id, hero2Card.Id));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, hero2Card.Id, hero1Card.Id));
+        Assert.IsTrue(game.ConfirmAll(player1Id));
+        Assert.IsTrue(game.ConfirmAll(player2Id));
+        Assert.IsTrue(game.StartRound(random));
+
+        Assert.IsTrue(game.PerformMove(random));
+        Assert.That(game.Players[1].HeroCard.Statistics.HP.CalculateValue(), Is.EqualTo(10));
+    }
+
+    public static HeroCard CreateHeroCard(int i = -1,
+        int attack = 10, int hp = 25, int speed = 15, int power = 5)
+    {
+        var stats = new StatisticPointGroup(
+            attack: new(attack),
+            hp: new(hp),
+            speed: new(speed),
+            power: new(power));
+
+        var id = i != -1 ? i.ToString() : Guid.NewGuid().ToString();
+        var cardId = new HeroCardId($"unit-{id}");
+        return new HeroCard(cardId, stats);
+    }
+
+    public static UnitCard CreateUnitCard(int i = -1, 
+        int attack = 10, int hp = 25, int speed = 15, int power = 5)
+    {
+        var stats = new StatisticPointGroup(
+            attack: new(attack),
+            hp: new(hp),
+            speed: new(speed),
+            power: new(power));
+
+        var id = i.ToString() + "-" + Guid.NewGuid().ToString();
+        var cardId = new UnitCardId($"unit-{id}");
+        return new UnitCard(cardId, stats);
+    }
+
+    public static Gameplay.Cards.SpellCard CreateSpellCard(int i = -1,
+        int attack = 10, int hp = 25, int speed = 15, int power = 5)
+    {
+        var stats = new StatisticPointGroup(
+            attack: new(attack),
+            hp: new(hp),
+            speed: new(speed),
+            power: new(power));
+
+        var id = i != -1 ? i.ToString() : Guid.NewGuid().ToString();
+        var cardId = new SpellCardId($"unit-{id}");
+        return new Gameplay.Cards.SpellCard(cardId, stats, new IEffect[] { });
+    }
+
+    public static Gameplay.Cards.SkillCard CreateSkillCard(int i = -1)
+    {
+        var id = i != -1 ? i.ToString() : Guid.NewGuid().ToString();
+        var cardId = new SkillCardId($"unit-{id}");
+        return new Gameplay.Cards.SkillCard(cardId, new IEffect[] { });
+    }
+
+    public static Gameplay.Cards.ItemCard CreateItemCard(int i = -1,
+        int attack = 10, int hp = 25, int speed = 15, int power = 5)
+    {
+        var stats = new StatisticPointGroup(
+            attack: new(attack),
+            hp: new(hp),
+            speed: new(speed),
+            power: new(power));
+
+        var id = i != -1 ? i.ToString() : Guid.NewGuid().ToString();
+        var cardId = new ItemCardId($"unit-{id}");
+        return new Gameplay.Cards.ItemCard(cardId, stats);
+    }
+
+    public static UnitCard[] CreateUnitCards(int count = 3) =>
+        Enumerable.Range(0, count).Select(i => CreateUnitCard(i)).ToArray();
 }

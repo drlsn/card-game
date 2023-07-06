@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
+using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
@@ -54,7 +55,7 @@ public class Game : Entity<GameId>
         {
             CenterCardRoundsAlive++;
             if (CenterCardRoundsAlive >= 6)
-                return FinishGame(random, Players.GetPlayerWithCard(CenterCard.Id));
+                return ActionController.SetNextExpectedAction(FinishGame);
         }
 
         _cardIndex = 0;
@@ -303,16 +304,21 @@ public class Game : Entity<GameId>
         {
             if (moveType is MoveType.Attack && moveAtAll.AttackEnabled)
             {
-                targetCards.ForEach(targetCard =>
+                foreach (var targetCard in targetCards)
                 {
                     var move = movesAtSingle[targetCard.Id];
-                    
+
                     var targetPlayer = Players.GetPlayerWithCard(targetCard.Id);
                     targetPlayer.InflictDamage(move.Damage, targetCard.Id);
                     if (targetPlayer.IsCardDead(targetCard))
+                    {
+                        if (targetCard is HeroCard)
+                            return ActionController.SetNextExpectedAction(FinishGame);
+
                         if (CenterCard == targetCard)
                             CenterCardRoundsAlive = 0;
-                });
+                    }
+                }
             }
             else
             if (moveType is MoveType.Skill && moveAtAll.SkillsEnabled)
@@ -414,7 +420,7 @@ public class Game : Entity<GameId>
         IsGameOverByHeroElimination() ||
         IsGameOverByCenterOccupied();
 
-    public bool FinishGame(Random random, Player winner)
+    public bool FinishGame(Random random)
     {
         if (!ActionController.CanDo(FinishGame))
             return false;

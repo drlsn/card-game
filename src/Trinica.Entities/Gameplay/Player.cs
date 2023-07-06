@@ -90,7 +90,7 @@ public class Player : Entity<UserId>
     {
         var maxCardsCanTakeCount = MaxHandCardsCount - HandDeck.Count;
         n = n.Clamp(maxCardsCanTakeCount);
-        HandDeck = IdleDeck.TakeCards(random, n);
+        HandDeck += IdleDeck.TakeCards(random, n);
     }
 
     public bool LayCardsToBattle(CardToLay[] cards)
@@ -194,7 +194,11 @@ public static class PlayerExtensions
     public static FieldDeck ShuffleAllAndTakeHalfCards(this IEnumerable<Player> players, Random random) =>
         players
             .Select(player => player.ShuffleAllAndTakeHalfCards(random))
-            .AggregateOrDefault((x, y) => x + y);
+            .ToArray()
+            .AggregateOrDefault((x, y) =>
+            {
+                return x + y;
+            });
 
     public static void TakeCardsToHand(this IEnumerable<Player> players, Random random, int n = Player.MaxHandCardsCount) =>
         players.ForEach(player => player.TakeCardsToHand(random, n));
