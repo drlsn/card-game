@@ -19,16 +19,17 @@ public class Player : Entity<UserId>
     public FieldDeck IdleDeck { get; private set; }
 
     public HeroCard HeroCard { get; private set; }
-    public FieldDeck HandDeck { get; private set; }
-    public FieldDeck BattlingDeck { get; private set; }
+    public FieldDeck HandDeck { get; private set; } = new();
+    public FieldDeck BattlingDeck { get; private set; } = new();
     public FieldDeck DeadDeck { get; private set; }
     public List<DiceOutcome> FreeDiceOutcomes { get; private set; }
-    public Dictionary<CardId, CardAssignment> CardAssignments { get; private set; }
+    public Dictionary<CardId, CardAssignment> CardAssignments { get; private set; } = new();
 
     public Player(
+        UserId playerId,
         DeckId deckId,
         HeroCard heroCard,
-        FieldDeck idleDeck)
+        FieldDeck idleDeck) : base(playerId)
     {
         DeckId = deckId;
         HeroCard = heroCard;
@@ -38,7 +39,7 @@ public class Player : Entity<UserId>
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)
     {
         IdleDeck.ShuffleAll(random);
-        return IdleDeck.TakeCards(random, TotalCardsPerPlayerCount / 2);
+        return IdleDeck.TakeCards(random, IdleDeck.Count / 2);
     }
 
     public ICard GetBattlingCard(CardId cardId)
@@ -83,6 +84,9 @@ public class Player : Entity<UserId>
 
     public bool LayCardsToBattle(CardToLay[] cards)
     {
+        if (cards.Length == 0)
+            return true;
+
         var maxCardsCanTake = MaxBattlingCardsCount - cards.Length;
         if (cards.Length > maxCardsCanTake)
             return false;
@@ -114,9 +118,12 @@ public class Player : Entity<UserId>
         return true;
     }
 
+    public void PlayDices(Func<Random> getRandom) =>
+        PlayDices(BattlingDeck.Count + 1, getRandom);
+
     public void PlayDices(int n, Func<Random> getRandom)
     {
-        n = n.Clamp(BattlingDeck.Count);
+        n = n.Clamp(BattlingDeck.Count + 1);
 
         FreeDiceOutcomes = Enumerable.Range(0, n)
             .Select(i => Dice.Play(getRandom()))
@@ -163,7 +170,7 @@ public static class PlayerExtensions
         players.ForEach(player => player.TakeCardsToHand(random, n));
 
     public static Player[] GetPlayersOrderedByHeroSpeed(this IEnumerable<Player> players) =>
-        players.OrderByDescending(p => p.HeroCard.Statistics.Speed).ToArray();
+        players.OrderByDescending(p => p.HeroCard.Statistics.Speed.CalculateValue()).ToArray();
 
     public static Player OfId(this IEnumerable<Player> players, UserId id) =>
         players.First(p => p.Id == id);
@@ -177,8 +184,8 @@ public static class PlayerExtensions
     public static ICard[] GetBattlingCardsBySpeed(this IEnumerable<Player> players, Random random) =>
         players
             .Select(c => c.BattlingDeck)
-            .Aggregate((x, y) => x + y)
-            .ThenSelect(deck => deck.SpellCards.Shuffle().Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed).Cast<ICard>()))
+            .AggregateOrDefault((x, y) => x + y)
+            .ThenSelect(deck => deck.SpellCards.Shuffle().Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed.CalculateValue()).Cast<ICard>()))
             .ToArray();
 
     public static ICard[] GetBattlingCards(this IEnumerable<Player> players) =>
@@ -186,10 +193,15 @@ public static class PlayerExtensions
             .Select(c => c.BattlingDeck)
             .Aggregate((x, y) => x + y)
             .GetAllCards()
+            .Concat(players.Select(p => p.HeroCard))
             .ToArray();
 
     public static Player GetPlayerWithCard(this IEnumerable<Player> players, CardId cardId) =>
-        players.First(p => p.BattlingDeck.GetAllCards().Contains(c => c.Id == cardId));
+        players
+            .First(p => p.BattlingDeck
+                .GetAllCards()
+                .Concat(players.Select(p => p.HeroCard))
+                .Contains(c => c.Id == cardId));
 }
 
 public static class CardsExtensions

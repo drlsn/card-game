@@ -14,7 +14,7 @@ public class Game : Entity<GameId>
     public ICard CenterCard { get; private set; }
     public UserId[] CardsLayOrderPerPlayer { get; private set; }
 
-    public RoundSettings RoundSettings { get; private set; }
+    public RoundSettings RoundSettings { get; private set; } = new();
 
     public Game(
         GameId id,
@@ -30,9 +30,8 @@ public class Game : Entity<GameId>
 
     public void StartRound(Random random)
     {
-        var cards = Players.GetBattlingCardsBySpeed(random);
-
-        cards.ForEach(card =>
+        _cards = Players.GetBattlingCardsBySpeed(random);
+        _cards.ForEach(card =>
         {
             if (card is not ICombatCard combatCard)
                 return;
@@ -78,7 +77,13 @@ public class Game : Entity<GameId>
         player.LayCardsToBattle(cards);
     }
 
-    public void PlayDices(UserId playerId, int n, Func<Random> getRandom)
+    public void PlayDices(UserId playerId, Func<Random> getRandom)
+    {
+        var player = Players.OfId(playerId);
+        player.PlayDices(getRandom);
+    }
+
+    public void ReplayDices(UserId playerId, int n, Func<Random> getRandom)
     {
         var player = Players.OfId(playerId);
         player.PlayDices(n, getRandom);
@@ -114,152 +119,164 @@ public class Game : Entity<GameId>
         player.RemoveCardTarget(cardId, targetCardId);
     }
 
-    public void PerformRound(Random random)
+    private ICard[] _cards;
+    private int _cardIndex;
+    public void PerformMove(Random random)
     {
-        var cards = Players.GetBattlingCardsBySpeed(random);
+        var card = _cards[_cardIndex];
+        _cardIndex++;
 
-        cards.ForEach(card =>
+        var player = Players.GetPlayerWithCard(card.Id);
+        var cardAssignment = player.CardAssignments[card.Id];
+        var targetCards = _cards.Where(c => cardAssignment.TargetCardIds.Contains(c.Id)).Cast<ICombatCard>().ToArray();
+        targetCards = targetCards.Where(c => !RoundSettings.NotAllowedAsTargetCards.ContainsKey(c.Id)).ToArray();
+
+        var otherPlayers = Players.NotOfId(player.Id);
+        var enemiesBattlingCards = otherPlayers.GetBattlingCards().OfType<ICombatCard>().ToArray();
+
+        if (!RoundSettings.PrioritizedToAttackCards.IsNullOrEmpty())
         {
-            var player = Players.GetPlayerWithCard(card.Id);
-            var cardAssignment = player.CardAssignments[card.Id];
-            var targetCards = cards.Where(c => cardAssignment.TargetCardIds.Contains(c.Id)).Cast<ICombatCard>().ToArray();
-            targetCards = targetCards.Where(c => !RoundSettings.NotAllowedAsTargetCards.ContainsKey(c.Id)).ToArray();
+            var cardId = RoundSettings.PrioritizedToAttackCards.Values.Shuffle(random).First();
+            targetCards = enemiesBattlingCards.Where(c => c.Id == cardId).ToArray();
+        }
 
-            var otherPlayers = Players.NotOfId(player.Id);
-            var enemiesBattlingCards = otherPlayers.GetBattlingCards().OfType<ICombatCard>().ToArray();
+        if (card is not ICombatCard combatCard)
+            return;
 
-            if (!RoundSettings.PrioritizedToAttackCards.IsNullOrEmpty())
+        var moveType = cardAssignment.DiceOutcome.IsElement() ? MoveType.Skill : MoveType.Attack;
+
+        // ----- use items! -----
+        var cardWithItems = combatCard as ICardWithItems;
+        if (cardWithItems is not null)
+            cardWithItems.ItemCards.ForEach(itemCard =>
+                combatCard.Statistics.Modify(itemCard.Statistics, itemCard.Id));
+
+        // Attacker - BeforeMoveAtAll
+        var moveAtAll = new Move()
+        {
+            Damage = CalculateDamage(combatCard, null, moveType),
+            Type = moveType
+        };
+        combatCard.Effects.ForEach(effect =>
+            effect.BeforeMoveAtAll(combatCard, new(targetCards, enemiesBattlingCards, null), moveAtAll));
+
+        var movesAtSingle = new Dictionary<CardId, Move>();
+        targetCards.ForEach(targetCard =>
+        {
+            var damage = CalculateDamage(combatCard, targetCard, moveType);
+            movesAtSingle.Add(targetCard.Id, new Move()
             {
-                var cardId = RoundSettings.PrioritizedToAttackCards.Values.Shuffle(random).First();
-                targetCards = enemiesBattlingCards.Where(c => c.Id == cardId).ToArray();
-            }
-
-            if (card is not ICombatCard combatCard)
-                return;
-
-            var moveType = cardAssignment.DiceOutcome.IsElement() ? MoveType.Skill : MoveType.Attack;
-
-            // ----- use items! -----
-            var cardWithItems = combatCard as ICardWithItems;
-            if (cardWithItems is not null)
-                cardWithItems.ItemCards.ForEach(itemCard =>
-                    combatCard.Statistics.Modify(itemCard.Statistics, itemCard.Id));
-
-            // Attacker - BeforeMoveAtAll
-            var moveAtAll = new Move()
-            {
-                Damage = CalculateDamage(combatCard, null, moveType),
+                Damage = moveAtAll.Damage,
                 Type = moveType
-            };
-            combatCard.Effects.ForEach(effect =>
-                effect.BeforeMoveAtAll(combatCard, new(targetCards, enemiesBattlingCards, null), moveAtAll));
-
-            // Attacker - BeforeMoveAtSingleTarget
-            var movesAtSingle = new Dictionary<CardId, Move>();
-            combatCard.Effects.ForEach(effect =>
-               targetCards.ForEach(targetCard =>
-               {
-                   var damage = CalculateDamage(combatCard, targetCard, moveType);
-                   movesAtSingle.Add(targetCard.Id, new Move()
-                   {
-                       Damage = moveAtAll.Damage,
-                       Type = moveType
-                   });
-
-                   effect.BeforeMoveAtSingleTarget(combatCard, targetCard, movesAtSingle[targetCard.Id]);
-               }));
-
-            // Defender - BeforeReceive
-            targetCards.ForEach(targetCard =>
-            {
-                targetCard.Effects.ForEach(effect =>
-                    effect.BeforeReceive(targetCard, new(combatCard, enemiesBattlingCards, null), movesAtSingle[targetCard.Id]));
             });
+        });
 
-            // Update After Move Modified By Effects
-            if (cardWithItems is not null && !moveAtAll.ItemsEnabled)
-                cardWithItems.ItemCards.ForEach(itemCard =>
-                    combatCard.Statistics.RemoveAll(itemCard.Id));
+        // Attacker - BeforeMoveAtSingleTarget
+        combatCard.Effects.ForEach(effect =>
+           targetCards.ForEach(targetCard =>
+           {
+               effect.BeforeMoveAtSingleTarget(combatCard, targetCard, movesAtSingle[targetCard.Id]);
+           }));
 
-            // ------------------------
-            // PERFORM ACTION!!!
-            // ------------------------
-            if (moveAtAll.MoveEnabled)
+        // Defender - BeforeReceive
+        targetCards.ForEach(targetCard =>
+        {
+            targetCard.Effects.ForEach(effect =>
+                effect.BeforeReceive(targetCard, new(combatCard, enemiesBattlingCards, null), movesAtSingle[targetCard.Id]));
+        });
+
+        // Update After Move Modified By Effects
+        if (cardWithItems is not null && !moveAtAll.ItemsEnabled)
+            cardWithItems.ItemCards.ForEach(itemCard =>
+                combatCard.Statistics.RemoveAll(itemCard.Id));
+
+        // ------------------------
+        // PERFORM ACTION!!!
+        // ------------------------
+        if (moveAtAll.MoveEnabled)
+        {
+            if (moveType is MoveType.Attack && moveAtAll.AttackEnabled)
             {
-                if (moveType is MoveType.Attack && moveAtAll.AttackEnabled)
+                targetCards.ForEach(targetCard =>
                 {
-                    targetCards.ForEach(targetCard =>
-                    {
-                        var move = movesAtSingle[targetCard.Id];
-                        targetCard.Statistics.HP.Modify(move.Damage);
-                    });
-                }
-                else
-                if (moveType is MoveType.Skill && moveAtAll.SkillsEnabled)
-                {
-                    targetCards.ForEach(targetCard =>
-                    {
-                        var move = movesAtSingle[targetCard.Id];
-                        if (!move.SkillsEnabled)
-                            return;
-
-                        var doesPowerDamage = combatCard.DoesPowerDamage(cardAssignment.SkillIndex);
-                        if (doesPowerDamage)
-                            targetCard.Statistics.HP.Modify(move.Damage);
-
-                        if (move.EffectsEnabled)
-                        {
-                            var effects = combatCard.GetEffects(cardAssignment.SkillIndex);
-                            targetCard.Effects.AddRange(effects);
-                        }
-                    });
-                }
+                    var move = movesAtSingle[targetCard.Id];
+                    targetCard.Statistics.HP.Modify(move.Damage);
+                });
             }
+            else
+            if (moveType is MoveType.Skill && moveAtAll.SkillsEnabled)
+            {
+                targetCards.ForEach(targetCard =>
+                {
+                    var move = movesAtSingle[targetCard.Id];
+                    if (!move.SkillsEnabled)
+                        return;
 
-            // Attacker - AfterMoveAtAll
-            combatCard.Effects.ForEach(effect =>
-                effect.AfterMoveAtAll(combatCard, new(targetCards, enemiesBattlingCards, null), new()
+                    var doesPowerDamage = combatCard.DoesPowerDamage(cardAssignment.SkillIndex);
+                    if (doesPowerDamage)
+                        targetCard.Statistics.HP.Modify(move.Damage);
+
+                    if (move.EffectsEnabled)
+                    {
+                        var effects = combatCard.GetEffects(cardAssignment.SkillIndex);
+                        targetCard.Effects.AddRange(effects);
+                    }
+                });
+            }
+        }
+
+        // Attacker - AfterMoveAtAll
+        combatCard.Effects.ForEach(effect =>
+            effect.AfterMoveAtAll(combatCard, new(targetCards, enemiesBattlingCards, null), new()
+            {
+                Damage = 23,
+                Type = moveType
+            }));
+
+        // Attacker - AfterMoveAtSingleTarget
+        combatCard.Effects.ForEach(effect =>
+           targetCards.ForEach(targetCard =>
+           {
+               var damage = CalculateDamage(combatCard, targetCard, moveType);
+               effect.AfterMoveAtSingleTarget(combatCard, targetCard, new()
+               {
+                   Damage = damage,
+                   Type = moveType
+               });
+           }));
+
+        // Defender - AfterReceive
+        targetCards.ForEach(targetCard =>
+        {
+            var damage = CalculateDamage(combatCard, targetCard, moveType);
+            targetCard.Effects.ForEach(effect =>
+                effect.AfterReceive(targetCard, new(combatCard, enemiesBattlingCards, null), new()
                 {
                     Damage = 23,
                     Type = moveType
                 }));
+        });
 
-            // Attacker - AfterMoveAtSingleTarget
-            combatCard.Effects.ForEach(effect =>
-               targetCards.ForEach(targetCard =>
-               {
-                   var damage = CalculateDamage(combatCard, targetCard, moveType);
-                   effect.AfterMoveAtSingleTarget(combatCard, targetCard, new()
-                   {
-                       Damage = damage,
-                       Type = moveType
-                   });
-               }));
+        // ----- unuse items! -----
+        if (cardWithItems is not null)
+            cardWithItems.ItemCards.ForEach(itemCard =>
+                combatCard.Statistics.RemoveAll(itemCard.Id));
 
-            // Defender - AfterReceive
-            targetCards.ForEach(targetCard =>
-            {
-                var damage = CalculateDamage(combatCard, targetCard, moveType);
-                targetCard.Effects.ForEach(effect =>
-                    effect.AfterReceive(targetCard, new(combatCard, enemiesBattlingCards, null), new()
-                    {
-                        Damage = 23,
-                        Type = moveType
-                    }));
-            });
+    }
 
-            // ----- unuse items! -----
-            if (cardWithItems is not null)
-                cardWithItems.ItemCards.ForEach(itemCard =>
-                    combatCard.Statistics.RemoveAll(itemCard.Id));
+    public void PerformRound(Random random)
+    {
+        _cards ??= Players.GetBattlingCardsBySpeed(random);
+
+        _cards.ForEach(card =>
+        {
+            PerformMove(random);
         });
     }
 
     public void FinishRound(Random random)
     {
-        var cards = Players.GetBattlingCardsBySpeed(random);
-
-        cards.ForEach(card =>
+        _cards.ForEach(card =>
         {
             if (card is not ICombatCard combatCard)
                 return;
@@ -270,12 +287,12 @@ public class Game : Entity<GameId>
     }
 
     public static int CalculateDamage(ICombatCard attacker, ICombatCard defender, MoveType moveType) =>
-        CalculateDamage(attacker.Statistics, defender.Statistics, moveType);
+        CalculateDamage(attacker.Statistics, defender?.Statistics, moveType);
 
     public static int CalculateDamage(StatisticPointGroup attackerStats, StatisticPointGroup defenderStats, MoveType moveType)
     {
         var damage = moveType is MoveType.Attack ? attackerStats.Attack.CalculateValue() : attackerStats.Power.CalculateValue();
-        var hpValue = defenderStats.HP.CalculateValue();
+        //var hpValue = defenderStats.HP.CalculateValue();
 
         return damage;
     }

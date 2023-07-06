@@ -8,10 +8,10 @@ public class SlotGroup
 {
     public int MaxSlots { get; private set; }
 
-    public List<ItemCard> ItemCards { get; private set; }
-    public List<SkillCard> SkillCards { get; private set; }
+    public List<ItemCard> ItemCards { get; private set; } = new();
+    public List<SkillCard> SkillCards { get; private set; } = new();
 
-    public List<CardId> OrderedCards { get; private set; }
+    public List<CardId> OrderedCards { get; private set; } = new();
 
     public void AddCards(ICard[] cards) =>
         cards.ForEach(c => AddCard(c));

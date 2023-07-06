@@ -7,7 +7,7 @@ public class HeroCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICar
 {
     public HeroCardId Id { get; private set; }
     public StatisticPointGroup Statistics { get; private set; }
-    public SlotGroup Slots { get; private set; }
+    public SlotGroup Slots { get; private set; } = new(); 
 
     public List<IEffect> Effects { get; private set; } = new();
 

@@ -21,7 +21,7 @@ public class FieldDeck
         SpellCards.Count;
 
     public int SpeedSum =>
-        UnitCards.Select(c => c.Statistics.Speed.Value).Sum();
+        UnitCards.Select(c => c.Statistics.Speed.CalculateValue()).Sum();
 
     public FieldDeck(
         List<UnitCard> unitCards = null,
