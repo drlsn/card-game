@@ -44,7 +44,7 @@ public class GameActionController
     public bool SetPlayerDoneOrNextExpectedAction(UserId userId, Delegate @delegate, UserId[] expectedPlayers = null, bool mustObeyOrder = false) => 
         SetPlayerDoneOrNextExpectedAction(userId, @delegate.Method.Name, expectedPlayers, mustObeyOrder);
 
-    public bool SetNextExpectedAction(Delegate @delegate) => SetNextExpectedAction(@delegate.Method.Name);
+    public bool SetNextExpectedAction(params Delegate[] @delegates) => SetNextExpectedAction(@delegates.Select(d => d.Method.Name).ToArray());
     public bool SetNextExpectedAction(
         Delegate @delegate,
         UserId[] expectedPlayers) => SetNextExpectedAction(@delegate.Method.Name, expectedPlayers);

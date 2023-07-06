@@ -52,7 +52,7 @@ public class Game : Entity<GameId>
                 effect.OnRoundStart(combatCard, null, null, RoundSettings));
         });
 
-        return ActionController.SetNextExpectedAction(PerformRound);
+        return ActionController.SetNextExpectedAction(PerformRound, PerformMove);
     }
 
     public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random)
@@ -207,8 +207,11 @@ public class Game : Entity<GameId>
 
     private ICard[] _cards;
     private int _cardIndex;
-    public void PerformMove(Random random)
+    public bool PerformMove(Random random)
     {
+        if (!ActionController.CanDo(PerformMove))
+            return false;
+
         var card = _cards[_cardIndex];
         _cardIndex++;
 
@@ -227,7 +230,7 @@ public class Game : Entity<GameId>
         }
 
         if (card is not ICombatCard combatCard)
-            return;
+            return true;
 
         var moveType = cardAssignment.DiceOutcome.IsElement() ? MoveType.Skill : MoveType.Attack;
 
@@ -348,20 +351,31 @@ public class Game : Entity<GameId>
             cardWithItems.ItemCards.ForEach(itemCard =>
                 combatCard.Statistics.RemoveAll(itemCard.Id));
 
+        if (!IsRoundOngoing())
+            return ActionController.SetNextExpectedAction(FinishRound);
+
+        return ActionController.SetNextExpectedAction(PerformMove);
     }
 
-    public void PerformRound(Random random)
+    public bool PerformRound(Random random)
     {
+        if (!ActionController.CanDo(PerformRound))
+            return false;
+
         _cards ??= Players.GetBattlingCardsBySpeed(random);
 
-        _cards.ForEach(card =>
-        {
-            PerformMove(random);
-        });
+        while (IsRoundOngoing())
+            if (!PerformMove(random))
+                return false;
+
+        return true;
     }
 
-    public void FinishRound(Random random)
+    public bool FinishRound(Random random)
     {
+        if (!ActionController.CanDo(FinishRound))
+            return false;
+
         _cards.ForEach(card =>
         {
             if (card is not ICombatCard combatCard)
@@ -370,6 +384,8 @@ public class Game : Entity<GameId>
             combatCard.Effects.ForEach(effect =>
                 effect.OnRoundFinish(combatCard));
         });
+
+        return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds());
     }
 
     public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanDo(@delegate, userId);

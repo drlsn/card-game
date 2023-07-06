@@ -178,17 +178,30 @@ public class GameplayTests
         Assert.That(game.Players[0].CardAssignments[hero1CardId].TargetCardIds.Count, Is.EqualTo(1));
         Assert.That(game.Players[1].CardAssignments[hero2CardId].TargetCardIds.Count, Is.EqualTo(1));
 
-        game.StartRound(random);
+        Assert.IsTrue(game.StartRound(random));
+        Assert.IsTrue(game.CanDo(game.PerformRound));
+        Assert.IsTrue(game.CanDo(game.PerformMove));
 
         Assert.IsTrue(game.IsRoundOngoing());
-        game.PerformMove(random);
+        Assert.IsTrue(game.PerformMove(random));
         Assert.That(game.Players[1].HeroCard.Statistics.HP.CalculateValue(), Is.EqualTo(10));
 
+        Assert.IsFalse(game.CanDo(game.PerformRound));
+
         Assert.IsTrue(game.IsRoundOngoing());
-        game.PerformMove(random);
+        Assert.IsTrue(game.PerformMove(random));
         Assert.That(game.Players[0].HeroCard.Statistics.HP.CalculateValue(), Is.EqualTo(15));
 
         Assert.IsFalse(game.IsRoundOngoing());
+        Assert.IsFalse(game.CanDo(game.PerformMove));
+
+        Assert.IsTrue(game.CanDo(game.FinishRound));
+        Assert.IsTrue(game.FinishRound(random));
+        Assert.IsFalse(game.CanDo(game.FinishRound));
+
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
+        Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player2Id));
+        Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
 
         game.FinishRound(random);
     }
