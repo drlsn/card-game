@@ -15,7 +15,7 @@ public class GameActionController
 
     public bool CanDo(string actionType, UserId userId = null)
     {
-        if (actionType != _expectedAction.Type)
+        if (!_expectedAction.Types.Contains(actionType))
             return false;
 
         if (_expectedAction.ExpectsUserAction())
@@ -28,6 +28,18 @@ public class GameActionController
 
         return true;
     }
+
+    public bool SetNextUserOrExpectedAction(UserId userId, params Delegate[] @delegates) =>
+        SetNextUserOrExpectedAction(userId, @delegates.Select(d => d.Method.Name).ToArray());
+
+    public bool SetNextUserOrExpectedAction(UserId userId, UserId[] expectedPlayers, params Delegate[] @delegates) =>
+        SetNextUserOrExpectedAction(userId, @delegates.Select(d => d.Method.Name).ToArray(), expectedPlayers);
+
+    public bool SetNextUserOrExpectedAction(UserId userId, UserId[] expectedPlayers, bool mustObeyOrder = false, params Delegate[] @delegates) =>
+        SetNextUserOrExpectedAction(userId, @delegates.Select(d => d.Method.Name).ToArray(), expectedPlayers, mustObeyOrder);
+
+    public bool SetNextUserOrExpectedAction(UserId userId, Delegate[] @delegates, UserId[] expectedPlayers = null, bool mustObeyOrder = false) =>
+        SetNextUserOrExpectedAction(userId, @delegates.Select(d => d.Method.Name).ToArray(), expectedPlayers, mustObeyOrder);
 
     public bool SetNextUserOrExpectedAction(UserId userId, Delegate @delegate, UserId[] expectedPlayers = null, bool mustObeyOrder = false) => 
         SetNextUserOrExpectedAction(userId, @delegate.Method.Name, expectedPlayers, mustObeyOrder);
@@ -44,6 +56,11 @@ public class GameActionController
     public bool SetNextExpectedAction(
         string type,
         UserId[] expectedPlayers = null,
+        bool mustObeyOrder = false) => SetNextExpectedAction(new[] { type }, expectedPlayers, mustObeyOrder);
+
+    public bool SetNextExpectedAction(
+        string[] types,
+        UserId[] expectedPlayers = null,
         bool mustObeyOrder = false)
     {
         if (!_expectedAction.HasUsersDoneActions())
@@ -51,7 +68,7 @@ public class GameActionController
 
         _expectedAction = new()
         {
-            Type = type,
+            Types = types,
             ExpectedPlayers = expectedPlayers ?? Array.Empty<UserId>(),
             MustObeyOrder = mustObeyOrder
         };
@@ -63,22 +80,28 @@ public class GameActionController
         UserId userId,
         string type,
         UserId[] expectedPlayers = null,
+        bool mustObeyOrder = false) => SetNextUserOrExpectedAction(userId, new[] { type }, expectedPlayers, mustObeyOrder);
+
+    public bool SetNextUserOrExpectedAction(
+        UserId userId,
+        string[] types,
+        UserId[] expectedPlayers = null,
         bool mustObeyOrder = false)
     {
         if (!_expectedAction.HasUsersDoneActions())
         {
             if (_expectedAction.CanMakeAction(userId))
-            {
                 _expectedAction.AlreadyMadeActionsPlayers.Add(userId);
-                return true;
-            }
-
-            return false;
+            else
+                return false;
         }
+
+        if (!_expectedAction.HasUsersDoneActions())
+            return true;
 
         _expectedAction = new()
         {
-            Type = type,
+            Types = types,
             ExpectedPlayers = expectedPlayers ?? Array.Empty<UserId>(),
             MustObeyOrder = mustObeyOrder
         };
@@ -89,7 +112,7 @@ public class GameActionController
 
 public class Action
 {
-    public string Type { get; init; }
+    public string[] Types { get; init; }
     public UserId[] ExpectedPlayers { get; init; } = Array.Empty<UserId>();
     public bool MustObeyOrder { get; init; }
     public List<UserId> AlreadyMadeActionsPlayers { get; } = new();
@@ -105,7 +128,7 @@ public class Action
 
     public bool CanMakeAction(UserId userId, string type = "") 
     {
-        if (!type.IsNullOrEmpty() && type != Type)
+        if (!type.IsNullOrEmpty() && !Types.Contains(type))
             return false;
 
         if (MustObeyOrder)

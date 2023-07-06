@@ -55,32 +55,54 @@ public class GameplayTests
         // TakeCardsToCommonPool
         var random = new Random(1);
         Assert.IsTrue(game.TakeCardsToCommonPool(random));
-        Assert.That(game.CommonPool.Count, Is.EqualTo(0));
+        {
+            Assert.That(game.CommonPool.Count, Is.EqualTo(0));
+        }
         Assert.IsFalse(game.CanDo(game.TakeCardsToCommonPool));
 
         // TakeCardsToHand
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
+        Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player2Id));
+        {
+            Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
+            Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
+        }
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
+        Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player1Id));
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player2Id));
-
-        Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
-        Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
-
         Assert.That(game.Players[0].HandDeck.Count, Is.EqualTo(0));
         Assert.That(game.Players[1].HandDeck.Count, Is.EqualTo(0));
-        Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
 
         // CalculateLayDownOrderPerPlayer
-        game.CalculateLayDownOrderPerPlayer();
+        Assert.IsTrue(game.CanDo(game.CalculateLayDownOrderPerPlayer));
+        {
+            Assert.IsTrue(game.CalculateLayDownOrderPerPlayer());
+        }
+        Assert.IsFalse(game.CanDo(game.CalculateLayDownOrderPerPlayer));
         Assert.That(game.CardsLayOrderPerPlayer[0], Is.EqualTo(player1Id));
         Assert.That(game.CardsLayOrderPerPlayer[1], Is.EqualTo(player2Id));
 
-        game.LayCardsToBattle(player1Id, Array.Empty<CardToLay>());
-        game.LayCardsToBattle(player2Id, Array.Empty<CardToLay>());
+        // LayCardsToBattle
+        Assert.IsFalse(game.CanDo(game.LayCardsToBattle));
+        Assert.IsTrue(game.CanDo(game.LayCardsToBattle, player1Id));
+        Assert.IsFalse(game.CanDo(game.LayCardsToBattle, player2Id));
+        {
+            Assert.IsTrue(game.LayCardsToBattle(player1Id, Array.Empty<CardToLay>()));
+            Assert.IsTrue(game.LayCardsToBattle(player2Id, Array.Empty<CardToLay>()));
+        }
+        Assert.IsFalse(game.CanDo(game.LayCardsToBattle, player1Id));
+        Assert.IsFalse(game.CanDo(game.LayCardsToBattle, player2Id));
         Assert.That(game.Players[0].BattlingDeck.Count, Is.EqualTo(0));
         Assert.That(game.Players[1].BattlingDeck.Count, Is.EqualTo(0));
 
-        game.PlayDices(player1Id, () => new Random(2));
-        game.PlayDices(player2Id, () => new Random(2));
+        // PlayDices
+        Assert.IsFalse(game.CanDo(game.PlayDices));
+        Assert.IsTrue(game.CanDo(game.PlayDices, player1Id));
+        Assert.IsTrue(game.CanDo(game.PlayDices, player2Id));
+        {
+            Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
+            Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
+        }
         Assert.That(game.Players[0].FreeDiceOutcomes.Count, Is.EqualTo(1));
         Assert.That(game.Players[1].FreeDiceOutcomes.Count, Is.EqualTo(1));
 

@@ -33,7 +33,7 @@ public class Game : Entity<GameId>
 
         CommonPool = Players.ShuffleAllAndTakeHalfCards(random);
 
-        return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds(), mustObeyOrder: true);
+        return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds());
     }
 
     public void StartRound(Random random)
@@ -68,15 +68,23 @@ public class Game : Entity<GameId>
         return ActionController.SetNextUserOrExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
     }
 
-    public void CalculateLayDownOrderPerPlayer()
+    public bool CalculateLayDownOrderPerPlayer()
     {
+        if (!ActionController.CanDo(CalculateLayDownOrderPerPlayer))
+            return false;
+
         CardsLayOrderPerPlayer = Players
             .GetPlayersOrderedByHeroSpeed()
             .ToIds();
+
+        return ActionController.SetNextExpectedAction(LayCardsToBattle, CardsLayOrderPerPlayer, mustObeyOrder: true);
     }
 
-    public void LayCardsToBattle(UserId playerId, CardToLay[] cards)
+    public bool LayCardsToBattle(UserId playerId, CardToLay[] cards)
     {
+        if (!ActionController.CanDo(LayCardsToBattle, playerId))
+            return false;
+
         var player = Players.OfId(playerId);
         if (CenterCard is not null)
         {
@@ -88,13 +96,32 @@ public class Game : Entity<GameId>
             }
         }
 
-        player.LayCardsToBattle(cards);
+        if (!player.LayCardsToBattle(cards))
+            return false;
+
+        return ActionController.SetNextUserOrExpectedAction(playerId, PlayDices, Players.ToIds());
     }
 
-    public void PlayDices(UserId playerId, Func<Random> getRandom)
+    public bool PlayDices(UserId playerId, Func<Random> getRandom)
     {
+        if (!ActionController.CanDo(PlayDices, playerId))
+            return false;
+
         var player = Players.OfId(playerId);
         player.PlayDices(getRandom);
+
+        return ActionController.SetNextUserOrExpectedAction(playerId, ReplayDices, PassReplayDices);
+    }
+
+    public bool PassReplayDices(UserId playerId, int n, Func<Random> getRandom)
+    {
+        if (!ActionController.CanDo(PassReplayDices, playerId))
+            return false;
+
+        var player = Players.OfId(playerId);
+        player.PlayDices(n, getRandom);
+
+        return ActionController.SetNextUserOrExpectedAction(playerId, AssignDiceToCard);
     }
 
     public void ReplayDices(UserId playerId, int n, Func<Random> getRandom)
