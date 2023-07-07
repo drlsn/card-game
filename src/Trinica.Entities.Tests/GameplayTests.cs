@@ -9,6 +9,7 @@ using Trinica.Entities.SkillCards;
 using Trinica.Entities.SpellCards;
 using Trinica.Entities.UnitCards;
 using Trinica.Entities.Users;
+using System.Numerics;
 
 namespace Trinica.Entities.Tests;
 
@@ -317,19 +318,71 @@ public class GameplayTests
         Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[2].SourceCardId, cardsToLay1[2].SourceCardId));
         Assert.IsTrue(game.ConfirmAll(player1Id));
         Assert.IsTrue(game.ConfirmAll(player2Id));
+
         Assert.IsTrue(game.StartRound(random));
-
-        int i = 0;
-        while (game.IsRoundOngoing() && i < 50)
         {
-            Assert.IsTrue(game.PerformMove(random));
-            i++;
-        }
-        Assert.That(i, Is.EqualTo(8));
+            int i = 0;
+            while (game.IsRoundOngoing() && i < 50)
+            {
+                Assert.IsTrue(game.PerformMove(random));
+                i++;
+            }
+            Assert.That(i, Is.EqualTo(8));
 
-        foreach (var player in game.Players)
-            foreach (var card in player.BattlingDeck.UnitCards)
-                Assert.That(card.Statistics.HP.CalculateValue(), Is.EqualTo(15));
+            foreach (var player in game.Players)
+                foreach (var card in player.BattlingDeck.UnitCards)
+                    Assert.That(card.Statistics.HP.CalculateValue(), Is.EqualTo(15));
+        }
+        Assert.IsTrue(game.FinishRound(random));
+
+        Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
+        Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
+        Assert.IsTrue(game.CalculateLayDownOrderPerPlayer());
+        Assert.IsTrue(game.LayCardsToBattle(player1Id, Array.Empty<CardToLay>()));
+        Assert.IsTrue(game.LayCardsToBattle(player2Id, Array.Empty<CardToLay>()));
+        Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
+        Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
+        Assert.IsTrue(game.PassReplayDices(player1Id));
+        Assert.IsTrue(game.PassReplayDices(player2Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, hero1Card.Id));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, hero2Card.Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, cardsToLay1[0].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, cardsToLay2[0].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, cardsToLay1[1].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, cardsToLay2[1].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, cardsToLay1[2].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, cardsToLay2[2].SourceCardId));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player1Id));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, hero1Card.Id, hero2Card.Id));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, hero2Card.Id, hero1Card.Id));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, cardsToLay1[0].SourceCardId, cardsToLay2[0].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[0].SourceCardId, cardsToLay1[0].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, cardsToLay1[1].SourceCardId, cardsToLay2[1].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[1].SourceCardId, cardsToLay1[1].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, cardsToLay1[2].SourceCardId, cardsToLay2[2].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[2].SourceCardId, cardsToLay1[2].SourceCardId));
+        Assert.IsTrue(game.ConfirmAll(player1Id));
+        Assert.IsTrue(game.ConfirmAll(player2Id));
+
+        Assert.IsTrue(game.StartRound(random));
+        {
+            int i = 0;
+            while (game.IsRoundOngoing() && i < 50)
+            {
+                Assert.IsTrue(game.PerformMove(random));
+                i++;
+            }
+            Assert.That(i, Is.EqualTo(7));
+
+            foreach (var player in game.Players)
+                foreach (var card in player.BattlingDeck.UnitCards)
+                    Assert.That(card.Statistics.HP.CalculateValue(), Is.EqualTo(5));
+
+            Assert.IsTrue(game.Players[1].HeroCard is null);
+        }
+        
+        Assert.IsTrue(game.IsGameOver());
     }
 
     [Test]
@@ -358,7 +411,7 @@ public class GameplayTests
     }
 
     public static HeroCard CreateHeroCard(int i = -1,
-        int attack = 10, int hp = 25, int speed = 15, int power = 5)
+        int attack = 10, int hp = 20, int speed = 15, int power = 5)
     {
         var stats = new StatisticPointGroup(
             attack: new(attack),

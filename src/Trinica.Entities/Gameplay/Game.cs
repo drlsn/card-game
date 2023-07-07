@@ -439,7 +439,10 @@ public class Game : Entity<GameId>
 
     public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanDo(@delegate, userId);
 
-    public bool IsRoundOngoing() => _cards is not null && _cardIndex < _cards.Length;
+    public bool IsRoundOngoing() => 
+        _cards is not null &&
+        _cardIndex < _cards.Length &&
+        !IsGameOver();
 
     public static int CalculateDamage(ICombatCard attacker, ICombatCard defender, MoveType moveType) =>
         CalculateDamage(attacker.Statistics, defender?.Statistics, moveType);
