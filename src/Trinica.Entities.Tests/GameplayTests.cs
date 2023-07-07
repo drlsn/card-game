@@ -453,6 +453,67 @@ public class GameplayTests
     }
 
     [Test]
+    public void PlayHeroesAndNoEffectSpells()
+    {
+        // Player 1
+        var hero1Card = CreateHeroCard(speed: 20);
+        var spellCard1Id = new SpellCardId("spell-1");
+        var spellCard1 = CreateSpellCard(spellCard1Id, attack: 15);
+        var deck1 = new FieldDeck(spellCards: new() { spellCard1 });
+        var deck1Id = new DeckId("deck-1");
+        var player1Id = new UserId("player-1");
+        var player1 = new Player(player1Id, deck1Id, hero1Card, deck1);
+
+        // Player 2
+        var hero2Card = CreateHeroCard();
+        var spellCard2Id = new SpellCardId("spell-2");
+        var spellCard2 = CreateSpellCard(spellCard1Id, attack: 5);
+        var deck2 = new FieldDeck(spellCards: new() { spellCard2 });
+        var deck2Id = new DeckId("deck-2");
+        var player2Id = new UserId("player-2");
+        var player2 = new Player(player2Id, deck2Id, hero2Card, deck2);
+
+        var random = new Random(1);
+
+        // Game
+        var gameId = new GameId("game");
+        var game = new Game(gameId, new[] { player1, player2 });
+
+        var cardsToTake = new[] { new CardToTake(CardSource.Own) };
+
+        var cardsToLay1 = new CardToLay[] { new(spellCard1Id, hero1Card.Id) };
+        var cardsToLay2 = new CardToLay[] { new(spellCard2Id, hero2Card.Id) };
+
+        Assert.IsTrue(game.StartGame(player1Id, random));
+        Assert.IsTrue(game.StartGame(player2Id, random));
+        Assert.IsTrue(game.TakeCardsToCommonPool(random));
+        Assert.IsTrue(game.TakeCardsToHand(player1Id, cardsToTake, random));
+        Assert.IsTrue(game.TakeCardsToHand(player2Id, cardsToTake, random));
+        Assert.IsTrue(game.CalculateLayDownOrderPerPlayer());
+        Assert.IsTrue(game.LayCardsToBattle(player1Id, cardsToLay1));
+        Assert.IsTrue(game.LayCardsToBattle(player2Id, cardsToLay2));
+        Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
+        Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
+        Assert.IsTrue(game.PassReplayDices(player1Id));
+        Assert.IsTrue(game.PassReplayDices(player2Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, hero1Card.Id));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, hero2Card.Id));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player1Id));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, hero1Card.Id, hero2Card.Id));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, hero2Card.Id, hero1Card.Id));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, spellCard1.Id, hero2Card.Id));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, spellCard2.Id, hero1Card.Id));
+        Assert.IsTrue(game.ConfirmAll(player1Id));
+        Assert.IsTrue(game.ConfirmAll(player2Id));
+
+        Assert.IsTrue(game.StartRound(random));
+        Assert.IsTrue(game.PerformMove(random));
+        Assert.IsTrue(game.Players[0].HeroCard is null);
+        Assert.IsTrue(game.IsGameOver());
+    }
+
+    [Test]
     public void ShouldNotAssignDiceToNotOwnCard()
     {
         var heroCard = CreateHeroCard();
@@ -505,17 +566,20 @@ public class GameplayTests
         return new UnitCard(cardId, stats);
     }
 
-    public static Gameplay.Cards.SpellCard CreateSpellCard(int i = -1,
-        int attack = 10, int hp = 25, int speed = 15, int power = 5)
+    public static Gameplay.Cards.SpellCard CreateSpellCard(SpellCardId id, int attack = 10)
     {
         var stats = new StatisticPointGroup(
-            attack: new(attack),
-            hp: new(hp),
-            speed: new(speed),
-            power: new(power));
+            attack: new(attack));
 
-        var id = i != -1 ? i.ToString() : Guid.NewGuid().ToString();
-        var cardId = new SpellCardId($"unit-{id}");
+        return new Gameplay.Cards.SpellCard(id, stats, new IEffect[] { });
+    }
+
+    public static Gameplay.Cards.SpellCard CreateSpellCard(string id, int attack = 10)
+    {
+        var stats = new StatisticPointGroup(
+            attack: new(attack));
+
+        var cardId = new SpellCardId(id);
         return new Gameplay.Cards.SpellCard(cardId, stats, new IEffect[] { });
     }
 

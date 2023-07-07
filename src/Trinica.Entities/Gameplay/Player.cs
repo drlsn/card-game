@@ -98,22 +98,29 @@ public class Player : Entity<UserId>
         var battlingCards = BattlingDeck.GetAllCards().Prepend(HeroCard).ToIdDict();
 
         var cardsToAdd = new List<ICard>();
-        cards.ForEach(cardToLay =>
+        foreach (var cardToLay in cards)
         {
             if (!handCards.TryGetValue(cardToLay.SourceCardId, out var handCard))
-                return;
+                continue;
 
-            if (cardToLay.TargetCardId is not null &&
-                battlingCards.TryGetValue(cardToLay.TargetCardId, out var battlingCard) &&
-                battlingCard is ICardWithSlots cardWithSlots)
+            var hasTargetCard = cardToLay.TargetCardId is not null;
+            if (hasTargetCard)
             {
-                cardWithSlots.Slots.AddCard(handCard);
+                var doesTargetCardExist = battlingCards.TryGetValue(cardToLay.TargetCardId, out var battlingCard);
+                var cardWithSlots = battlingCard as ICardWithSlots;
+                var canTargetCardBePutToSlot = handCard is SkillCard || handCard is ItemCard;
+                if (hasTargetCard &&
+                    doesTargetCardExist &&
+                    canTargetCardBePutToSlot &&
+                    cardWithSlots is not null)
+                {
+                    cardWithSlots.Slots.AddCard(handCard);
+                    continue;
+                }
             }
-            else
-            {
-                cardsToAdd.Add(handCard);
-            }
-        });
+            
+            cardsToAdd.Add(handCard);
+        }
 
         BattlingDeck += cardsToAdd;
 
@@ -163,7 +170,8 @@ public class Player : Entity<UserId>
 
     public void AssignCardTarget(CardId cardId, CardId targetCardId)
     {
-        CardAssignments.TryGetOrAddValue(cardId).TargetCardIds.Add(targetCardId);
+        var assignment = CardAssignments.TryGetOrAddValue(cardId);
+        assignment.SourceCardId = cardId;
     }
 
     public void RemoveCardTarget(CardId cardId, CardId targetCardId)

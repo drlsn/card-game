@@ -2,21 +2,21 @@
 
 public class StatisticPointGroup
 {
-    public StatisticPoint Attack { get; init; }
-    public StatisticPoint HP { get; init; }
-    public StatisticPoint Speed { get; init; }
-    public StatisticPoint Power { get; init; }
+    public StatisticPoint Attack { get; }
+    public StatisticPoint HP { get; }
+    public StatisticPoint Speed { get; }
+    public StatisticPoint Power { get; }
 
     public StatisticPointGroup(
-        StatisticPoint attack, 
-        StatisticPoint hp, 
-        StatisticPoint speed, 
-        StatisticPoint power)
+        StatisticPoint attack = null, 
+        StatisticPoint hp = null, 
+        StatisticPoint speed = null, 
+        StatisticPoint power = null)
     {
-        Attack = attack;
-        HP = hp;
-        Speed = speed;
-        Power = power;
+        Attack = attack ?? new(0);
+        HP = hp ?? new(0);
+        Speed = speed ?? new(0);
+        Power = power ?? new(0);
     }
 
     public void Modify(StatisticPointGroup statisticPointGroup, string id)

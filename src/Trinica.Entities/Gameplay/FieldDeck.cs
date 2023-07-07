@@ -63,13 +63,13 @@ public class FieldDeck
     public ICard TakeCard(CardId cardId) =>
         TakeCards(new[] { cardId }).GetAllCards().First();
 
-    public FieldDeck TakeCards(CardId[] cards)
+    public FieldDeck TakeCards(CardId[] cardsToTake)
     {
         var deckToTake = new FieldDeck(
-            UnitCards.Where(c => cards.Contains(c.Id)).ToList(),
-            SkillCards.Where(c => cards.Contains(c.Id)).ToList(),
-            ItemCards.Where(c => cards.Contains(c.Id)).ToList(),
-            SpellCards.Where(c => cards.Contains(c.Id)).ToList());
+            UnitCards.Where(c => cardsToTake.Contains(c.Id)).ToList(),
+            SkillCards.Where(c => cardsToTake.Contains(c.Id)).ToList(),
+            ItemCards.Where(c => cardsToTake.Contains(c.Id)).ToList(),
+            SpellCards.Where(c => cardsToTake.Contains(c.Id)).ToList());
 
         var leftDeck = this - deckToTake;
 
