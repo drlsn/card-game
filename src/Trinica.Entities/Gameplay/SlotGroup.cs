@@ -6,12 +6,15 @@ namespace Trinica.Entities.Gameplay;
 
 public class SlotGroup
 {
-    public int MaxSlots { get; private set; }
+    public int MaxSlots { get; } = 4;
 
     public List<ItemCard> ItemCards { get; private set; } = new();
     public List<SkillCard> SkillCards { get; private set; } = new();
 
     public List<CardId> OrderedCards { get; private set; } = new();
+
+    public SlotGroup(int maxSlots) => MaxSlots = maxSlots;
+    public SlotGroup() {}
 
     public void AddCards(ICard[] cards) =>
         cards.ForEach(c => AddCard(c));

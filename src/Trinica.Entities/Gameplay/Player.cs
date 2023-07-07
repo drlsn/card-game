@@ -177,7 +177,7 @@ public class Player : Entity<UserId>
         if (card is ICombatCard combatCard)
         {
             combatCard.Statistics.HP.ModifyClamped(-damage);
-            var hp = combatCard.Statistics.HP.CalculateValue();
+            var hp = combatCard.Statistics.HP.CalculatedValue;
             if (hp > 0)
                 return;
         }
@@ -206,7 +206,7 @@ public static class PlayerExtensions
         players.ForEach(player => player.TakeCardsToHand(random, n));
 
     public static Player[] GetPlayersOrderedByHeroSpeed(this IEnumerable<Player> players) =>
-        players.OrderByDescending(p => p.HeroCard.Statistics.Speed.CalculateValue()).ToArray();
+        players.OrderByDescending(p => p.HeroCard.Statistics.Speed.CalculatedValue).ToArray();
 
     public static Player OfId(this IEnumerable<Player> players, UserId id) =>
         players.First(p => p.Id == id);
@@ -221,7 +221,7 @@ public static class PlayerExtensions
         players
             .Select(c => c.BattlingDeck)
             .AggregateOrDefault((x, y) => x + y)
-            .ThenSelect(deck => deck.SpellCards.Shuffle().Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed.CalculateValue()).Cast<ICard>()))
+            .ThenSelect(deck => deck.SpellCards.Shuffle().Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed.CalculatedValue).Cast<ICard>()))
             .ToArray();
 
     public static ICard[] GetBattlingCards(this IEnumerable<Player> players) =>

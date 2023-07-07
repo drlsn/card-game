@@ -265,7 +265,7 @@ public class CounterattackEffect : Effect, IEffect
         if (effectOwner.Effects.Contains<DazzleEffect>())
             return;
 
-        var counterAttackValue = effectOwner.Statistics.Attack.CalculateValue();
+        var counterAttackValue = effectOwner.Statistics.Attack.CalculatedValue;
         actors.MoveActor.Statistics.HP.Modify(counterAttackValue);
     }
 }

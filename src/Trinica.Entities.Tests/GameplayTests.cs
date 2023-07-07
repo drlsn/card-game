@@ -1,4 +1,3 @@
-using Corelibs.Basic.Collections;
 using Corelibs.Basic.CLI;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
@@ -9,7 +8,6 @@ using Trinica.Entities.SkillCards;
 using Trinica.Entities.SpellCards;
 using Trinica.Entities.UnitCards;
 using Trinica.Entities.Users;
-using System.Numerics;
 
 namespace Trinica.Entities.Tests;
 
@@ -199,13 +197,13 @@ public class GameplayTests
 
         Assert.IsTrue(game.IsRoundOngoing());
         Assert.IsTrue(game.PerformMove(random));
-        Assert.That(game.Players[1].HeroCard.Statistics.HP.CalculateValue(), Is.EqualTo(10));
+        Assert.That(game.Players[1].HeroCard.Statistics.HP.CalculatedValue, Is.EqualTo(10));
 
         Assert.IsFalse(game.CanDo(game.PerformRound));
 
         Assert.IsTrue(game.IsRoundOngoing());
         Assert.IsTrue(game.PerformMove(random));
-        Assert.That(game.Players[0].HeroCard.Statistics.HP.CalculateValue(), Is.EqualTo(15));
+        Assert.That(game.Players[0].HeroCard.Statistics.HP.CalculatedValue, Is.EqualTo(15));
 
         Assert.IsFalse(game.IsRoundOngoing());
         Assert.IsFalse(game.CanDo(game.PerformMove));
@@ -256,7 +254,7 @@ public class GameplayTests
     }
 
     [Test]
-    public void CheckUnits()
+    public void PlayHeroesAndUnits()
     {
         // Player 1
         var hero1Card = CreateHeroCard();
@@ -331,7 +329,7 @@ public class GameplayTests
 
             foreach (var player in game.Players)
                 foreach (var card in player.BattlingDeck.UnitCards)
-                    Assert.That(card.Statistics.HP.CalculateValue(), Is.EqualTo(15));
+                    Assert.That(card.Statistics.HP.CalculatedValue, Is.EqualTo(15));
         }
         Assert.IsTrue(game.FinishRound(random));
 
@@ -377,11 +375,80 @@ public class GameplayTests
 
             foreach (var player in game.Players)
                 foreach (var card in player.BattlingDeck.UnitCards)
-                    Assert.That(card.Statistics.HP.CalculateValue(), Is.EqualTo(5));
+                    Assert.That(card.Statistics.HP.CalculatedValue, Is.EqualTo(5));
 
             Assert.IsTrue(game.Players[1].HeroCard is null);
         }
         
+        Assert.IsTrue(game.IsGameOver());
+    }
+
+    [Test]
+    public void PlayHeroesWithItems()
+    {
+        // Player 1
+        var hero1Card = CreateHeroCard(speed: 20);
+        var itemCard1Id = new ItemCardId("item-1");
+        var itemCard1 = CreateItemCard(itemCard1Id, attack: 20);
+        var deck1 = new FieldDeck(itemCards: new() { itemCard1 });
+        var deck1Id = new DeckId("deck-1");
+        var player1Id = new UserId("player-1");
+        var player1 = new Player(player1Id, deck1Id, hero1Card, deck1);
+
+        // Player 2
+        var hero2Card = CreateHeroCard();
+        var itemCard2Id = new ItemCardId("item-2");
+        var itemCard2 = CreateItemCard(itemCard2Id, attack: 5, hp: 10);
+        var deck2 = new FieldDeck(itemCards: new() { itemCard2 });
+        var deck2Id = new DeckId("deck-2");
+        var player2Id = new UserId("player-2");
+        var player2 = new Player(player2Id, deck2Id, hero2Card, deck2);
+
+        var random = new Random(1);
+
+        // Game
+        var gameId = new GameId("game");
+        var game = new Game(gameId, new[] { player1, player2 });
+
+        var cardsToTake = new[] { new CardToTake(CardSource.Own) };
+
+        var cardsToLay1 = new CardToLay[] { new(itemCard1Id, hero1Card.Id) };
+        var cardsToLay2 = new CardToLay[] { new(itemCard2Id, hero2Card.Id) };
+
+        Assert.IsTrue(game.StartGame(player1Id, random));
+        Assert.IsTrue(game.StartGame(player2Id, random));
+        Assert.IsTrue(game.TakeCardsToCommonPool(random));
+        Assert.IsTrue(game.TakeCardsToHand(player1Id, cardsToTake, random));
+        Assert.IsTrue(game.TakeCardsToHand(player2Id, cardsToTake, random));
+        Assert.IsTrue(game.CalculateLayDownOrderPerPlayer());
+        Assert.IsTrue(game.LayCardsToBattle(player1Id, cardsToLay1));
+        Assert.IsTrue(game.LayCardsToBattle(player2Id, cardsToLay2));
+        Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
+        Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
+        Assert.IsTrue(game.PassReplayDices(player1Id));
+        Assert.IsTrue(game.PassReplayDices(player2Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, hero1Card.Id));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, hero2Card.Id));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player1Id));
+        Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, hero1Card.Id, hero2Card.Id));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, hero2Card.Id, hero1Card.Id));
+        Assert.IsTrue(game.ConfirmAll(player1Id));
+        Assert.IsTrue(game.ConfirmAll(player2Id));
+
+        Assert.IsTrue(game.StartRound(random));
+        {
+            int i = 0;
+            while (game.IsRoundOngoing() && i < 50)
+            {
+                Assert.IsTrue(game.PerformMove(random));
+                i++;
+            }
+            Assert.That(i, Is.EqualTo(1));
+
+            Assert.IsTrue(game.Players[1].HeroCard is null);
+        }
+
         Assert.IsTrue(game.IsGameOver());
     }
 
@@ -459,8 +526,8 @@ public class GameplayTests
         return new Gameplay.Cards.SkillCard(cardId, new IEffect[] { });
     }
 
-    public static Gameplay.Cards.ItemCard CreateItemCard(int i = -1,
-        int attack = 10, int hp = 25, int speed = 15, int power = 5)
+    public static Gameplay.Cards.ItemCard CreateItemCard(ItemCardId id,
+        int attack = 10, int hp = 0, int speed = 0, int power = 0)
     {
         var stats = new StatisticPointGroup(
             attack: new(attack),
@@ -468,8 +535,19 @@ public class GameplayTests
             speed: new(speed),
             power: new(power));
 
-        var id = i != -1 ? i.ToString() : Guid.NewGuid().ToString();
-        var cardId = new ItemCardId($"unit-{id}");
+        return new Gameplay.Cards.ItemCard(id, stats);
+    }
+
+    public static Gameplay.Cards.ItemCard CreateItemCard(string id,
+        int attack = 10, int hp = 0, int speed = 0, int power = 0)
+    {
+        var stats = new StatisticPointGroup(
+            attack: new(attack),
+            hp: new(hp),
+            speed: new(speed),
+            power: new(power));
+
+        var cardId = new ItemCardId(id);
         return new Gameplay.Cards.ItemCard(cardId, stats);
     }
 

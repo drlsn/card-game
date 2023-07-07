@@ -21,10 +21,10 @@ public class StatisticPointGroup
 
     public void Modify(StatisticPointGroup statisticPointGroup, string id)
     {
-        var attack = statisticPointGroup.Attack.CalculateValue();
-        var hp = statisticPointGroup.HP.CalculateValue();
-        var speed = statisticPointGroup.Speed.CalculateValue();
-        var power = statisticPointGroup.Power.CalculateValue();
+        var attack = statisticPointGroup.Attack.CalculatedValue;
+        var hp = statisticPointGroup.HP.CalculatedValue;
+        var speed = statisticPointGroup.Speed.CalculatedValue;
+        var power = statisticPointGroup.Power.CalculatedValue;
 
         Attack.Modify(attack, id);
         HP.Modify(hp, id);

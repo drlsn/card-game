@@ -14,24 +14,25 @@ public class StatisticPoint
         OriginalValue = value;
     }
 
-    public int CalculateValue()
-    {
-        var value = OriginalValue;
+    public int CalculatedValue {
+        get {
+            var value = OriginalValue;
 
-        Modifiers.ForEach(m => 
-            value = m.IsFactor ? value = (int) (value * m.Value) : (int) (value + m.Value)
-        );
+            Modifiers.ForEach(m =>
+                value = m.IsFactor ? value = (int)(value * m.Value) : (int)(value + m.Value)
+            );
 
-        ModifiersLate.ForEach(m =>
-            value = m.IsFactor ? value = (int) (value * m.Value) : (int) (value + m.Value)
-        );
+            ModifiersLate.ForEach(m =>
+                value = m.IsFactor ? value = (int)(value * m.Value) : (int)(value + m.Value)
+            );
 
-        return value;
+            return value;
+        }
     }
 
     public void ModifyClamped(double value)
     {
-        var currentValue = CalculateValue();
+        var currentValue = CalculatedValue;
         value = value.Clamp(-currentValue, OriginalValue - currentValue);
         if (value == 0)
             return;

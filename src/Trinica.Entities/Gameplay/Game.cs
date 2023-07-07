@@ -264,6 +264,14 @@ public class Game : Entity<GameId>
             cardWithItems.ItemCards.ForEach(itemCard =>
                 combatCard.Statistics.Modify(itemCard.Statistics, itemCard.Id));
 
+        targetCards.ForEach(targetCard =>
+        {
+            var cardWithItems = targetCard as ICardWithItems;
+            if (cardWithItems is not null)
+                cardWithItems.ItemCards.ForEach(itemCard =>
+                    targetCard.Statistics.Modify(itemCard.Statistics, itemCard.Id));
+        });
+
         // Attacker - BeforeMoveAtAll
         var moveAtAll = new Move()
         {
@@ -449,8 +457,8 @@ public class Game : Entity<GameId>
 
     public static int CalculateDamage(StatisticPointGroup attackerStats, StatisticPointGroup defenderStats, MoveType moveType)
     {
-        var damage = moveType is MoveType.Attack ? attackerStats.Attack.CalculateValue() : attackerStats.Power.CalculateValue();
-        //var hpValue = defenderStats.HP.CalculateValue();
+        var damage = moveType is MoveType.Attack ? attackerStats.Attack.CalculatedValue : attackerStats.Power.CalculatedValue;
+        //var hpValue = defenderStats.HP.CalculatedValue;
 
         return damage;
     }
