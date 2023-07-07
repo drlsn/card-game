@@ -1,3 +1,5 @@
+using Corelibs.Basic.Collections;
+using Corelibs.Basic.CLI;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
@@ -97,6 +99,7 @@ public class GameplayTests
         Assert.IsTrue(game.CanDo(game.LayCardsToBattle, player1Id));
         Assert.IsFalse(game.CanDo(game.LayCardsToBattle, player2Id));
         {
+            Assert.IsFalse(game.LayCardsToBattle(player2Id, Array.Empty<CardToLay>()));
             Assert.IsTrue(game.LayCardsToBattle(player1Id, Array.Empty<CardToLay>()));
             Assert.IsTrue(game.LayCardsToBattle(player2Id, Array.Empty<CardToLay>()));
         }
@@ -256,7 +259,7 @@ public class GameplayTests
     {
         // Player 1
         var hero1Card = CreateHeroCard();
-        var unitCards1 = CreateUnitCards();
+        var unitCards1 = CreateUnitCards().WriteLines();
         var deck1 = new FieldDeck(unitCards1.ToList());
         var deck1Id = new DeckId("deck-1");
         var player1Id = new UserId("player-1");
@@ -264,7 +267,7 @@ public class GameplayTests
 
         // Player 2
         var hero2Card = CreateHeroCard();
-        var unitCards2 = CreateUnitCards();
+        var unitCards2 = CreateUnitCards().WriteLines();
         var deck2 = new FieldDeck(unitCards2.ToList());
         var deck2Id = new DeckId("deck-2");
         var player2Id = new UserId("player-2");
@@ -279,8 +282,8 @@ public class GameplayTests
         var cardsToTake = new[] { 
             new CardToTake(CardSource.Own), new CardToTake(CardSource.Own), new CardToTake(CardSource.CommonPool) };
 
-        var cardsToLay1 = new CardToLay[] { new(unitCards1[0].Id), new(unitCards1[1].Id), new(unitCards2[2].Id) }; 
-        var cardsToLay2 = new CardToLay[] { new(unitCards2[0].Id), new(unitCards2[1].Id), new(unitCards1[2].Id) };
+        var cardsToLay1 = new CardToLay[] { new(unitCards1[0].Id), new(unitCards1[1].Id), new(unitCards2[0].Id) }; 
+        var cardsToLay2 = new CardToLay[] { new(unitCards2[2].Id), new(unitCards2[1].Id), new(unitCards1[2].Id) };
 
         Assert.IsTrue(game.StartGame(player1Id, random));
         Assert.IsTrue(game.StartGame(player2Id, random));
@@ -296,22 +299,62 @@ public class GameplayTests
         Assert.IsTrue(game.PassReplayDices(player2Id));
         Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, hero1Card.Id));
         Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, hero2Card.Id));
-        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 1, unitCards1[0].Id));
-        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 1, unitCards2[0].Id));
-        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 2, unitCards1[1].Id));
-        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 2, unitCards2[1].Id));
-        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 3, unitCards1[2].Id));
-        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 3, unitCards2[2].Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, cardsToLay1[0].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, cardsToLay2[0].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, cardsToLay1[1].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, cardsToLay2[1].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, cardsToLay1[2].SourceCardId));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, cardsToLay2[2].SourceCardId));
         Assert.IsTrue(game.ConfirmAssignDicesToCards(player1Id));
         Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
         Assert.IsTrue(game.AssignCardTarget(player1Id, hero1Card.Id, hero2Card.Id));
         Assert.IsTrue(game.AssignCardTarget(player2Id, hero2Card.Id, hero1Card.Id));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, cardsToLay1[0].SourceCardId, cardsToLay2[0].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[0].SourceCardId, cardsToLay1[0].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, cardsToLay1[1].SourceCardId, cardsToLay2[1].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[1].SourceCardId, cardsToLay1[1].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player1Id, cardsToLay1[2].SourceCardId, cardsToLay2[2].SourceCardId));
+        Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[2].SourceCardId, cardsToLay1[2].SourceCardId));
         Assert.IsTrue(game.ConfirmAll(player1Id));
         Assert.IsTrue(game.ConfirmAll(player2Id));
         Assert.IsTrue(game.StartRound(random));
 
-        Assert.IsTrue(game.PerformMove(random));
-        Assert.That(game.Players[1].HeroCard.Statistics.HP.CalculateValue(), Is.EqualTo(10));
+        int i = 0;
+        while (game.IsRoundOngoing() && i < 50)
+        {
+            Assert.IsTrue(game.PerformMove(random));
+            i++;
+        }
+        Assert.That(i, Is.EqualTo(8));
+
+        foreach (var player in game.Players)
+            foreach (var card in player.BattlingDeck.UnitCards)
+                Assert.That(card.Statistics.HP.CalculateValue(), Is.EqualTo(15));
+    }
+
+    [Test]
+    public void ShouldNotAssignDiceToNotOwnCard()
+    {
+        var heroCard = CreateHeroCard();
+        var deck = new FieldDeck();
+        var deckId = new DeckId("deck");
+        var playerId = new UserId("player");
+        var player = new Player(playerId, deckId, heroCard, deck);
+
+        player.PlayDices(() => new Random(1));
+        Assert.IsFalse(player.AssignDiceToCard(0, new HeroCardId("not-my-card")));
+    }
+
+    [Test]
+    public void ShouldNotAssignDiceIfNoRolledDices()
+    {
+        var heroCard = CreateHeroCard();
+        var deck = new FieldDeck();
+        var deckId = new DeckId("deck");
+        var playerId = new UserId("player");
+        var player = new Player(playerId, deckId, heroCard, deck);
+
+        Assert.IsFalse(player.AssignDiceToCard(0, heroCard.Id));
     }
 
     public static HeroCard CreateHeroCard(int i = -1,

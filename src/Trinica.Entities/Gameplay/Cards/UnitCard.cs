@@ -7,9 +7,9 @@ public class UnitCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICar
 {
     public UnitCardId Id { get; private set; }
     public StatisticPointGroup Statistics { get; private set; }
-    public SlotGroup Slots { get; private set; }
+    public SlotGroup Slots { get; private set; } = new();
 
-    public List<IEffect> Effects { get; private set; }
+    public List<IEffect> Effects { get; private set; } = new();
 
     public List<ItemCard> ItemCards => Slots.ItemCards;
 
@@ -35,4 +35,6 @@ public class UnitCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICar
         var skillCard = Slots.SkillCards[skillIndex];
         return skillCard.Effects;
     }
+
+    public override string ToString() => Id;
 }

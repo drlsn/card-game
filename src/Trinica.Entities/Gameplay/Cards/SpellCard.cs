@@ -32,4 +32,6 @@ public class SpellCard : ICard, ICombatCard
     public bool DoesPowerDamage(int skillIndex) => DoesDamage;
 
     public IEffect[] GetEffects(int skillIndex) => Effects.ToArray();
+
+    public override string ToString() => Id;
 }

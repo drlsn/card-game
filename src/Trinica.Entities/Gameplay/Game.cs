@@ -161,7 +161,8 @@ public class Game : Entity<GameId>
             return false;
 
         var player = Players.OfId(playerId);
-        player.AssignDiceToCard(diceIndex, cardId);
+        if (!player.AssignDiceToCard(diceIndex, cardId))
+            return false;
 
         return true;
     }
@@ -237,6 +238,8 @@ public class Game : Entity<GameId>
         var cardAssignment = player.CardAssignments[card.Id];
         var targetCards = _cards.Where(c => cardAssignment.TargetCardIds.Contains(c.Id)).Cast<ICombatCard>().ToArray();
         targetCards = targetCards.Where(c => !RoundSettings.NotAllowedAsTargetCards.ContainsKey(c.Id)).ToArray();
+        if (targetCards.IsEmpty())
+            return true;
 
         var otherPlayers = Players.NotOfId(player.Id);
         var enemiesBattlingCards = otherPlayers.GetBattlingCards().OfType<ICombatCard>().ToArray();
@@ -249,6 +252,9 @@ public class Game : Entity<GameId>
 
         if (card is not ICombatCard combatCard)
             return true;
+
+        if (cardAssignment.DiceOutcome is null)
+            return false;
 
         var moveType = cardAssignment.DiceOutcome.IsElement() ? MoveType.Skill : MoveType.Attack;
 

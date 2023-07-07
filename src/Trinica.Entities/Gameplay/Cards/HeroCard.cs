@@ -35,4 +35,6 @@ public class HeroCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICar
         var skillCard = Slots.SkillCards[skillIndex];
         return skillCard.Effects;
     }
+
+    public override string ToString() => Id;
 }

@@ -50,17 +50,7 @@ public class Player : Entity<UserId>
         return BattlingDeck.GetCard(cardId);
     }
 
-    public FieldDeck GetBattlingCardsBySpeed(Random random)
-    {
-        var spellCards = BattlingDeck.SpellCards.Shuffle(random).ToList();
-        var unitCards = BattlingDeck.UnitCards.Shuffle(random).OrderBy(c => c.Statistics.Speed).ToList();
-        
-        return new(
-            unitCards,  
-            skillCards: new(), 
-            itemCards: new(), 
-            spellCards);
-    }
+    public ICard[] GetBattlingCards() => BattlingDeck.GetAllCards().Prepend(HeroCard).ToArray();
 
     public ICard TakeCardFromHand(CardId cardId)
     {
@@ -113,7 +103,8 @@ public class Player : Entity<UserId>
             if (!handCards.TryGetValue(cardToLay.SourceCardId, out var handCard))
                 return;
 
-            if (battlingCards.TryGetValue(cardToLay.TargetCardId, out var battlingCard) &&
+            if (cardToLay.TargetCardId is not null &&
+                battlingCards.TryGetValue(cardToLay.TargetCardId, out var battlingCard) &&
                 battlingCard is ICardWithSlots cardWithSlots)
             {
                 cardWithSlots.Slots.AddCard(handCard);
@@ -139,12 +130,23 @@ public class Player : Entity<UserId>
         FreeDiceOutcomes = Enumerable.Range(0, n)
             .Select(i => Dice.Play(getRandom()))
             .ToList();
+
     }
 
-    public void AssignDiceToCard(int diceIndex, CardId cardId)
+    public bool AssignDiceToCard(int diceIndex, CardId cardId)
     {
+        if (FreeDiceOutcomes.IsNullOrEmpty() || diceIndex >= FreeDiceOutcomes.Count)
+            return false;
+
+        var battlingCards = GetBattlingCards();
+        if (!battlingCards.Contains(c => c.Id == cardId))
+            return false;
+
+        // TO DO: prevent assigning no your cards!
         CardAssignments.TryGetOrAddValue(cardId).DiceOutcome = FreeDiceOutcomes[diceIndex];
         FreeDiceOutcomes.RemoveAt(diceIndex);
+
+        return true;
     }
 
     public void RemoveDiceFromCard(CardId cardId)
