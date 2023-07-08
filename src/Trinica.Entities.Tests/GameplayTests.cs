@@ -118,8 +118,8 @@ public class GameplayTests
         Assert.IsFalse(game.CanDo(game.PlayDices));
         Assert.IsFalse(game.CanDo(game.PlayDices, player1Id));
         Assert.IsFalse(game.CanDo(game.PlayDices, player2Id));
-        Assert.That(game.Players[0].FreeDiceOutcomes.Count, Is.EqualTo(1));
-        Assert.That(game.Players[1].FreeDiceOutcomes.Count, Is.EqualTo(1));
+        Assert.That(game.Players[0].DiceOutcomesToAssign.Count, Is.EqualTo(1));
+        Assert.That(game.Players[1].DiceOutcomesToAssign.Count, Is.EqualTo(1));
 
         // PassReplayDices or ReplayDices
         Assert.IsTrue(game.CanDo(game.PassReplayDices, player1Id));
@@ -157,8 +157,8 @@ public class GameplayTests
         Assert.IsFalse(game.CanDo(game.AssignDiceToCard, player2Id));
         Assert.IsFalse(game.CanDo(game.ConfirmAssignDicesToCards, player1Id));
         Assert.IsFalse(game.CanDo(game.ConfirmAssignDicesToCards, player2Id));
-        Assert.That(game.Players[0].FreeDiceOutcomes.Count, Is.EqualTo(0));
-        Assert.That(game.Players[1].FreeDiceOutcomes.Count, Is.EqualTo(0));
+        Assert.That(game.Players[0].DiceOutcomesToAssign.Count, Is.EqualTo(0));
+        Assert.That(game.Players[1].DiceOutcomesToAssign.Count, Is.EqualTo(0));
         Assert.That(game.Players[0].CardAssignments.Count, Is.EqualTo(1));
         Assert.That(game.Players[1].CardAssignments.Count, Is.EqualTo(1));
 
@@ -257,7 +257,7 @@ public class GameplayTests
     public void PlayHeroesAndUnits()
     {
         // Player 1
-        var hero1Card = CreateHeroCard();
+        var hero1Card = CreateHeroCard("hero-1");
         var unitCards1 = CreateUnitCards().WriteLines();
         var deck1 = new FieldDeck(unitCards1.ToList());
         var deck1Id = new DeckId("deck-1");
@@ -265,7 +265,7 @@ public class GameplayTests
         var player1 = new Player(player1Id, deck1Id, hero1Card, deck1);
 
         // Player 2
-        var hero2Card = CreateHeroCard();
+        var hero2Card = CreateHeroCard("hero-2");
         var unitCards2 = CreateUnitCards().WriteLines();
         var deck2 = new FieldDeck(unitCards2.ToList());
         var deck2Id = new DeckId("deck-2");
@@ -387,7 +387,7 @@ public class GameplayTests
     public void PlayHeroesWithItems()
     {
         // Player 1
-        var hero1Card = CreateHeroCard(speed: 20);
+        var hero1Card = CreateHeroCard("hero-1", speed: 20);
         var itemCard1Id = new ItemCardId("item-1");
         var itemCard1 = CreateItemCard(itemCard1Id, attack: 20);
         var deck1 = new FieldDeck(itemCards: new() { itemCard1 });
@@ -396,7 +396,7 @@ public class GameplayTests
         var player1 = new Player(player1Id, deck1Id, hero1Card, deck1);
 
         // Player 2
-        var hero2Card = CreateHeroCard();
+        var hero2Card = CreateHeroCard("hero-2");
         var itemCard2Id = new ItemCardId("item-2");
         var itemCard2 = CreateItemCard(itemCard2Id, attack: 5, hp: 10);
         var deck2 = new FieldDeck(itemCards: new() { itemCard2 });
@@ -456,18 +456,16 @@ public class GameplayTests
     public void PlayHeroesAndNoEffectSpells()
     {
         // Player 1
-        var hero1Card = CreateHeroCard(speed: 20);
-        var spellCard1Id = new SpellCardId("spell-1");
-        var spellCard1 = CreateSpellCard(spellCard1Id, attack: 15);
+        var hero1Card = CreateHeroCard("hero-1", speed: 20);
+        var spellCard1 = CreateSpellCard("spell-1", attack: 20);
         var deck1 = new FieldDeck(spellCards: new() { spellCard1 });
         var deck1Id = new DeckId("deck-1");
         var player1Id = new UserId("player-1");
         var player1 = new Player(player1Id, deck1Id, hero1Card, deck1);
 
         // Player 2
-        var hero2Card = CreateHeroCard();
-        var spellCard2Id = new SpellCardId("spell-2");
-        var spellCard2 = CreateSpellCard(spellCard1Id, attack: 5);
+        var hero2Card = CreateHeroCard("hero-2");
+        var spellCard2 = CreateSpellCard("spell-2", attack: 5);
         var deck2 = new FieldDeck(spellCards: new() { spellCard2 });
         var deck2Id = new DeckId("deck-2");
         var player2Id = new UserId("player-2");
@@ -481,8 +479,8 @@ public class GameplayTests
 
         var cardsToTake = new[] { new CardToTake(CardSource.Own) };
 
-        var cardsToLay1 = new CardToLay[] { new(spellCard1Id, hero1Card.Id) };
-        var cardsToLay2 = new CardToLay[] { new(spellCard2Id, hero2Card.Id) };
+        var cardsToLay1 = new CardToLay[] { new(spellCard1.Id, hero1Card.Id) };
+        var cardsToLay2 = new CardToLay[] { new(spellCard2.Id, hero2Card.Id) };
 
         Assert.IsTrue(game.StartGame(player1Id, random));
         Assert.IsTrue(game.StartGame(player2Id, random));
@@ -498,6 +496,8 @@ public class GameplayTests
         Assert.IsTrue(game.PassReplayDices(player2Id));
         Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, hero1Card.Id));
         Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, hero2Card.Id));
+        Assert.IsTrue(game.AssignDiceToCard(player1Id, diceIndex: 0, spellCard1.Id));
+        Assert.IsTrue(game.AssignDiceToCard(player2Id, diceIndex: 0, spellCard2.Id));
         Assert.IsTrue(game.ConfirmAssignDicesToCards(player1Id));
         Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
         Assert.IsTrue(game.AssignCardTarget(player1Id, hero1Card.Id, hero2Card.Id));
@@ -509,14 +509,14 @@ public class GameplayTests
 
         Assert.IsTrue(game.StartRound(random));
         Assert.IsTrue(game.PerformMove(random));
-        Assert.IsTrue(game.Players[0].HeroCard is null);
+        Assert.IsTrue(game.Players[1].HeroCard is null);
         Assert.IsTrue(game.IsGameOver());
     }
 
     [Test]
     public void ShouldNotAssignDiceToNotOwnCard()
     {
-        var heroCard = CreateHeroCard();
+        var heroCard = CreateHeroCard("hero");
         var deck = new FieldDeck();
         var deckId = new DeckId("deck");
         var playerId = new UserId("player");
@@ -529,7 +529,7 @@ public class GameplayTests
     [Test]
     public void ShouldNotAssignDiceIfNoRolledDices()
     {
-        var heroCard = CreateHeroCard();
+        var heroCard = CreateHeroCard("hero");
         var deck = new FieldDeck();
         var deckId = new DeckId("deck");
         var playerId = new UserId("player");
@@ -538,7 +538,7 @@ public class GameplayTests
         Assert.IsFalse(player.AssignDiceToCard(0, heroCard.Id));
     }
 
-    public static HeroCard CreateHeroCard(int i = -1,
+    public static HeroCard CreateHeroCard(string id,
         int attack = 10, int hp = 20, int speed = 15, int power = 5)
     {
         var stats = new StatisticPointGroup(
@@ -547,8 +547,7 @@ public class GameplayTests
             speed: new(speed),
             power: new(power));
 
-        var id = i != -1 ? i.ToString() : Guid.NewGuid().ToString();
-        var cardId = new HeroCardId($"unit-{id}");
+        var cardId = new HeroCardId(id);
         return new HeroCard(cardId, stats);
     }
 

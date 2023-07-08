@@ -22,7 +22,7 @@ public class Player : Entity<UserId>
     public FieldDeck HandDeck { get; private set; } = new();
     public FieldDeck BattlingDeck { get; private set; } = new();
     public FieldDeck DeadDeck { get; private set; } = new();
-    public List<DiceOutcome> FreeDiceOutcomes { get; private set; }
+    public List<DiceOutcome> DiceOutcomesToAssign { get; private set; }
     public Dictionary<CardId, CardAssignment> CardAssignments { get; private set; } = new();
 
     public Player(
@@ -134,24 +134,28 @@ public class Player : Entity<UserId>
     {
         n = n.Clamp(BattlingDeck.Count + 1);
 
-        FreeDiceOutcomes = Enumerable.Range(0, n)
+        DiceOutcomesToAssign = Enumerable.Range(0, n)
             .Select(i => Dice.Play(getRandom()))
             .ToList();
 
+        GetBattlingCards().ForEach(
+            card => CardAssignments.TryAdd(card.Id, new() { SourceCardId = card.Id }));
     }
 
     public bool AssignDiceToCard(int diceIndex, CardId cardId)
     {
-        if (FreeDiceOutcomes.IsNullOrEmpty() || diceIndex >= FreeDiceOutcomes.Count)
+        if (DiceOutcomesToAssign.IsNullOrEmpty() || diceIndex >= DiceOutcomesToAssign.Count)
             return false;
 
         var battlingCards = GetBattlingCards();
-        if (!battlingCards.Contains(c => c.Id == cardId))
+        if (!battlingCards.ContainsOfId(cardId))
             return false;
 
-        // TO DO: prevent assigning no your cards!
-        CardAssignments.TryGetOrAddValue(cardId).DiceOutcome = FreeDiceOutcomes[diceIndex];
-        FreeDiceOutcomes.RemoveAt(diceIndex);
+        if (!CardAssignments.TryGetValue(cardId, out var assignment))
+            return false;
+
+        assignment.DiceOutcome = DiceOutcomesToAssign[diceIndex];
+        DiceOutcomesToAssign.RemoveAt(diceIndex);
 
         return true;
     }
@@ -159,7 +163,7 @@ public class Player : Entity<UserId>
     public void RemoveDiceFromCard(CardId cardId)
     {
         var card = CardAssignments.TryGetOrAddValue(cardId);
-        FreeDiceOutcomes.Add(card.DiceOutcome);
+        DiceOutcomesToAssign.Add(card.DiceOutcome);
         card.DiceOutcome = null;
     }
 
@@ -168,10 +172,19 @@ public class Player : Entity<UserId>
         CardAssignments.TryGetOrAddValue(cardId).SkillIndex = skillIndex;
     }
 
-    public void AssignCardTarget(CardId cardId, CardId targetCardId)
+    public bool AssignCardTarget(CardId cardId, CardId targetCardId)
     {
-        var assignment = CardAssignments.TryGetOrAddValue(cardId);
-        assignment.SourceCardId = cardId;
+        var cards = GetBattlingCards();
+        if (!cards.ContainsOfId(cardId))
+            return false;
+
+        // TO DO: check if target card can be really the target always depending on card
+        if (!CardAssignments.TryGetValue(cardId, out var assignment))
+            return false;
+        
+        assignment.TargetCardIds.Add(targetCardId);
+
+        return true;
     }
 
     public void RemoveCardTarget(CardId cardId, CardId targetCardId)
@@ -229,7 +242,7 @@ public static class PlayerExtensions
         players
             .Select(c => c.BattlingDeck)
             .AggregateOrDefault((x, y) => x + y)
-            .ThenSelect(deck => deck.SpellCards.Shuffle().Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed.CalculatedValue).Cast<ICard>()))
+            .ThenSelect(deck => deck.SpellCards.Shuffle(random).Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed.CalculatedValue).Cast<ICard>()))
             .ToArray();
 
     public static ICard[] GetBattlingCards(this IEnumerable<Player> players) =>
