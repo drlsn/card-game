@@ -108,16 +108,16 @@ public class GameplayTests
         Assert.That(game.Players[1].BattlingDeck.Count, Is.EqualTo(0));
 
         // PlayDices
-        Assert.IsFalse(game.CanDo(game.PlayDices));
-        Assert.IsTrue(game.CanDo(game.PlayDices, player1Id));
-        Assert.IsTrue(game.CanDo(game.PlayDices, player2Id));
+        Assert.IsFalse(game.CanDo(nameof(game.PlayDices)));
+        Assert.IsTrue(game.CanDo(nameof(game.PlayDices), player1Id));
+        Assert.IsTrue(game.CanDo(nameof(game.PlayDices), player2Id));
         {
             Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
             Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
         }
-        Assert.IsFalse(game.CanDo(game.PlayDices));
-        Assert.IsFalse(game.CanDo(game.PlayDices, player1Id));
-        Assert.IsFalse(game.CanDo(game.PlayDices, player2Id));
+        Assert.IsFalse(game.CanDo(nameof(game.PlayDices)));
+        Assert.IsFalse(game.CanDo(nameof(game.PlayDices), player1Id));
+        Assert.IsFalse(game.CanDo(nameof(game.PlayDices), player2Id));
         Assert.That(game.Players[0].DiceOutcomesToAssign.Count, Is.EqualTo(1));
         Assert.That(game.Players[1].DiceOutcomesToAssign.Count, Is.EqualTo(1));
 
@@ -485,7 +485,8 @@ public class GameplayTests
         Assert.IsTrue(game.CalculateLayDownOrderPerPlayer());
         Assert.IsTrue(game.LayCardsToBattle(player1Id, cardsToLay1));
         Assert.IsTrue(game.LayCardsToBattle(player2Id, cardsToLay2));
-        Assert.IsTrue(game.PlayDices(player1Id, () => new Random(2)));
+
+        Assert.IsTrue(game.PlayDices(player1Id, new Random(2)));
         Assert.IsTrue(game.PlayDices(player2Id, () => new Random(2)));
         Assert.IsTrue(game.PassReplayDices(player1Id));
         Assert.IsTrue(game.PassReplayDices(player2Id));

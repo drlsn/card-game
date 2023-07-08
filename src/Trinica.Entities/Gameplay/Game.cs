@@ -122,12 +122,15 @@ public class Game : Entity<GameId>
         if (!player.LayCardsToBattle(cards))
             return false;
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, PlayDices, Players.ToIds());
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, nameof(PlayDices), Players.ToIds());
     }
+
+    public bool PlayDices(UserId playerId, Random random) =>
+        PlayDices(playerId, () => random);
 
     public bool PlayDices(UserId playerId, Func<Random> getRandom)
     {
-        if (!ActionController.CanDo(PlayDices, playerId))
+        if (!ActionController.CanDo(nameof(PlayDices), playerId))
             return false;
 
         var player = Players.OfId(playerId);
@@ -446,6 +449,7 @@ public class Game : Entity<GameId>
     public bool IsGameOverByCenterOccupied() => CenterCardRoundsAlive >= 6;
 
     public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanDo(@delegate, userId);
+    public bool CanDo(string type, UserId userId = null) => ActionController.CanDo(type, userId);
 
     public bool IsRoundOngoing() => 
         _cards is not null &&

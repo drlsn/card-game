@@ -148,8 +148,15 @@ public class Player : Entity<UserId>
             return false;
 
         var battlingCards = GetBattlingCards();
-        if (!battlingCards.ContainsOfId(cardId))
+        var card = battlingCards.FirstOrDefault(c => c.Id == cardId);
+        if (card is null)
             return false;
+
+        var diceOutcome = DiceOutcomesToAssign[diceIndex];
+        if (diceOutcome == DiceOutcome.Attack && (card is SpellCard || card is SkillCard))
+            return false;
+
+        // TO DO: Check if card can take a specific element dice outcome
 
         if (!CardAssignments.TryGetValue(cardId, out var assignment))
             return false;
