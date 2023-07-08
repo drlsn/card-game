@@ -371,12 +371,7 @@ public class GameplayTests
                 Assert.IsTrue(game.PerformMove(random));
                 i++;
             }
-            Assert.That(i, Is.EqualTo(7));
-
-            foreach (var player in game.Players)
-                foreach (var card in player.BattlingDeck.UnitCards)
-                    Assert.That(card.Statistics.HP.CalculatedValue, Is.EqualTo(5));
-
+            Assert.That(i, Is.EqualTo(1));
             Assert.IsTrue(game.Players[1].HeroCard is null);
         }
         

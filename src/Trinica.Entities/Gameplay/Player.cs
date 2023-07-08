@@ -238,12 +238,21 @@ public static class PlayerExtensions
     public static UserId[] ToIds(this IEnumerable<Player> players) =>
         players.Select(c => c.Id).ToArray();
 
-    public static ICard[] GetBattlingCardsBySpeed(this IEnumerable<Player> players, Random random) =>
-        players
-            .Select(c => c.BattlingDeck)
-            .AggregateOrDefault((x, y) => x + y)
-            .ThenSelect(deck => deck.SpellCards.Shuffle(random).Cast<ICard>().Concat(deck.UnitCards.Cast<ICardWithStats>().Concat(players.Select(p => p.HeroCard)).OrderByDescending(c => c.Statistics.Speed.CalculatedValue).Cast<ICard>()))
-            .ToArray();
+    public static ICard[] GetBattlingCardsBySpeed(this IEnumerable<Player> players, Random random)
+    {
+        var battlingDecks = players.Select(c => c.BattlingDeck);
+        var battlingDeck = battlingDecks.AggregateOrDefault((x, y) => x + y);
+
+        var heroCards = players.Select(p => p.HeroCard);
+        var unitCards = battlingDeck.UnitCards;
+        var spellCards = battlingDeck.SpellCards.Shuffle(random);
+
+        var unitAndHeroCards = heroCards.Concat<ICardWithStats>(unitCards);
+        var unitAndHeroCardsOrdered = unitAndHeroCards.OrderByDescending(c => c.Statistics.Speed.CalculatedValue).Cast<ICard>().ToArray();
+        var allCardsOrdered = spellCards.Concat(unitAndHeroCardsOrdered).ToArray();
+
+        return allCardsOrdered;
+    }
 
     public static ICard[] GetBattlingCards(this IEnumerable<Player> players) =>
         players
