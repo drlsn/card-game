@@ -505,6 +505,7 @@ public class GameplayTests
 
         Assert.IsTrue(game.StartRound(random));
         Assert.IsTrue(game.PerformMove(random));
+        Assert.IsTrue(game.IsDead(spellCard1));
         Assert.IsTrue(game.IsGameOverByHeroElimination());
     }
 

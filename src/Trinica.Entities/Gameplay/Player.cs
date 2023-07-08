@@ -222,8 +222,29 @@ public class Player : Entity<UserId>
                 return;
         }
 
-        card = TakeCardFromBattling(cardId);
+        KillCard(cardId);
+    }
+
+    public bool KillCard(CardId cardId)
+    {
+        var card = TakeCardFromBattling(cardId);
+        if (card is null || card.Id != cardId)
+            return false;
+
         DeadDeck += card;
+
+        return true;
+    }
+
+    public bool KillCard(ICard card)
+    {
+        var battlingCard = TakeCardFromBattling(card.Id);
+        if (battlingCard is null || battlingCard.Id != card.Id)
+            return false;
+
+        DeadDeck += card;
+
+        return true;
     }
 
     public bool IsCardDead(ICard card) =>

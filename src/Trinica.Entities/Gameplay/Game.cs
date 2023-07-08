@@ -351,6 +351,10 @@ public class Game : Entity<GameId>
                     var targetPlayer = Players.GetPlayerWithCard(targetCard.Id);
                     if (combatCard.DoesPowerDamage(cardAssignment.SkillIndex))
                         targetPlayer.InflictDamage(move.Damage, targetCard.Id);
+
+                    if (combatCard is SpellCard)
+                        player.KillCard(combatCard.Id);
+
                     if (targetPlayer.IsCardDead(targetCard))
                     {
                         if (targetCard is HeroCard)
@@ -365,6 +369,7 @@ public class Game : Entity<GameId>
                         var effects = combatCard.GetEffects(cardAssignment.SkillIndex);
                         targetCard.Effects.AddRange(effects);
                     }
+
                 };
             }
         }
@@ -463,6 +468,8 @@ public class Game : Entity<GameId>
         Players.Any(p => p.HeroCard.Statistics.HP.CalculatedValue <= 0);
 
     public bool IsGameOverByCenterOccupied() => CenterCardRoundsAlive >= 6;
+
+    public bool IsDead(ICard card) => Players.FirstOrDefault(p => p.DeadDeck.Contains(card)) is not null;
 
     public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanDo(@delegate, userId);
     public bool CanDo(string type, UserId userId = null) => ActionController.CanDo(type, userId);
