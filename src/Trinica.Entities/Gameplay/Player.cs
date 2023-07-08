@@ -153,10 +153,22 @@ public class Player : Entity<UserId>
             return false;
 
         var diceOutcome = DiceOutcomesToAssign[diceIndex];
-        if (diceOutcome == DiceOutcome.Attack && (card is SpellCard || card is SkillCard))
-            return false;
+        if (diceOutcome.IsElement())
+        {
+            if (card is UnitCard || card is HeroCard)
+                return false;
 
-        // TO DO: Check if card can take a specific element dice outcome
+            if (card is not ICardWithElements cardWithElements)
+                return false;
+            
+            var element = diceOutcome.ToElement();
+            if (!cardWithElements.RequiredElements.Contains(element))
+                return false;
+        }
+        else
+        {
+
+        }
 
         if (!CardAssignments.TryGetValue(cardId, out var assignment))
             return false;

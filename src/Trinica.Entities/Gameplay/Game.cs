@@ -278,7 +278,7 @@ public class Game : Entity<GameId>
         // Attacker - BeforeMoveAtAll
         var moveAtAll = new Move()
         {
-            Damage = CalculateDamage(combatCard, null, moveType),
+            Damage = CalculateDamage(combatCard, null, moveType, cardAssignment.SkillIndex),
             Type = moveType
         };
         combatCard.Effects.ForEach(effect =>
@@ -287,7 +287,7 @@ public class Game : Entity<GameId>
         var movesAtSingle = new Dictionary<CardId, Move>();
         targetCards.ForEach(targetCard =>
         {
-            var damage = CalculateDamage(combatCard, targetCard, moveType);
+            var damage = CalculateDamage(combatCard, targetCard, moveType, cardAssignment.SkillIndex);
             movesAtSingle.Add(targetCard.Id, new Move()
             {
                 Damage = moveAtAll.Damage,
@@ -319,7 +319,9 @@ public class Game : Entity<GameId>
         // ------------------------
         if (moveAtAll.MoveEnabled)
         {
-            if (moveType is MoveType.Attack && moveAtAll.AttackEnabled)
+            if (moveType is MoveType.Attack && 
+                moveAtAll.AttackEnabled &&
+                (card is HeroCard || card is UnitCard))
             {
                 foreach (var targetCard in targetCards)
                 {
@@ -340,22 +342,30 @@ public class Game : Entity<GameId>
             else
             if (moveType is MoveType.Skill && moveAtAll.SkillsEnabled)
             {
-                targetCards.ForEach(targetCard =>
+                foreach (var targetCard in targetCards)
                 {
                     var move = movesAtSingle[targetCard.Id];
                     if (!move.SkillsEnabled)
-                        return;
+                        continue;
 
-                    var doesPowerDamage = combatCard.DoesPowerDamage(cardAssignment.SkillIndex);
-                    if (doesPowerDamage)
-                        targetCard.Statistics.HP.Modify(move.Damage);
+                    var targetPlayer = Players.GetPlayerWithCard(targetCard.Id);
+                    if (combatCard.DoesPowerDamage(cardAssignment.SkillIndex))
+                        targetPlayer.InflictDamage(move.Damage, targetCard.Id);
+                    if (targetPlayer.IsCardDead(targetCard))
+                    {
+                        if (targetCard is HeroCard)
+                            return ActionController.SetNextExpectedAction(FinishGame);
+
+                        if (CenterCard == targetCard)
+                            CenterCardRoundsAlive = 0;
+                    }
 
                     if (move.EffectsEnabled)
                     {
                         var effects = combatCard.GetEffects(cardAssignment.SkillIndex);
                         targetCard.Effects.AddRange(effects);
                     }
-                });
+                };
             }
         }
 
@@ -371,7 +381,7 @@ public class Game : Entity<GameId>
         combatCard.Effects.ForEach(effect =>
            targetCards.ForEach(targetCard =>
            {
-               var damage = CalculateDamage(combatCard, targetCard, moveType);
+               var damage = CalculateDamage(combatCard, targetCard, moveType, cardAssignment.SkillIndex);
                effect.AfterMoveAtSingleTarget(combatCard, targetCard, new()
                {
                    Damage = damage,
@@ -382,7 +392,7 @@ public class Game : Entity<GameId>
         // Defender - AfterReceive
         targetCards.ForEach(targetCard =>
         {
-            var damage = CalculateDamage(combatCard, targetCard, moveType);
+            var damage = CalculateDamage(combatCard, targetCard, moveType, cardAssignment.SkillIndex);
             targetCard.Effects.ForEach(effect =>
                 effect.AfterReceive(targetCard, new(combatCard, enemiesBattlingCards, null), new()
                 {
@@ -390,6 +400,9 @@ public class Game : Entity<GameId>
                     Type = moveType
                 }));
         });
+
+        if (IsGameOver())
+            return ActionController.SetNextExpectedAction(FinishGame);
 
         // ----- unuse items! -----
         if (cardWithItems is not null)
@@ -445,7 +458,10 @@ public class Game : Entity<GameId>
         return ActionController.SetNextExpectedAction("None");
     }
 
-    public bool IsGameOverByHeroElimination() => Players.Any(p => p.HeroCard is null);
+    public bool IsGameOverByHeroElimination() => 
+        Players.Any(p => p.HeroCard is null) ||
+        Players.Any(p => p.HeroCard.Statistics.HP.CalculatedValue <= 0);
+
     public bool IsGameOverByCenterOccupied() => CenterCardRoundsAlive >= 6;
 
     public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanDo(@delegate, userId);
@@ -456,14 +472,16 @@ public class Game : Entity<GameId>
         _cardIndex < _cards.Length &&
         !IsGameOver();
 
-    public static int CalculateDamage(ICombatCard attacker, ICombatCard defender, MoveType moveType) =>
-        CalculateDamage(attacker.Statistics, defender?.Statistics, moveType);
-
-    public static int CalculateDamage(StatisticPointGroup attackerStats, StatisticPointGroup defenderStats, MoveType moveType)
+    public static int CalculateDamage(ICombatCard attacker, ICombatCard defender, MoveType moveType, int skillIndex)
     {
-        var damage = moveType is MoveType.Attack ? attackerStats.Attack.CalculatedValue : attackerStats.Power.CalculatedValue;
-        //var hpValue = defenderStats.HP.CalculatedValue;
+        if (attacker is SpellCard spellCard && moveType == MoveType.Skill)
+            return spellCard.Damage;
 
-        return damage;
+        return moveType switch
+        {
+            MoveType.Skill => attacker.Statistics.Power.CalculatedValue /* + skill.Damage */,
+            MoveType.Attack => attacker.Statistics.Attack.CalculatedValue,
+            _ => 0
+        };
     }
 }
