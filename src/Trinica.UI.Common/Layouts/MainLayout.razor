@@ -28,11 +28,11 @@
     protected override async Task OnInitializedAsync()
     {
         var state = await Auth.GetAuthenticationStateAsync();
-        //if (await Auth.IsSignedIn() is false)
-        //{
-        //    Navigation.NavigateTo("/", forceLoad: true);
-        //    return;
-        //}
+        if (await Auth.IsSignedIn() is false)
+        {
+            Navigation.NavigateTo("/", forceLoad: true);
+            return;
+        }
 
         BottomLeftMenuButtonGroups = await GetBottomLeftMenuButtonGroups();
     }
@@ -72,7 +72,7 @@
     private async Task<SideMenu.ButtonGroup[]> GetBottomLeftMenuButtonGroups()
     {
         var res = new List<SideMenu.Button>();
-        ///res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
+        res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
         return new SideMenu.ButtonGroup[] { new("Account", res.ToArray()) };
     }
 }

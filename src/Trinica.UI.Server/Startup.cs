@@ -20,7 +20,7 @@ public static class Startup
         services.AddScoped<IAccessorAsync<ClaimsPrincipal>, ClaimsPrincipalAccessor>();
         
         services.AddFluentValidationAutoValidation();
-        //services.AddValidatorsFromAssembly(useCasesAssembly);
+        services.AddValidatorsFromAssembly(useCasesAssembly);
 
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(MongoDbCommandTransactionBehaviour<,>));

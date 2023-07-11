@@ -163,8 +163,8 @@ public class GameplayTests
         Assert.That(game.Players[1].CardAssignments.Count, Is.EqualTo(1));
 
         // ChooseCardSkill or AssignCardTarget or RemoveCardTarget or ConfirmAll
-        Assert.IsTrue(game.CanDo(game.ConfirmAll, player1Id));
-        Assert.IsTrue(game.CanDo(game.ConfirmAll, player2Id));
+        Assert.IsTrue(game.CanDo(game.ConfirmCardTargets, player1Id));
+        Assert.IsTrue(game.CanDo(game.ConfirmCardTargets, player2Id));
         Assert.IsTrue(game.CanDo(game.ChooseCardSkill, player1Id));
         Assert.IsTrue(game.CanDo(game.ChooseCardSkill, player2Id));
         Assert.IsTrue(game.CanDo(game.AssignCardTarget, player1Id));
@@ -179,8 +179,8 @@ public class GameplayTests
             Assert.IsTrue(game.ConfirmCardTargets(player1Id));
             Assert.IsTrue(game.ConfirmCardTargets(player2Id));
         }
-        Assert.IsFalse(game.CanDo(game.ConfirmAll, player1Id));
-        Assert.IsFalse(game.CanDo(game.ConfirmAll, player2Id));
+        Assert.IsFalse(game.CanDo(game.ConfirmCardTargets, player1Id));
+        Assert.IsFalse(game.CanDo(game.ConfirmCardTargets, player2Id));
         Assert.IsFalse(game.CanDo(game.ChooseCardSkill, player1Id));
         Assert.IsFalse(game.CanDo(game.ChooseCardSkill, player2Id));
         Assert.IsFalse(game.CanDo(game.AssignCardTarget, player1Id));

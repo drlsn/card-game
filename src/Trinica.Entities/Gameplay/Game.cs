@@ -28,7 +28,7 @@ public class Game : Entity<GameId>
         ActionController = new(StartGame, Players.ToIds());
     }
 
-    public bool StartGame(UserId playerId, Random random)
+    public bool StartGame(UserId playerId, Random random = null)
     {
         if (!ActionController.CanDo(StartGame, playerId))
             return false;
@@ -36,12 +36,12 @@ public class Game : Entity<GameId>
         return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardsToCommonPool);
     }
 
-    public bool TakeCardsToCommonPool(Random random)
+    public bool TakeCardsToCommonPool(Random random = null)
     {
         if (!ActionController.CanDo(TakeCardsToCommonPool))
             return false;
 
-        CommonPool = Players.ShuffleAllAndTakeHalfCards(random);
+        CommonPool = Players.ShuffleAllAndTakeHalfCards(random ?? new());
 
         return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds());
     }
@@ -72,7 +72,7 @@ public class Game : Entity<GameId>
         return ActionController.SetNextExpectedAction(PerformRound, PerformMove);
     }
 
-    public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random)
+    public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random = null)
     {
         if (!ActionController.CanDo(TakeCardsToHand, playerId))
             return false;
@@ -81,10 +81,10 @@ public class Game : Entity<GameId>
         cards.ForEach(card =>
         {
             if (card.Source == CardSource.CommonPool)
-                player.AddCardToHand(CommonPool.TakeCard(random));
+                player.AddCardToHand(CommonPool.TakeCard(random ?? new()));
             else
             if (card.Source == CardSource.Own)
-                player.TakeCardToHand(random);
+                player.TakeCardToHand(random ?? new());
         });
 
         return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
@@ -183,7 +183,7 @@ public class Game : Entity<GameId>
 
     public bool ConfirmAssignDicesToCards(UserId playerId)
     {
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), ChooseCardSkill, AssignCardTarget, RemoveCardTarget, ConfirmAll);
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), ChooseCardSkill, AssignCardTarget, RemoveCardTarget, ConfirmCardTargets);
     }
 
     public bool ChooseCardSkill(UserId playerId, CardId cardId, int skillIndex)
@@ -221,7 +221,7 @@ public class Game : Entity<GameId>
 
     public bool ConfirmCardTargets(UserId playerId)
     {
-        if (!ActionController.CanDo(ConfirmAll, playerId))
+        if (!ActionController.CanDo(ConfirmCardTargets, playerId))
             return false;
 
         return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, StartRound);

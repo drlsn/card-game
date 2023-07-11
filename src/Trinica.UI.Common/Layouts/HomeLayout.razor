@@ -49,7 +49,7 @@
         //if (await Auth.IsSignedIn())
             res.Add(new("dashboard", "Dashboard", IconUrl: $"{Config.BaseAssetsPath}/images/icons/design/grid.png"));
 
-        //res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
+        res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
 
         return new HorizontalMenu.ButtonGroup[] { new(res.ToArray()) };
     }
