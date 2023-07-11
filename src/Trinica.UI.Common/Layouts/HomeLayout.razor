@@ -1,0 +1,56 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization;
+@using Trinica.UseCases.Users;
+
+@inherits BaseLayout
+
+<main class="main" style=@_paddingLeftCssAttribute>
+    <TopAndSideMenu
+        OnSideMenuSizeChanged=@OnMenuSizeChanged
+        MenuIconUrl=@($"{Config.BaseAssetsPath}/images/icons/design/grid.png")
+        LogoName="Trinica"
+        LogoImageUrl=@($"{Config.BaseAssetsPath}/images/icons/design/mask.png")
+        TopMenuButtonGroups=@TopMenuButtonGroups
+        OnButtonClick=@OnMenuButtonClick />
+
+    <div class="main-content">
+        @Body
+    </div>
+
+</main>
+
+@code {
+    [Inject] public AuthenticationStateProvider Auth { get; set; }
+    [Inject] public NavigationManager Navigation { get; set; }
+    [Inject] public ICommandExecutor CommandExecutor { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        TopMenuButtonGroups = await GetTopMenuButtonGroups();
+        if (await Auth.IsSignedIn()) ;
+        //await CommandExecutor.Execute<CreateUserCommand>();
+    }
+
+    private async void OnAuthenticationStateChanged(Task<AuthenticationState> task) {}
+
+    private async Task OnMenuButtonClick(string id)
+    {
+        if (id == "login")
+            await Auth.SignAction(Navigation);
+        else
+        if (id == "dashboard")
+            Navigation.NavigateTo(id);
+    }
+
+    HorizontalMenu.ButtonGroup[] TopMenuButtonGroups { get; set; }
+
+    private async Task<HorizontalMenu.ButtonGroup[]> GetTopMenuButtonGroups()
+    {
+        var res = new List<HorizontalMenu.Button>();
+        if (await Auth.IsSignedIn())
+            res.Add(new("dashboard", "Dashboard", IconUrl: $"{Config.BaseAssetsPath}/images/icons/design/grid.png"));
+
+        res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
+
+        return new HorizontalMenu.ButtonGroup[] { new(res.ToArray()) };
+    }
+}

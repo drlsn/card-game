@@ -1,0 +1,78 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization;
+@*@using Trinica.UseCases.Users;*@
+@inherits BaseLayout
+
+<main class="main" style=@_paddingLeftCssAttribute>
+    
+    <TopAndSideMenu
+        OnSideMenuSizeChanged=@OnMenuSizeChanged
+        MenuIconUrl=@($"{Config.BaseAssetsPath}/images/icons/design/grid.png")
+        LogoName="Trinica"
+        LogoImageUrl=@($"{Config.BaseAssetsPath}/images/icons/design/mask.png")
+        SideMenuButtonGroups=@SideMenuButtonGroups 
+        TopMenuButtonGroups=@TopMenuButtonGroups 
+        BottomLeftMenuButtonGroups=@BottomLeftMenuButtonGroups 
+        OnButtonClick=@OnMenuButtonClick/>
+
+    <div class="main-content">
+        @Body
+    </div>
+
+</main>
+
+@code {
+    [Inject] public AuthenticationStateProvider Auth { get; set; }
+    [Inject] public NavigationManager Navigation { get; set; }
+    [Inject] public ICommandExecutor CommandExecutor { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await Auth.GetAuthenticationStateAsync();
+        //if (await Auth.IsSignedIn() is false)
+        //{
+        //    Navigation.NavigateTo("/", forceLoad: true);
+        //    return;
+        //}
+
+        BottomLeftMenuButtonGroups = await GetBottomLeftMenuButtonGroups();
+    }
+
+    private async Task OnMenuButtonClick(string id)
+    {
+        if (id == "login")
+        {
+            await Auth.SignAction(Navigation);
+        }
+        else
+            Navigation.NavigateTo(id);
+    }
+
+    private SideMenu.ButtonGroup[] SideMenuButtonGroups =
+    {
+        new("General", new SideMenu.Button[]
+        {
+            new("dashboard", "Dashboard", $"{Config.BaseAssetsPath}/images/icons/nav/home.png"),
+            new("plans", "Plans", $"{Config.BaseAssetsPath}/images/icons/basic/news.png"),
+            new("sessions", "Sessions", $"{Config.BaseAssetsPath}/images/icons/basic/time.png"),
+            new("exercises", "Exercises", $"{Config.BaseAssetsPath}/images/icons/gym/arm.png"),
+        })
+    };
+
+    private HorizontalMenu.ButtonGroup[] TopMenuButtonGroups =
+    {
+        new(new HorizontalMenu.Button[]
+        {
+            new("profile", "Profile", $"{Config.BaseAssetsPath}/images/icons/edu/head-settings.png"),
+        })
+    };
+
+    private SideMenu.ButtonGroup[] BottomLeftMenuButtonGroups { get; set; }
+
+    private async Task<SideMenu.ButtonGroup[]> GetBottomLeftMenuButtonGroups()
+    {
+        var res = new List<SideMenu.Button>();
+        res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
+        return new SideMenu.ButtonGroup[] { new("Account", res.ToArray()) };
+    }
+
+}

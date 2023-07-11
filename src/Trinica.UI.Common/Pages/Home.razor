@@ -1,0 +1,10 @@
+﻿@page "/"
+@page "/home"
+@layout HomeLayout
+
+<FullBg ImageUrl=@($@"{Config.BaseAssetsPath}/images/general/main-bg.png") />
+
+<Landing 
+    Title="Trinica"
+    Description="Keep your workouts on track!"
+    Label=@(new(ImageUrl: $@"{Config.BaseAssetsPath}\images\general\logo-big.png"))/>

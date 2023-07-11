@@ -1,0 +1,26 @@
+﻿@using System.Reflection;
+@using Microsoft.AspNetCore.Components.Authorization
+
+<CascadingAuthenticationState>
+    <Router AppAssembly=@typeof(App).Assembly AdditionalAssemblies=@AdditionalAssemblies>
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+
+@code {
+    [Inject] public AuthenticationStateProvider Auth { get; set; }
+
+    private Assembly[] AdditionalAssemblies { get; } = new[]
+    {
+        typeof(Corelibs.Blazor.UIComponents.Dropdowns.Dropdown).Assembly
+    };
+}
