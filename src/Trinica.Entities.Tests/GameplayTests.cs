@@ -176,8 +176,8 @@ public class GameplayTests
             Assert.IsTrue(game.CanDo(game.RemoveCardTarget, player1Id));
             Assert.IsTrue(game.AssignCardTarget(player2Id, hero2CardId, hero1CardId));
             Assert.IsTrue(game.CanDo(game.RemoveCardTarget, player2Id));
-            Assert.IsTrue(game.ConfirmAll(player1Id));
-            Assert.IsTrue(game.ConfirmAll(player2Id));
+            Assert.IsTrue(game.ConfirmCardTargets(player1Id));
+            Assert.IsTrue(game.ConfirmCardTargets(player2Id));
         }
         Assert.IsFalse(game.CanDo(game.ConfirmAll, player1Id));
         Assert.IsFalse(game.CanDo(game.ConfirmAll, player2Id));
@@ -241,8 +241,8 @@ public class GameplayTests
         Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
         Assert.IsTrue(game.AssignCardTarget(player1Id, hero1CardId, hero2CardId));
         Assert.IsTrue(game.AssignCardTarget(player2Id, hero2CardId, hero1CardId));
-        Assert.IsTrue(game.ConfirmAll(player1Id));
-        Assert.IsTrue(game.ConfirmAll(player2Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player1Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player2Id));
         Assert.IsTrue(game.StartRound(random));
 
         Assert.IsTrue(game.IsRoundOngoing());
@@ -314,8 +314,8 @@ public class GameplayTests
         Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[1].SourceCardId, cardsToLay1[1].SourceCardId));
         Assert.IsTrue(game.AssignCardTarget(player1Id, cardsToLay1[2].SourceCardId, cardsToLay2[2].SourceCardId));
         Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[2].SourceCardId, cardsToLay1[2].SourceCardId));
-        Assert.IsTrue(game.ConfirmAll(player1Id));
-        Assert.IsTrue(game.ConfirmAll(player2Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player1Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player2Id));
 
         Assert.IsTrue(game.StartRound(random));
         {
@@ -360,8 +360,8 @@ public class GameplayTests
         Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[1].SourceCardId, cardsToLay1[1].SourceCardId));
         Assert.IsTrue(game.AssignCardTarget(player1Id, cardsToLay1[2].SourceCardId, cardsToLay2[2].SourceCardId));
         Assert.IsTrue(game.AssignCardTarget(player2Id, cardsToLay2[2].SourceCardId, cardsToLay1[2].SourceCardId));
-        Assert.IsTrue(game.ConfirmAll(player1Id));
-        Assert.IsTrue(game.ConfirmAll(player2Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player1Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player2Id));
 
         Assert.IsTrue(game.StartRound(random));
         {
@@ -428,8 +428,8 @@ public class GameplayTests
         Assert.IsTrue(game.ConfirmAssignDicesToCards(player2Id));
         Assert.IsTrue(game.AssignCardTarget(player1Id, hero1Card.Id, hero2Card.Id));
         Assert.IsTrue(game.AssignCardTarget(player2Id, hero2Card.Id, hero1Card.Id));
-        Assert.IsTrue(game.ConfirmAll(player1Id));
-        Assert.IsTrue(game.ConfirmAll(player2Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player1Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player2Id));
 
         Assert.IsTrue(game.StartRound(random));
         {
@@ -500,8 +500,8 @@ public class GameplayTests
         Assert.IsTrue(game.AssignCardTarget(player2Id, hero2Card.Id, hero1Card.Id));
         Assert.IsTrue(game.AssignCardTarget(player1Id, spellCard1.Id, hero2Card.Id));
         Assert.IsTrue(game.AssignCardTarget(player2Id, spellCard2.Id, hero1Card.Id));
-        Assert.IsTrue(game.ConfirmAll(player1Id));
-        Assert.IsTrue(game.ConfirmAll(player2Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player1Id));
+        Assert.IsTrue(game.ConfirmCardTargets(player2Id));
 
         Assert.IsTrue(game.StartRound(random));
         Assert.IsTrue(game.PerformMove(random));

@@ -219,7 +219,7 @@ public class Game : Entity<GameId>
         return true;
     }
 
-    public bool ConfirmAll(UserId playerId)
+    public bool ConfirmCardTargets(UserId playerId)
     {
         if (!ActionController.CanDo(ConfirmAll, playerId))
             return false;

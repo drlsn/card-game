@@ -14,8 +14,8 @@ public static class Startup
 {
     public static void InitializeApp(this IServiceCollection services, IWebHostEnvironment environment)
     {
-        //var entitiesAssembly = typeof(Entities.Users.User).Assembly;
-        //var useCasesAssembly = typeof(UseCases.Users.CreateUserCommand).Assembly;
+        var entitiesAssembly = typeof(Entities.Users.User).Assembly;
+        var useCasesAssembly = typeof(UseCases.Users.CreateUserCommand).Assembly;
 
         services.AddScoped<IAccessorAsync<ClaimsPrincipal>, ClaimsPrincipalAccessor>();
         
@@ -31,7 +31,7 @@ public static class Startup
 
         services.AddMediator(opts => opts.ServiceLifetime = ServiceLifetime.Scoped);
 
-        //services.AddRepositories(environment, entitiesAssembly);
+        services.AddRepositories(environment, entitiesAssembly);
     }
 
     public static void AddRepositories(this IServiceCollection services, IWebHostEnvironment environment, Assembly assembly)

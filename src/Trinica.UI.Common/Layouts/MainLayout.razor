@@ -51,10 +51,11 @@
     {
         new("General", new SideMenu.Button[]
         {
-            new("dashboard", "Dashboard", $"{Config.BaseAssetsPath}/images/icons/nav/home.png"),
-            new("plans", "Plans", $"{Config.BaseAssetsPath}/images/icons/basic/news.png"),
-            new("sessions", "Sessions", $"{Config.BaseAssetsPath}/images/icons/basic/time.png"),
-            new("exercises", "Exercises", $"{Config.BaseAssetsPath}/images/icons/gym/arm.png"),
+            new("game", "Game", $"{Config.BaseAssetsPath}/images/icons/nav/home.png"),
+            //new("dashboard", "Dashboard", $"{Config.BaseAssetsPath}/images/icons/nav/home.png"),
+            //new("plans", "Plans", $"{Config.BaseAssetsPath}/images/icons/basic/news.png"),
+            //new("sessions", "Sessions", $"{Config.BaseAssetsPath}/images/icons/basic/time.png"),
+            //new("exercises", "Exercises", $"{Config.BaseAssetsPath}/images/icons/gym/arm.png"),
         })
     };
 
@@ -62,7 +63,7 @@
     {
         new(new HorizontalMenu.Button[]
         {
-            new("profile", "Profile", $"{Config.BaseAssetsPath}/images/icons/edu/head-settings.png"),
+            //new("profile", "Profile", $"{Config.BaseAssetsPath}/images/icons/edu/head-settings.png"),
         })
     };
 
@@ -71,8 +72,7 @@
     private async Task<SideMenu.ButtonGroup[]> GetBottomLeftMenuButtonGroups()
     {
         var res = new List<SideMenu.Button>();
-        res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
+        ///res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
         return new SideMenu.ButtonGroup[] { new("Account", res.ToArray()) };
     }
-
 }
