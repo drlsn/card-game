@@ -36,5 +36,5 @@ public class UnitCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICar
         return skillCard.Effects;
     }
 
-    public override string ToString() => Id;
+    public override string ToString() => Id.Value;
 }

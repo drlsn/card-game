@@ -26,8 +26,8 @@
     protected override async Task OnInitializedAsync()
     {
         TopMenuButtonGroups = await GetTopMenuButtonGroups();
-        if (await Auth.IsSignedIn()) ;
-        //await CommandExecutor.Execute<CreateUserCommand>();
+        if (await Auth.IsSignedIn())
+            await CommandExecutor.Execute<CreateUserCommand>();
     }
 
     private async void OnAuthenticationStateChanged(Task<AuthenticationState> task) {}
@@ -37,7 +37,7 @@
         if (id == "login")
             await Auth.SignAction(Navigation);
         else
-        if (id == "dashboard")
+        if (id == "game")
             Navigation.NavigateTo(id);
     }
 
@@ -47,7 +47,7 @@
     {
         var res = new List<HorizontalMenu.Button>();
         //if (await Auth.IsSignedIn())
-            res.Add(new("dashboard", "Dashboard", IconUrl: $"{Config.BaseAssetsPath}/images/icons/design/grid.png"));
+            res.Add(new("game", "Game", IconUrl: $"{Config.BaseAssetsPath}/images/icons/design/grid.png"));
 
         res.Add(new("login", await Auth.GetLabel(), IconUrl: $"{Config.BaseAssetsPath}/images/icons/basic/exit.png"));
 

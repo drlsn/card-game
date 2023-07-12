@@ -19,5 +19,5 @@ public class SkillCard : ICard
     public int? Damage { get; init; }
     public IEffect[] Effects { get; init; }
 
-    public override string ToString() => Id;
+    public override string ToString() => Id.Value;
 }

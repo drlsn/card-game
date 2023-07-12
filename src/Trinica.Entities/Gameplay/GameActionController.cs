@@ -5,7 +5,7 @@ namespace Trinica.Entities.Gameplay;
 
 public class GameActionController
 {
-    private Action _expectedAction = new();
+    public Action ExpectedAction = new();
 
     public GameActionController(Delegate @delegate) => SetNextExpectedAction(@delegate.Method.Name);
     public GameActionController(Delegate @delegate, UserId[] expectedPlayers) => SetNextExpectedAction(@delegate.Method.Name, expectedPlayers);
@@ -16,15 +16,15 @@ public class GameActionController
 
     public bool CanDo(string actionType, UserId userId = null)
     {
-        if (!_expectedAction.Types.Contains(actionType))
+        if (!ExpectedAction.Types.Contains(actionType))
             return false;
 
-        if (_expectedAction.ExpectsUserAction())
+        if (ExpectedAction.ExpectsUserAction())
         {
-            if (!_expectedAction.ExpectedPlayers.Contains(userId))
+            if (!ExpectedAction.ExpectedPlayers.Contains(userId))
                 return false;
 
-            return _expectedAction.CanMakeAction(userId, actionType);
+            return ExpectedAction.CanMakeAction(userId, actionType);
         }
 
         return true;
@@ -64,10 +64,10 @@ public class GameActionController
         UserId[] expectedPlayers = null,
         bool mustObeyOrder = false)
     {
-        if (!_expectedAction.HasUsersDoneActions())
+        if (!ExpectedAction.HasUsersDoneActions())
             return false;
 
-        _expectedAction = new()
+        ExpectedAction = new()
         {
             Types = types,
             ExpectedPlayers = expectedPlayers ?? Array.Empty<UserId>(),
@@ -89,18 +89,18 @@ public class GameActionController
         UserId[] expectedPlayers = null,
         bool mustObeyOrder = false)
     {
-        if (!_expectedAction.HasUsersDoneActions())
+        if (!ExpectedAction.HasUsersDoneActions())
         {
-            if (_expectedAction.CanMakeAction(userId))
-                _expectedAction.AlreadyMadeActionsPlayers.Add(userId);
+            if (ExpectedAction.CanMakeAction(userId))
+                ExpectedAction.AlreadyMadeActionsPlayers.Add(userId);
             else
                 return false;
         }
 
-        if (!_expectedAction.HasUsersDoneActions())
+        if (!ExpectedAction.HasUsersDoneActions())
             return true;
 
-        _expectedAction = new()
+        ExpectedAction = new()
         {
             Types = types,
             ExpectedPlayers = expectedPlayers ?? Array.Empty<UserId>(),

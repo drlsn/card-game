@@ -7,6 +7,8 @@ using Mediator;
 using Trinica.UI.Server.Data;
 using System.Reflection;
 using System.Security.Claims;
+using Trinica.UseCases.Gameplay;
+using Trinica.Entities.Gameplay;
 
 namespace Trinica.UI.Server;
 
@@ -32,6 +34,8 @@ public static class Startup
         services.AddMediator(opts => opts.ServiceLifetime = ServiceLifetime.Scoped);
 
         services.AddRepositories(environment, entitiesAssembly);
+
+        services.AddSingleton<BotHub>();
     }
 
     public static void AddRepositories(this IServiceCollection services, IWebHostEnvironment environment, Assembly assembly)
@@ -41,6 +45,7 @@ public static class Startup
 
         MongoConventionPackExtensions.AddIgnoreConventionPack();
 
+        services.AddSingleton<IRepository<Game, GameId>, InMemoryRepository<Game, GameId>>();
         services.AddMongoRepositories(assembly, mongoConnectionString, databaseName);
     }
 }

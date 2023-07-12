@@ -8,8 +8,10 @@ namespace Trinica.Entities.Gameplay;
 
 public record GameId(string Value) : EntityId(Value);
 
-public class Game : Entity<GameId>
+public class Game : Entity<GameId>, IAggregateRoot<GameId>
 {
+    public const string DefaultCollectionName = "games";
+
     public Player[] Players { get; private set; }
     public FieldDeck CommonPool { get; private set; }
     public ICard CenterCard { get; private set; }
@@ -240,7 +242,7 @@ public class Game : Entity<GameId>
         var player = Players.GetPlayerWithCard(card.Id);
         var cardAssignment = player.CardAssignments[card.Id];
         var targetCards = _cards.Where(c => cardAssignment.TargetCardIds.Contains(c.Id)).Cast<ICombatCard>().ToArray();
-        targetCards = targetCards.Where(c => !RoundSettings.NotAllowedAsTargetCards.ContainsKey(c.Id)).ToArray();
+        targetCards = targetCards.Where(c => !RoundSettings.NotAllowedAsTargetCards.ContainsKey(c.Id.Value)).ToArray();
         if (targetCards.IsEmpty())
             return true;
 
@@ -265,14 +267,14 @@ public class Game : Entity<GameId>
         var cardWithItems = combatCard as ICardWithItems;
         if (cardWithItems is not null)
             cardWithItems.ItemCards.ForEach(itemCard =>
-                combatCard.Statistics.Modify(itemCard.Statistics, itemCard.Id));
+                combatCard.Statistics.Modify(itemCard.Statistics, itemCard.Id.Value));
 
         targetCards.ForEach(targetCard =>
         {
             var cardWithItems = targetCard as ICardWithItems;
             if (cardWithItems is not null)
                 cardWithItems.ItemCards.ForEach(itemCard =>
-                    targetCard.Statistics.Modify(itemCard.Statistics, itemCard.Id));
+                    targetCard.Statistics.Modify(itemCard.Statistics, itemCard.Id.Value));
         });
 
         // Attacker - BeforeMoveAtAll
@@ -312,7 +314,7 @@ public class Game : Entity<GameId>
         // Update After Move Modified By Effects
         if (cardWithItems is not null && !moveAtAll.ItemsEnabled)
             cardWithItems.ItemCards.ForEach(itemCard =>
-                combatCard.Statistics.RemoveAll(itemCard.Id));
+                combatCard.Statistics.RemoveAll(itemCard.Id.Value));
 
         // ------------------------
         // PERFORM ACTION!!!
@@ -412,7 +414,7 @@ public class Game : Entity<GameId>
         // ----- unuse items! -----
         if (cardWithItems is not null)
             cardWithItems.ItemCards.ForEach(itemCard =>
-                combatCard.Statistics.RemoveAll(itemCard.Id));
+                combatCard.Statistics.RemoveAll(itemCard.Id.Value));
 
         if (!IsRoundOngoing())
             return ActionController.SetNextExpectedAction(FinishRound);

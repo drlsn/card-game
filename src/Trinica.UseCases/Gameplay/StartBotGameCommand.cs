@@ -1,5 +1,4 @@
-﻿using Corelibs.Basic.Auth;
-using Corelibs.Basic.Blocks;
+﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
 using Corelibs.Basic.UseCases;
@@ -7,33 +6,36 @@ using Mediator;
 using System.Security.Claims;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
-using Trinica.Entities.Gameplay.Events;
+using Trinica.Entities.Gameplay.Cards;
+using Trinica.Entities.HeroCards;
 using Trinica.Entities.Users;
 
 namespace Trinica.UseCases.Gameplay;
 
 public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, Result>
 {
-    private readonly IAccessorAsync<ClaimsPrincipal> _userAccessor;
-    private readonly IPublisher _publisher;
+    private readonly IRepository<User, UserId> _userRepository;
+    private readonly IRepository<Game, GameId> _gameRepository;
     private readonly BotHub _botHub;
 
     public StartBotGameCommandHandler(
-        IAccessorAsync<ClaimsPrincipal> userAccessor,
-        IPublisher publisher)
+        BotHub botHub,
+        IRepository<User, UserId> userRepository,
+        IRepository<Game, GameId> gameRepository)
     {
-        _userAccessor = userAccessor;
-        _publisher = publisher;
+        _botHub = botHub;
+        _userRepository = userRepository;
+        _gameRepository = gameRepository;
     }
 
     public async ValueTask<Result> Handle(StartBotGameCommand command, CancellationToken ct)
     {
         var result = Result.Success();
 
-        var userId = await _userAccessor.GetUserID<UserId>();
+        var user = await _userRepository.Get(new UserId(command.PlayerId), result);
 
-        var player = new Player(userId, EntityId.New<DeckId>(), null, null);
-        var bot = new Player(EntityId.New<UserId>(), EntityId.New<DeckId>(), null, null);
+        var player = CreatePlayer(user.Id);
+        var bot = CreatePlayer();
         var game = new Game(EntityId.New<GameId>(), new[] { player, bot });
         if (!game.StartGame(player.Id))
             return result.Fail();
@@ -44,16 +46,34 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
         if (!game.TakeCardsToCommonPool())
             return result.Fail();
 
-        await _publisher.Publish(new GameStartedByPlayerEvent(player.Id, game.Id, game.ActionController));
-        await _publisher.Publish(new GameStartedByPlayerEvent(bot.Id, game.Id, game.ActionController));
+        _botHub.AddGame(user.Id, game.Id, game.ActionController);
+
+        await _gameRepository.Save(game, result);
+
+        user.ChangeLastGame(game.Id);
+        await _userRepository.Save(user, result);
 
         return result;
     }
+
+    public static Player CreatePlayer(UserId userId = null) 
+    {
+        var statistics = new StatisticPointGroup(
+            attack: new(10),
+            hp: new(10),
+            speed: new(10),
+            power: new(10));
+
+        var hero = new HeroCard(EntityId.New<HeroCardId>(), statistics);
+        var fieldDeck = new FieldDeck();
+
+        return new Player(userId ?? EntityId.New<UserId>(), EntityId.New<DeckId>(), hero, fieldDeck);
+    }
 }
 
-public record StartBotGameCommand() : ICommand<Result>;
+public record StartBotGameCommand(string PlayerId) : ICommand<Result>;
 
-public class CreateUserValidator : UserRequestValidator<StartBotGameCommand>
+public class StartBotGameValidator : UserRequestValidator<StartBotGameCommand>
 {
-    public CreateUserValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
+    public StartBotGameValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
 }

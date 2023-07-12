@@ -1,4 +1,5 @@
 ﻿using Mediator;
+using Microsoft.Extensions.DependencyInjection;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Users;
@@ -10,13 +11,11 @@ public class BotHub :
 {
     private readonly Dictionary<GameId, BotGame> _botGames = new();
 
-    private IMediator _mediator;
-    private IServiceProvider _serviceProvider;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public BotHub(IMediator mediator, IServiceProvider serviceProvider)
+    public BotHub(IServiceScopeFactory serviceScopeFactory)
     {
-        _mediator = mediator;
-        _serviceProvider = serviceProvider;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     public void AddGame(
@@ -29,9 +28,12 @@ public class BotHub :
     {
         var game = _botGames[ev.GameId];
         var random = new Random();
-        
-        await _mediator.Send(
-            new TakeCardsToHandCommand(game.GameId, game.BotId, 
+
+        using var scope = _serviceScopeFactory.CreateScope();
+        var mediator = scope.ServiceProvider.GetService<IMediator>();
+
+        await mediator.Send(
+            new TakeCardsToHandCommand(game.GameId.Value, game.BotId.Value, 
                 Enumerable.Range(0, 8)
                     .Select(i => 
                         new CardToTake(random.Next(2) == 0 ? CardSource.Own : CardSource.CommonPool))

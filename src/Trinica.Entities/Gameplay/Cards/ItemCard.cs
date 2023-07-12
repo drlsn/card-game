@@ -16,5 +16,5 @@ public class ItemCard : ICard
     public StatisticPointGroup Statistics { get; private set; }
     public bool IsActive { get; set; } = true;
 
-    public override string ToString() => Id;
+    public override string ToString() => Id.Value;
 }

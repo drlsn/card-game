@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Corelibs.Basic.Auth;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Trinica.Entities.Users;
 
 namespace Trinica.UI.Common.Auth;
 
@@ -27,5 +29,11 @@ public static class AuthenticationStateProviderExtensions
             nav.NavigateTo($"MicrosoftIdentity/Account/SignIn", forceLoad: true);
         else
             nav.NavigateTo($"MicrosoftIdentity/Account/SignOut", forceLoad: true);
+    }
+
+    public static async Task<string> GetUserId(this AuthenticationStateProvider auth)
+    {
+        var state = await auth.GetAuthenticationStateAsync();
+        return state.User.GetUserID();
     }
 }

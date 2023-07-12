@@ -35,5 +35,5 @@ public class SpellCard : ICard, ICombatCard, ICardWithElements
 
     public IEffect[] GetEffects(int skillIndex) => Effects.ToArray();
 
-    public override string ToString() => Id;
+    public override string ToString() => Id.Value;
 }
