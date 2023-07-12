@@ -11,10 +11,12 @@ public class BotHub :
     private readonly Dictionary<GameId, BotGame> _botGames = new();
 
     private IMediator _mediator;
+    private IServiceProvider _serviceProvider;
 
-    public BotHub(IMediator mediator)
+    public BotHub(IMediator mediator, IServiceProvider serviceProvider)
     {
         _mediator = mediator;
+        _serviceProvider = serviceProvider;
     }
 
     public void AddGame(
@@ -27,10 +29,13 @@ public class BotHub :
     {
         var game = _botGames[ev.GameId];
         var random = new Random();
-
+        
         await _mediator.Send(
             new TakeCardsToHandCommand(game.GameId, game.BotId, 
-                Enumerable.Range(0, 8).Select(i => new CardToTake(random.Next(2) == 0 ? CardSource.Own : CardSource.CommonPool)).ToArray()));
+                Enumerable.Range(0, 8)
+                    .Select(i => 
+                        new CardToTake(random.Next(2) == 0 ? CardSource.Own : CardSource.CommonPool))
+                    .ToArray()));
     }
 }
 
