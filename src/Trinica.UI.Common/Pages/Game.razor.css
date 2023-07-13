@@ -97,3 +97,7 @@ aside {
     border: none;
     cursor: pointer;
 }
+
+.action-button:hover {
+    background: rgb(180, 180, 180);
+}

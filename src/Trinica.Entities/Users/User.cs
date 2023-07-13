@@ -15,5 +15,5 @@ public class User : Entity<UserId>, IAggregateRoot<UserId>
 
     public string LastGameId { get; private set; }
 
-    public void ChangeLastGame(GameId gameId) { }// => LastGameId = gameId;
+    public void ChangeLastGame(GameId gameId) => LastGameId = gameId;
 }

@@ -22,6 +22,10 @@
                     @*enemy.HandDeck.Cards[i];*@
                     <button class="card card-revers">card</button>
                 }
+                @for (int i = 0; i < 6 - enemy.HandDeck.Cards.Length; i++)
+                {
+                    <button class="card card-revers card-hidden">card</button>
+                }
             </div>
             <div class="col battling-deck">
                 <button class="card card-avers card-hidden">card</button>
@@ -29,6 +33,10 @@
                 {
                     @*enemy.BattlingDeck.Cards[i];*@
                     <button class="card card-avers">card</button>
+                }
+                @for (int i = 0; i < 6 - enemy.BattlingDeck.Cards.Length; i++)
+                {
+                    <button class="card card-revers card-hidden">card</button>
                 }
             </div>
         </section>
@@ -47,6 +55,10 @@
                         @*_game.Player.BattlingDeck.Cards[i];*@
                         <button class="card card-avers">card</button>
                     }
+                    @for (int i = 0; i < 6 - _game.Player.BattlingDeck.Cards.Length; i++)
+                    {
+                        <button class="card card-revers card-hidden">card</button>
+                    }
                 </div>
                 <div class="col hand-deck">
                     <button class="card card-revers hero-card">Hero@*_game.Player.HeroCard*@</button>
@@ -54,6 +66,10 @@
                     {
                         @*_game.Player.HandDeck.Cards[i];*@
                         <button class="card card-revers">card</button>
+                    }
+                    @for (int i = 0; i < 6 - _game.Player.HandDeck.Cards.Length; i++)
+                    {
+                        <button class="card card-revers card-hidden">card</button>
                     }
                 </div>
             </section>

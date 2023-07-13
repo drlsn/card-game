@@ -29,7 +29,7 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
         var playerDto = player.ToDTO()!;
 
         var enemyPlayers = game.Players.NotOfId(new UserId(query.PlayerId));
-        var enemyPlayersDtos = enemyPlayers.ToDTOs()!;
+        var enemyPlayersDtos = enemyPlayers.ToDTOs();
 
         var centerCardDto = game.CenterCard.ToDTO();
 
@@ -106,6 +106,9 @@ public static class Card_ToDTO_Converter
 {
     public static CardDTO ToDTO(this ICard card)
     {
+        if (card is null)
+            return null;
+
         var type = card.ToTypeString();
         if (card is ICardWithStats cardWithStats)
             return new CardDTO(type, cardWithStats.Statistics.ToDTO());
@@ -116,7 +119,7 @@ public static class Card_ToDTO_Converter
 
 public static class Player_ToDTO_Converter
 {
-    public static PlayerDTO? ToDTO(this Player player) => player ? null :
+    public static PlayerDTO? ToDTO(this Player player) => !player ? null :
         new PlayerDTO(
             player.Id.Value,
             Hero: new(player.HeroCard.ToTypeString(), player.HeroCard.Statistics.ToDTO()),
