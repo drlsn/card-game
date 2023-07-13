@@ -45,7 +45,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
         CommonPool = Players.ShuffleAllAndTakeHalfCards(random ?? new());
 
-        return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds());
+        return ActionController.SetNextExpectedAction(Players.ToIds(), TakeCardsToHand, TakeCardToHand);
     }
 
     public bool StartRound(Random random)
@@ -72,6 +72,24 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         });
 
         return ActionController.SetNextExpectedAction(PerformRound, PerformMove);
+    }
+
+    public bool TakeCardToHand(UserId playerId, CardToTake card, Random random = null) 
+    {
+        if (!ActionController.CanDo(TakeCardToHand, playerId))
+            return false;
+
+        var player = Players.OfId(playerId);
+        if (!player.CanTakeCardToHand(out int max))
+            return false;
+
+        if (card.Source == CardSource.CommonPool)
+            player.AddCardToHand(CommonPool.TakeCard(random ?? new()));
+        else
+            if (card.Source == CardSource.Own)
+            player.TakeCardToHand(random ?? new());
+
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardToHand, TakeCardsToHand, CalculateLayDownOrderPerPlayer);
     }
 
     public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random = null)

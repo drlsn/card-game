@@ -1,5 +1,4 @@
 ﻿using Corelibs.Basic.Blocks;
-using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
 using Corelibs.Basic.UseCases;
 using Mediator;
@@ -10,15 +9,13 @@ using Trinica.Entities.Users;
 
 namespace Trinica.UseCases.Gameplay;
 
-public class TakeCardsToHandCommandHandler : ICommandHandler<TakeCardsToHandCommand, Result>
+public class TakeCardToHandCommandHandler : ICommandHandler<TakeCardToHandCommand, Result>
 {
     private readonly IRepository<User, UserId> _userRepository;
     private readonly IRepository<Game, GameId> _gameRepository;
     private readonly IPublisher _publisher;
 
-    private static object _versionLock;
-
-    public TakeCardsToHandCommandHandler(
+    public TakeCardToHandCommandHandler(
         IRepository<User, UserId> userRepository,
         IRepository<Game, GameId> gameRepository,
         IPublisher publisher)
@@ -28,27 +25,32 @@ public class TakeCardsToHandCommandHandler : ICommandHandler<TakeCardsToHandComm
         _publisher = publisher;
     }
 
-    public async ValueTask<Result> Handle(TakeCardsToHandCommand command, CancellationToken ct)
+    public async ValueTask<Result> Handle(TakeCardToHandCommand command, CancellationToken ct)
     {
         var result = Result.Success();
 
         var user = await _userRepository.Get(new UserId(command.PlayerId), result);
         var game = await _gameRepository.Get(new GameId(command.GameId), result);
-        if (!game.TakeCardsToHand(user.Id, command.CardsToTake))
+        if (!game.TakeCardToHand(user.Id, command.CardToTake))
             return result.Fail();
 
-        game.CalculateLayDownOrderPerPlayer();
-
         await _publisher.Publish(new CardsTakenToHandEvent(user.Id, game.Id));
-        game.IncrementVersion(ref _versionLock);
+
+        if (game.CanDo(game.CalculateLayDownOrderPerPlayer))
+        {
+            if (game.CalculateLayDownOrderPerPlayer())
+                await _publisher.Publish(new LayCardDownOrderCalculatedEvent(game.Id, game.CardsLayOrderPerPlayer.ToArray()));
+        }
+
+        await _gameRepository.Save(game, result);
 
         return result;
     }
 }
 
-public record TakeCardsToHandCommand(string GameId, string PlayerId, CardToTake[] CardsToTake) : ICommand<Result>;
+public record TakeCardToHandCommand(string GameId, string PlayerId, CardToTake CardToTake) : ICommand<Result>;
 
-public class TakeCardsToHandCommandValidator : UserRequestValidator<StartBotGameCommand>
+public class TakeCardToHandCommandValidator : UserRequestValidator<TakeCardToHandCommand>
 {
-    public TakeCardsToHandCommandValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
+    public TakeCardToHandCommandValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
 }

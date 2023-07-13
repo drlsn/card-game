@@ -1,0 +1,78 @@
+﻿*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#board-container {
+  display: flex;
+  justify-content: center;
+  height: 100%; 
+  overflow: hidden;
+}
+
+#board {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+aside {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.cards {
+  padding: 20px;
+
+  display: grid;
+  gap: 20px;
+}
+
+.col {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+}
+
+#center-card {
+    background: rgb(100, 100, 100);
+    transform: translateX(calc(50% + 10px));
+}
+
+.hero-card {
+    background: rgb(230, 230, 180);
+}
+
+.card-player-deck {
+    background: rgb(210, 230, 210);
+}
+
+.card-common-deck {
+    background: rgb(230, 210, 230);
+}
+
+.action-bar {
+    position: absolute;
+    bottom: -50px;
+}
+
+.action-button {
+    border-radius: 5px;
+    background: rgb(222, 222, 222);
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+.action-button:hover {
+    background: rgb(180, 180, 180);
+}

@@ -27,6 +27,9 @@ public class BotHub :
     public async ValueTask Handle(CardsTakenToHandEvent ev, CancellationToken cancellationToken)
     {
         var game = _botGames[ev.GameId];
+        if (ev.PlayerId == game.BotId)
+            return;
+
         var random = new Random();
 
         using var scope = _serviceScopeFactory.CreateScope();

@@ -1,6 +1,5 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
-using Corelibs.Basic.Functional;
 using Corelibs.Basic.Maths;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay.Cards;
@@ -71,6 +70,12 @@ public class Player : Entity<UserId>
     public void AddCardToHand(ICard card)
     {
         HandDeck += card;
+    }
+
+    public bool CanTakeCardToHand(out int max)
+    {
+        max = MaxHandCardsCount - HandDeck.Count;
+        return max != 0;
     }
 
     public void TakeCardToHand(Random random) =>

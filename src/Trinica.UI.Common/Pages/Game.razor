@@ -11,81 +11,7 @@
     return;
 }
 
-<div id="board-container">
-    <div id="board">
-        <section class="cards">
-            @{ var enemy = _game.Enemies[0]; }
-            <div class="col hand-deck">
-                <button class="card card-revers hero-card">Hero@*enemy.HeroCard*@</button>
-                @for (int i = 0; i < enemy.HandDeck.Cards.Length; i++)
-                {
-                    @*enemy.HandDeck.Cards[i];*@
-                    <button class="card card-revers">card</button>
-                }
-                @for (int i = 0; i < 6 - enemy.HandDeck.Cards.Length; i++)
-                {
-                    <button class="card card-revers card-hidden">card</button>
-                }
-            </div>
-            <div class="col battling-deck">
-                <button class="card card-avers card-hidden">card</button>
-                @for (int i = 0; i < enemy.BattlingDeck.Cards.Length; i++)
-                {
-                    @*enemy.BattlingDeck.Cards[i];*@
-                    <button class="card card-avers">card</button>
-                }
-                @for (int i = 0; i < 6 - enemy.BattlingDeck.Cards.Length; i++)
-                {
-                    <button class="card card-revers card-hidden">card</button>
-                }
-            </div>
-        </section>
-
-        @if (_game.CenterCard is not null)
-        {
-            <button class="card card-revers" id="center-card">Center Card</button>
-        }
-
-        <section class="cards">
-            <section class="cards">
-                <div class="col battling-deck">
-                    <button class="card card-avers card-hidden">card</button>
-                    @for (int i = 0; i < _game.Player.BattlingDeck.Cards.Length; i++)
-                    {
-                        @*_game.Player.BattlingDeck.Cards[i];*@
-                        <button class="card card-avers">card</button>
-                    }
-                    @for (int i = 0; i < 6 - _game.Player.BattlingDeck.Cards.Length; i++)
-                    {
-                        <button class="card card-revers card-hidden">card</button>
-                    }
-                </div>
-                <div class="col hand-deck">
-                    <button class="card card-revers hero-card">Hero@*_game.Player.HeroCard*@</button>
-                    @for (int i = 0; i < _game.Player.HandDeck.Cards.Length; i++)
-                    {
-                        @*_game.Player.HandDeck.Cards[i];*@
-                        <button class="card card-revers">card</button>
-                    }
-                    @for (int i = 0; i < 6 - _game.Player.HandDeck.Cards.Length; i++)
-                    {
-                        <button class="card card-revers card-hidden">card</button>
-                    }
-                </div>
-            </section>
-        </section>
-    </div>
-
-    <aside>
-        <button class="card card-hidden">card</button>
-        <button class="card card-common-deck">Common Deck</button>
-        <button class="card card-player-deck">Own Deck</button>
-    </aside>
-
-    <div class="action-bar">
-        <button class="action-button">Take Cards</button>
-    </div>
-</div>
+<Board @ref=_board Game=@_game OnActionButtonClick=@OnActionButtonClick />
 
 @code {
     [Inject] public IQueryExecutor QueryExecutor { get; set; }
@@ -96,10 +22,17 @@
     private GetUserQueryResponse _user;
     private GetGameStateQueryResponse _game;
 
+    private Board _board;
+
     protected override async Task OnInitializedAsync()
     {
         var result = await CommandExecutor.Execute(new StartBotGameCommand(await Auth.GetUserId()));
         await RefreshView();
+    }
+
+    private async Task OnActionButtonClick(Board.ActionType actionType)
+    {
+        await _board.GreyOutNonDeckCards();
     }
 
     protected async Task<bool> RefreshView()

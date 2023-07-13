@@ -1,0 +1,101 @@
+﻿@using Trinica.UseCases.Gameplay
+
+@inherits BaseElement
+
+<div id="board-container">
+    <div id="board">
+        <section class="cards">
+            @{ var enemy = Game.Enemies[0]; }
+            <div class="col hand-deck">
+                <Card IsTransparent=true />
+                @GetCardRow(enemy.HandDeck.Cards, Card.CardDeckType.HandDeck, reversed: true)
+            </div>
+            <div class="col battling-deck">
+                @GetCard("", enemy.PlayerId, "Hero", Card.CardDeckType.Hero)
+                @GetCardRow(enemy.BattlingDeck.Cards, Card.CardDeckType.BattlingDeck)
+            </div>
+        </section>
+
+        @if (Game.CenterCard is not null)
+        {
+            @GetCard("", "", "Center", Card.CardDeckType.Center)
+        }
+        else
+        {
+            @GetTransparentCard()
+        }
+
+        <section class="cards">
+            <section class="cards">
+                <div class="col battling-deck">
+                    @GetCard("", Game.Player.PlayerId, "Hero", Card.CardDeckType.Hero)
+                    @GetCardRow(Game.Player.BattlingDeck.Cards, Card.CardDeckType.BattlingDeck)
+                </div>
+                <div class="col hand-deck">
+                    <Card IsTransparent=true />
+                    @GetCardRow(Game.Player.HandDeck.Cards, Card.CardDeckType.HandDeck)
+                </div>
+            </section>
+        </section>
+    </div>
+
+    <aside>
+        @GetCard("", enemy.PlayerId, "Enemy Deck", Card.CardDeckType.EnemyDeck)
+        @GetCard("", "", "Common Deck", Card.CardDeckType.CommonDeck)
+        @GetCard("", Game.Player.PlayerId, "Own Deck", Card.CardDeckType.OwnDeck)
+    </aside>
+
+    <div class="action-bar">
+        <button class="action-button" @onclick=@(() => OnActionButtonClick?.Invoke(ActionType.TakeCardToHand))>Take Cards</button>
+    </div>
+</div>
+
+@{
+    RenderFragment GetTransparentCard()
+    {
+        return builder =>
+        {
+            <Card IsTransparent=true />
+        };
+    }
+
+    RenderFragment GetCard(
+        string cardId, 
+        string playerId, 
+        string name,
+        Card.CardDeckType deckType,
+        bool reversed = false)
+    {
+        return builder =>
+        {
+            if (cardId.IsNullOrEmpty())
+                cardId = Guid.NewGuid().ToString();
+
+            <Card 
+                @ref=_cards[cardId]
+                Id=@cardId
+                Name=@name
+                PlayerId=@playerId
+                DeckType=@deckType  
+                IsReversed=@reversed />
+        };
+    }
+
+    RenderFragment GetCardRow(
+        CardDTO[] cards,
+        Card.CardDeckType deckType,
+        bool reversed = false)
+    {
+        return builder =>
+        {
+            @for (int i = 0; i < cards.Length; i++)
+            {
+                @GetCard("", Game.Player.PlayerId, deckType.Value, deckType, reversed)
+            }
+            @for (int i = 0; i < 6 - cards.Length; i++)
+            {
+                @GetTransparentCard()
+            }
+        };
+    }
+}

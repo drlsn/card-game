@@ -1,0 +1,44 @@
+﻿@using Corelibs.Basic.Functional;
+@inherits BaseElement
+
+@if (IsReversed)
+{
+    <div class="card @_grayedOutCssClass @_transparentCssClass"></div>
+    return;
+}
+
+<div class="card card-avers @_grayedOutCssClass @_transparentCssClass">
+    <h6>@Name</h6>
+</div>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string? PlayerId { get; set; }
+    [Parameter] public string? Name { get; set; }
+    [Parameter] public CardDeckType? DeckType { get; set; }
+    [Parameter] public bool IsTransparent { get; set; } = false;
+    [Parameter] public bool IsReversed { get; set; } = false;
+    [Parameter] public bool IsGrayedOut { get; set; } = false;
+
+    private string? _transparentCssClass => IsTransparent ? "card-hidden" : "";
+    private string? _grayedOutCssClass => IsGrayedOut ? "card-grayed-out" : "";
+
+    public record CardDeckType(string Value)
+    {
+        public static readonly CardDeckType BattlingDeck = new("Battling");
+        public static readonly CardDeckType HandDeck = new("Hand");
+        public static readonly CardDeckType Hero = new("Hero");
+        public static readonly CardDeckType OwnDeck = new("Own Deck");
+        public static readonly CardDeckType EnemyDeck = new("Enemy Deck");
+        public static readonly CardDeckType CommonDeck = new("Common Deck");
+        public static readonly CardDeckType Center = new("Center");
+    }
+
+    public Task Render() => InvokeAsync(StateHasChanged);
+
+    public Task SetGreyOut(bool value = true)
+    {
+        IsGrayedOut = value;
+        return InvokeAsync(StateHasChanged);
+    }
+}
