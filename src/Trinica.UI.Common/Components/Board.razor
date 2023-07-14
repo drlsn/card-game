@@ -40,13 +40,23 @@
     </div>
 
     <aside>
-        @GetCard("", enemy.PlayerId, "Enemy Deck", Card.CardDeckType.EnemyDeck)
-        @GetCard("", "", "Common Deck", Card.CardDeckType.CommonDeck)
-        @GetCard("", Game.Player.PlayerId, "Own Deck", Card.CardDeckType.OwnDeck)
+        @if (enemy.HasIdleCards)
+        {
+            @GetCard("", enemy.PlayerId, "Enemy Deck", Card.CardDeckType.EnemyDeck)
+        }
+        @if (Game.HasCommonCards)
+        {
+            @GetCard("", "", "Common Deck", Card.CardDeckType.CommonDeck)
+        }
+        @if (Game.Player.HasIdleCards)
+        {
+            @GetCard("", Game.Player.PlayerId, "Own Deck", Card.CardDeckType.OwnDeck)
+        }
     </aside>
 
     <div class="action-bar">
-        <button class="action-button" @onclick=@(() => OnActionButtonClick?.Invoke(ActionType.TakeCardToHand))>Take Cards</button>
+        @*<button class="action-button" @onclick=@(() => OnActionButtonClick?.Invoke(ActionType.TakeCardToHand))>Take Cards</button>*@
+        <h5 class="action-hint">@_actionHint</h5>
     </div>
 </div>
 
@@ -77,7 +87,9 @@
                 Name=@name
                 PlayerId=@playerId
                 DeckType=@deckType  
-                IsReversed=@reversed />
+                IsReversed=@reversed 
+                
+                OnCardClick=@OnCardClickInternal/>
         };
     }
 

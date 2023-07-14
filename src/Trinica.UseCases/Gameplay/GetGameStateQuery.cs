@@ -34,7 +34,14 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
         var centerCardDto = game.CenterCard.ToDTO();
 
         return result.With(
-            new GetGameStateQueryResponse(game.Id.Value, game.Version, state, playerDto, enemyPlayersDtos!, centerCardDto));
+            new GetGameStateQueryResponse(
+                game.Id.Value, 
+                game.Version, 
+                state, 
+                playerDto, 
+                enemyPlayersDtos!, 
+                HasCommonCards: game.CommonPool.Count > 0,
+                centerCardDto));
     }
 }
 
@@ -47,6 +54,7 @@ public record GetGameStateQueryResponse(
     GameStateDTO State,
     PlayerDTO Player,
     PlayerDTO[] Enemies,
+    bool HasCommonCards,
     CardDTO? CenterCard = null);
 
 public record GameStateDTO(
@@ -55,9 +63,15 @@ public record GameStateDTO(
     string[]? AlreadyMadeActionsPlayers = null,
     bool MustObeyOrder = false);
 
-public record PlayerDTO(string PlayerId, CardDTO Hero, CardDeckDTO BattlingDeck, CardDeckDTO HandDeck);
+public record PlayerDTO(
+    string PlayerId, 
+    CardDTO Hero, 
+    CardDeckDTO BattlingDeck, 
+    CardDeckDTO HandDeck,
+    bool HasIdleCards);
 
-public record CardDeckDTO(CardDTO[] Cards);
+public record CardDeckDTO(
+    CardDTO[] Cards);
 
 public record CardDTO(
     string Type,
@@ -99,7 +113,7 @@ public static class Statistics_ToDTO_Converter
 public static class FieldDeck_ToDTO_Converter
 {
     public static CardDeckDTO ToDTO(this FieldDeck deck) =>
-        new(deck.GetAllCards().Select(c => c.ToDTO()).ToArray());
+        new(Cards: deck.GetAllCards().Select(c => c.ToDTO()).ToArray());
 }
 
 public static class Card_ToDTO_Converter
@@ -124,7 +138,8 @@ public static class Player_ToDTO_Converter
             player.Id.Value,
             Hero: new(player.HeroCard.ToTypeString(), player.HeroCard.Statistics.ToDTO()),
             BattlingDeck: player.BattlingDeck.ToDTO(),
-            HandDeck: player.HandDeck.ToDTO());
+            HandDeck: player.HandDeck.ToDTO(),
+            HasIdleCards: player.IdleDeck.Count > 0);
 
     public static PlayerDTO?[]? ToDTOs(this IEnumerable<Player> players) =>
         players.Select(p => p.ToDTO()).ToArray();

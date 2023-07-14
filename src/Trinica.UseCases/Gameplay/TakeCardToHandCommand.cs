@@ -31,7 +31,7 @@ public class TakeCardToHandCommandHandler : ICommandHandler<TakeCardToHandComman
 
         var user = await _userRepository.Get(new UserId(command.PlayerId), result);
         var game = await _gameRepository.Get(new GameId(command.GameId), result);
-        if (!game.TakeCardToHand(user.Id, command.CardToTake))
+        if (!game.TakeCardToHand(user.Id, command.CardToTake.ToCardToTake()))
             return result.Fail();
 
         await _publisher.Publish(new CardsTakenToHandEvent(user.Id, game.Id));
@@ -48,7 +48,7 @@ public class TakeCardToHandCommandHandler : ICommandHandler<TakeCardToHandComman
     }
 }
 
-public record TakeCardToHandCommand(string GameId, string PlayerId, CardToTake CardToTake) : ICommand<Result>;
+public record TakeCardToHandCommand(string GameId, string PlayerId, string CardToTake) : ICommand<Result>;
 
 public class TakeCardToHandCommandValidator : UserRequestValidator<TakeCardToHandCommand>
 {

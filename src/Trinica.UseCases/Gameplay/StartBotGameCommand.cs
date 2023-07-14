@@ -1,4 +1,5 @@
 ﻿using Corelibs.Basic.Blocks;
+using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
 using Corelibs.Basic.UseCases;
@@ -34,9 +35,17 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
 
         var user = await _userRepository.Get(new UserId(command.PlayerId), result);
 
+        Game game;
+        if (user.LastGameId is not null)
+        {
+            game = await _gameRepository.Get(user.LastGameId, result);
+            if (result.IsSuccess && game is not null)
+                return result.Fail("Can't start another game while already in one.");
+        }
+
         var player = CreatePlayer(user.Id);
         var bot = CreatePlayer();
-        var game = new Game(EntityId.New<GameId>(), new[] { player, bot });
+        game = new Game(EntityId.New<GameId>(), new[] { player, bot });
         if (!game.StartGame(player.Id))
             return result.Fail();
 

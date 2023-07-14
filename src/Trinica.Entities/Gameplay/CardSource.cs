@@ -7,3 +7,12 @@ public record CardSource(string Value)
 }
 
 public record CardToTake(CardSource Source);
+
+public static class CardSourceExtensions
+{
+    public static CardToTake ToCardToTake(this string cardSource) =>
+        new CardToTake(new(cardSource));
+
+    public static CardToTake[] ToCardsToTake(this string[] cardSources) =>
+        cardSources.Select(c => c.ToCardToTake()).ToArray();
+}

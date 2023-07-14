@@ -11,7 +11,11 @@
     return;
 }
 
-<Board @ref=_board Game=@_game OnActionButtonClick=@OnActionButtonClick />
+<Board 
+    @ref=_board 
+    Game=@_game 
+    OnActionButtonClick=@OnActionButtonClick
+    OnCardClick=@OnCardClick />
 
 @code {
     [Inject] public IQueryExecutor QueryExecutor { get; set; }
@@ -30,9 +34,14 @@
         await RefreshView();
     }
 
-    private async Task OnActionButtonClick(Board.ActionType actionType)
+    private async Task OnActionButtonClick(Board.ActionType actionType) {}
+
+    private async Task OnCardClick(string cardId, Card.CardDeckType deckType)
     {
-        await _board.GreyOutNonDeckCards();
+        var result = await CommandExecutor.Execute(
+            new TakeCardToHandCommand(_game.Id, _game.Player.PlayerId, deckType.ToCardSourceStr()));
+
+        await RefreshView();
     }
 
     protected async Task<bool> RefreshView()

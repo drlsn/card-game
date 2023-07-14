@@ -38,8 +38,7 @@ public class BotHub :
         await mediator.Send(
             new TakeCardsToHandCommand(game.GameId.Value, game.BotId.Value, 
                 Enumerable.Range(0, 8)
-                    .Select(i => 
-                        new CardToTake(random.Next(2) == 0 ? CardSource.Own : CardSource.CommonPool))
+                    .Select(i => random.Next(2) == 0 ? CardSource.Own.Value : CardSource.CommonPool.Value)
                     .ToArray()));
     }
 }

@@ -1,4 +1,5 @@
 ﻿@using Corelibs.Basic.Functional;
+
 @inherits BaseElement
 
 @if (IsReversed)
@@ -7,11 +8,13 @@
     return;
 }
 
-<div class="card card-avers @_grayedOutCssClass @_transparentCssClass">
+<div class="card card-avers @_grayedOutCssClass @_transparentCssClass" @onclick=@OnCardClickInternal>
     <h6>@Name</h6>
 </div>
 
 @code {
+    public delegate Task OnCardClickDelegate(string cardId, Card.CardDeckType deckType);
+
     [Parameter] public string? Id { get; set; }
     [Parameter] public string? PlayerId { get; set; }
     [Parameter] public string? Name { get; set; }
@@ -19,9 +22,18 @@
     [Parameter] public bool IsTransparent { get; set; } = false;
     [Parameter] public bool IsReversed { get; set; } = false;
     [Parameter] public bool IsGrayedOut { get; set; } = false;
+    [Parameter] public bool IsWholeCardClickOnly { get; set; } = true;
+
+    [Parameter] public OnCardClickDelegate? OnCardClick { get; set; }
 
     private string? _transparentCssClass => IsTransparent ? "card-hidden" : "";
     private string? _grayedOutCssClass => IsGrayedOut ? "card-grayed-out" : "";
+
+    private async Task OnCardClickInternal()
+    {
+        if (IsWholeCardClickOnly && OnCardClick is not null)
+            await OnCardClick?.Invoke(Id, DeckType);
+    }
 
     public record CardDeckType(string Value)
     {

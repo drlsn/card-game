@@ -75,6 +75,7 @@ public class Player : Entity<UserId>
     public bool CanTakeCardToHand(out int max)
     {
         max = MaxHandCardsCount - HandDeck.Count;
+        max = max.Clamp(IdleDeck.Count);
         return max != 0;
     }
 
