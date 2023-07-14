@@ -66,6 +66,8 @@ public class StatisticPoint
         Modifiers = new();
         ModifiersLate = new();
     }
+
+    public static implicit operator StatisticPoint(int value) => new(value);
 }
 
 public record StatisticPointModifier(double Value, bool IsFactor = false, string Id = null);

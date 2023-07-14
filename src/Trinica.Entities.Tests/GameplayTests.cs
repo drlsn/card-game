@@ -281,8 +281,8 @@ public class GameplayTests
         var cardsToTake = new[] { 
             new CardToTake(CardSource.Own), new CardToTake(CardSource.Own), new CardToTake(CardSource.CommonPool) };
 
-        var cardsToLay1 = new CardToLay[] { new(unitCards1[0].Id), new(unitCards1[1].Id), new(unitCards2[0].Id) }; 
-        var cardsToLay2 = new CardToLay[] { new(unitCards2[2].Id), new(unitCards2[1].Id), new(unitCards1[2].Id) };
+        var cardsToLay1 = new CardToLay[] { new(unitCards2[2].Id), new(unitCards1[2].Id), new(unitCards1[0].Id) }; 
+        var cardsToLay2 = new CardToLay[] { new(unitCards2[0].Id), new(unitCards2[1].Id), new(unitCards1[1].Id) };
 
         Assert.IsTrue(game.StartGame(player1Id, random));
         Assert.IsTrue(game.StartGame(player2Id, random));

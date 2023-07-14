@@ -43,8 +43,10 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
                 return result.Fail("Can't start another game while already in one.");
         }
 
-        var player = CreatePlayer(user.Id);
-        var bot = CreatePlayer();
+        var decks = GetDecks();
+
+        var player = CreatePlayer(decks.Item1.Item1, decks.Item1.Item2, user.Id);
+        var bot = CreatePlayer(decks.Item2.Item1, decks.Item2.Item2);
         game = new Game(EntityId.New<GameId>(), new[] { player, bot });
         if (!game.StartGame(player.Id))
             return result.Fail();
@@ -55,7 +57,7 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
         if (!game.TakeCardsToCommonPool())
             return result.Fail();
 
-        _botHub.AddGame(user.Id, game.Id, game.ActionController);
+        _botHub.AddGame(bot.Id, game.Id, game.ActionController);
 
         await _gameRepository.Save(game, result);
 
@@ -65,7 +67,7 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
         return result;
     }
 
-    public static Player CreatePlayer(UserId userId = null) 
+    public static Player CreatePlayer(HeroCard hero, FieldDeck fieldDeck, UserId userId = null) 
     {
         var statistics = new StatisticPointGroup(
             attack: new(10),
@@ -73,10 +75,27 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
             speed: new(10),
             power: new(10));
 
-        var hero = new HeroCard(EntityId.New<HeroCardId>(), statistics);
-        var fieldDeck = new FieldDeck();
-
         return new Player(userId ?? EntityId.New<UserId>(), EntityId.New<DeckId>(), hero, fieldDeck);
+    }
+
+    public static ((HeroCard, FieldDeck), (HeroCard, FieldDeck)) GetDecks()
+    {
+        var all = DefaultCards.All.ToRemoveOnlyList();
+
+        var hero1 = all.Take(c => c is HeroCard) as HeroCard;
+        var hero2 = all.Take(c => c is HeroCard) as HeroCard;
+
+        var allButNoHeroes = all.Where(c => c is not HeroCard).ToArray();
+        var allButNoHeroesShuffled = allButNoHeroes.Shuffle().ToArray();
+
+        var count = allButNoHeroes.Length;
+        var halfCards1 = allButNoHeroesShuffled.Take(count / 2).ToArray();
+        var halfCards2 = allButNoHeroesShuffled.Skip(count / 2).ToArray();
+
+        var deck1 = new FieldDeck(halfCards1);
+        var deck2 = new FieldDeck(halfCards2);
+
+        return ((hero1, deck1), (hero2, deck2));
     }
 }
 

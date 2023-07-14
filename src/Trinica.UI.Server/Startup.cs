@@ -21,7 +21,9 @@ public static class Startup
 
         services.AddScoped<IAccessorAsync<ClaimsPrincipal>, ClaimsPrincipalAccessor>();
         
-        services.AddFluentValidationAutoValidation();
+        services.AddFluentValidationAutoValidation(config =>
+        {
+        });
         services.AddValidatorsFromAssembly(useCasesAssembly);
 
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));

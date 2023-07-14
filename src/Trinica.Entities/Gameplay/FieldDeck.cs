@@ -9,10 +9,10 @@ public class FieldDeck
 {
     public const int CardTypesCount = 4;
 
-    public List<UnitCard> UnitCards { get; private set; }
-    public List<SkillCard> SkillCards { get; private set; }
-    public List<ItemCard> ItemCards { get; private set; }
-    public List<SpellCard> SpellCards { get; private set; }
+    public List<UnitCard> UnitCards { get; private set; } = new();
+    public List<SkillCard> SkillCards { get; private set; } = new();
+    public List<ItemCard> ItemCards { get; private set; } = new();
+    public List<SpellCard> SpellCards { get; private set; } = new();
 
     public int Count =>
         UnitCards.Count + 
@@ -22,6 +22,11 @@ public class FieldDeck
 
     public int SpeedSum =>
         UnitCards.Select(c => c.Statistics.Speed.CalculatedValue).Sum();
+
+    public FieldDeck(IEnumerable<ICard> cards)
+    {
+        this.Assign(cards);
+    }
 
     public FieldDeck(
         List<UnitCard> unitCards = null,
@@ -33,6 +38,15 @@ public class FieldDeck
         SkillCards = skillCards ?? new();
         ItemCards = itemCards ?? new();
         SpellCards = spellCards ?? new();
+    }
+
+
+    public void Clear()
+    {
+        UnitCards.Clear();
+        SkillCards.Clear();
+        ItemCards.Clear();
+        SpellCards.Clear();
     }
 
     public void ShuffleAll(Random random)
@@ -86,53 +100,12 @@ public class FieldDeck
 
     public FieldDeck TakeCards(Random random, int n)
     {
-        var unitCards = UnitCards.ToRemoveOnlyList();
-        var skillCards = SkillCards.ToRemoveOnlyList();
-        var itemCards = ItemCards.ToRemoveOnlyList();
-        var spellCards = SpellCards.ToRemoveOnlyList();
-
-        var cardsCluster = new List<IRemoveOnlyList<object>>();
-        cardsCluster.AddIfNotEmpty(unitCards);
-        cardsCluster.AddIfNotEmpty(skillCards);
-        cardsCluster.AddIfNotEmpty(itemCards);
-        cardsCluster.AddIfNotEmpty(spellCards);
-
-        var cardsClusterSelected =
-            Enumerable.Range(0, CardTypesCount)
-                .Select(i => new List<object>(n))
-            .ToArray();
-
-        for (var i = 0; i < n; i++)
-        {
-            var cardGroupIndex = random.Next(cardsCluster.Count());
-            var cardGroup = cardsCluster[cardGroupIndex];
-            var cardIndex = random.Next(cardGroup.Count);
-
-            var cardSelected = cardGroup[cardIndex];
-            cardsClusterSelected[cardIndex].Add(cardSelected);
-            cardGroup.RemoveAt(cardIndex);
-        }
-
-        UnitCards = unitCards.CastToList<UnitCard>();
-        SkillCards = skillCards.CastToList<SkillCard>();
-        ItemCards = itemCards.CastToList<ItemCard>();
-        SpellCards = spellCards.CastToList<SpellCard>();
-
-        var unitCardsToReturn = cardsClusterSelected.Where(c => c.Contains<UnitCard>()).FirstOrDefault();
-        var skillCardsToReturn = cardsClusterSelected.Where(c => c.Contains<SkillCard>()).FirstOrDefault();
-        var itemCardsToReturn = cardsClusterSelected.Where(c => c.Contains<ItemCard>()).FirstOrDefault();
-        var spellCardsToReturn = cardsClusterSelected.Where(c => c.Contains<SpellCard>()).FirstOrDefault();
-
-        var unitCardsToReturnForReal = unitCardsToReturn is not null ? unitCardsToReturn.OfTypeToList<UnitCard>() : new();
-        var skillCardsToReturnForReal = skillCardsToReturn is not null ? skillCardsToReturn.OfTypeToList<SkillCard>() : new();
-        var itemCardsToReturnForReal = itemCardsToReturn is not null ? itemCardsToReturn.OfTypeToList<ItemCard>() : new();
-        var spellCardsToReturnForReal = spellCardsToReturn is not null ? spellCardsToReturn.OfTypeToList<SpellCard>() : new();
-
-        return new FieldDeck(
-            unitCardsToReturnForReal,
-            skillCardsToReturnForReal,
-            itemCardsToReturnForReal,
-            spellCardsToReturnForReal);
+        var cards = GetAllCards();
+        var cardsShuffled = cards.Shuffle(random).ToRemoveOnlyList();
+        var taken = cardsShuffled.Take(n);
+        Clear();
+        this.Assign(cardsShuffled);
+        return new(taken);
     }
 
     public static FieldDeck operator +(FieldDeck left, FieldDeck right)
@@ -171,4 +144,15 @@ public class FieldDeck
     public IEnumerable<ICard> GetAllCards() =>
         EnumerableExtensions.Concat<ICard>(
             UnitCards, SkillCards, ItemCards, SpellCards);
+}
+
+public static class FieldDeckExtensions
+{
+    public static void Assign(this FieldDeck deck, IEnumerable<ICard> cards)
+    {
+        deck.UnitCards.AddRange(cards.OfType<UnitCard>().ToList());
+        deck.SkillCards.AddRange(cards.OfType<SkillCard>().ToList());
+        deck.ItemCards.AddRange(cards.OfType<ItemCard>().ToList());
+        deck.SpellCards.AddRange(cards.OfType<SpellCard>().ToList());
+    }
 }

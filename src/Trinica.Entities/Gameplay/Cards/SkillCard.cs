@@ -3,8 +3,22 @@ using Trinica.Entities.SkillCards;
 
 namespace Trinica.Entities.Gameplay.Cards;
 
-public class SkillCard : ICard
+public class SkillCard : Card, ICard
 {
+    public SkillCard(
+        SkillCardId id, 
+        string name,
+        Race race,
+        Class @class,
+        Fraction fraction,
+        IEffect[] effects,
+        int? damage = null) : base(name, race, @class, fraction)
+    {
+        Id = id;
+        Effects = effects;
+        Damage = damage;
+    }
+
     public SkillCard(SkillCardId id, IEffect[] effects, int? damage = null)
     {
         Id = id;

@@ -3,17 +3,30 @@ using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay.Cards;
 
-public class HeroCard : ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICardWithItems
+public class HeroCard : Card, ICard, ICardWithSlots, ICardWithStats, ICombatCard, ICardWithItems
 {
     public HeroCardId Id { get; private set; }
+    
     public StatisticPointGroup Statistics { get; private set; }
     public SlotGroup Slots { get; private set; } = new(); 
 
     public List<IEffect> Effects { get; private set; } = new();
 
     public HeroCard(
-       HeroCardId id,
-       StatisticPointGroup statistics)
+        HeroCardId id,
+        string name,
+        Race race,
+        Class @class,
+        Fraction fraction,
+        StatisticPointGroup statistics) : base(name, race, @class, fraction)
+    {
+        Id = id;
+        Statistics = statistics;
+    }
+
+    public HeroCard(
+        HeroCardId id,
+        StatisticPointGroup statistics)
     {
         Id = id;
         Statistics = statistics;

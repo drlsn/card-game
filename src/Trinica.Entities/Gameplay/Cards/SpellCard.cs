@@ -3,7 +3,7 @@ using Trinica.Entities.SpellCards;
 
 namespace Trinica.Entities.Gameplay.Cards;
 
-public class SpellCard : ICard, ICombatCard, ICardWithElements
+public class SpellCard : Card, ICard, ICombatCard, ICardWithElements
 {
     public SpellCardId Id { get; private set; }
 
@@ -16,6 +16,22 @@ public class SpellCard : ICard, ICombatCard, ICardWithElements
        IEnumerable<IEffect> effects, 
        IEnumerable<Element> requiredElements,
        int damage = 0)
+    {
+        Id = id;
+        Effects = effects.ToList();
+        RequiredElements = requiredElements.ToArray();
+        Damage = damage;
+    }
+
+    public SpellCard(
+        SpellCardId id,
+        string name,
+        Race race,
+        Class @class,
+        Fraction fraction,
+        IEnumerable<IEffect> effects,
+        IEnumerable<Element> requiredElements,
+        int damage = 0) : base(name, race, @class, fraction)
     {
         Id = id;
         Effects = effects.ToList();
