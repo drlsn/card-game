@@ -8,11 +8,13 @@
 
   <ItemGroup>
     <PackageReference Include="Mediator.Abstractions" Version="2.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.19.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Corelibs.MongoDB\Corelibs.MongoDB\Corelibs.MongoDB.csproj" />
+    <ProjectReference Include="..\Trinica.UseCases\Trinica.UseCases.csproj" />
   </ItemGroup>
 
 </Project>

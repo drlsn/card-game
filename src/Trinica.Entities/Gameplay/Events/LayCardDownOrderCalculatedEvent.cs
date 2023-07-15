@@ -3,16 +3,14 @@ using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Gameplay.Events;
 
-public class LayCardDownOrderCalculatedEvent : INotification
+public class LayCardDownOrderCalculatedEvent : GameEvent
 {
     public LayCardDownOrderCalculatedEvent(
         GameId gameId,
-        UserId[] playerIds)
+        UserId[] playerIds) : base(gameId)
     {
-        GameId = gameId;
         PlayerIds = playerIds;
     }
 
-    public GameId GameId { get; }
     public UserId[] PlayerIds { get; }
 }

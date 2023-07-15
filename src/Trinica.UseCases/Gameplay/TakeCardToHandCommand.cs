@@ -52,5 +52,6 @@ public record TakeCardToHandCommand(string GameId, string PlayerId, string CardT
 
 public class TakeCardToHandCommandValidator : UserRequestValidator<TakeCardToHandCommand>
 {
+    public TakeCardToHandCommandValidator()  { }
     public TakeCardToHandCommandValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
 }

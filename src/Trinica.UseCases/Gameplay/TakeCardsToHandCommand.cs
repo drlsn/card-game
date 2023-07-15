@@ -1,9 +1,7 @@
 ﻿using Corelibs.Basic.Blocks;
-using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
-using Corelibs.Basic.UseCases;
+using FluentValidation;
 using Mediator;
-using System.Security.Claims;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Users;
@@ -15,8 +13,6 @@ public class TakeCardsToHandCommandHandler : ICommandHandler<TakeCardsToHandComm
     private readonly IRepository<User, UserId> _userRepository;
     private readonly IRepository<Game, GameId> _gameRepository;
     private readonly IPublisher _publisher;
-
-    private static object _versionLock;
 
     public TakeCardsToHandCommandHandler(
         IRepository<User, UserId> userRepository,
@@ -37,10 +33,16 @@ public class TakeCardsToHandCommandHandler : ICommandHandler<TakeCardsToHandComm
         if (!game.TakeCardsToHand(user.Id, command.CardsToTake.ToCardsToTake()))
             return result.Fail();
 
-        game.CalculateLayDownOrderPerPlayer();
-
         await _publisher.Publish(new CardsTakenToHandEvent(user.Id, game.Id));
-        game.IncrementVersion(ref _versionLock);
+
+        game.CalculateLayDownOrderPerPlayer();
+        if (game.CanDo(game.CalculateLayDownOrderPerPlayer))
+        {
+            if (game.CalculateLayDownOrderPerPlayer())
+                await _publisher.Publish(new LayCardDownOrderCalculatedEvent(game.Id, game.CardsLayOrderPerPlayer.ToArray()));
+        }
+
+        await _gameRepository.Save(game, result);
 
         return result;
     }
@@ -48,7 +50,7 @@ public class TakeCardsToHandCommandHandler : ICommandHandler<TakeCardsToHandComm
 
 public record TakeCardsToHandCommand(string GameId, string PlayerId, string[] CardsToTake) : ICommand<Result>;
 
-public class TakeCardsToHandCommandValidator : UserRequestValidator<StartBotGameCommand>
+public class TakeCardsToHandCommandValidator : AbstractValidator<TakeCardsToHandCommand>
 {
-    public TakeCardsToHandCommandValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
+    public TakeCardsToHandCommandValidator() {}
 }

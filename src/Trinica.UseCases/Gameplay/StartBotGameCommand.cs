@@ -8,7 +8,6 @@ using System.Security.Claims;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
-using Trinica.Entities.HeroCards;
 using Trinica.Entities.Users;
 
 namespace Trinica.UseCases.Gameplay;
@@ -17,10 +16,10 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
 {
     private readonly IRepository<User, UserId> _userRepository;
     private readonly IRepository<Game, GameId> _gameRepository;
-    private readonly BotHub _botHub;
+    private readonly IBotHub _botHub;
 
     public StartBotGameCommandHandler(
-        BotHub botHub,
+        IBotHub botHub,
         IRepository<User, UserId> userRepository,
         IRepository<Game, GameId> gameRepository)
     {

@@ -3,16 +3,11 @@ using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Gameplay.Events;
 
-public class CardsTakenToHandEvent : INotification
+public class CardsTakenToHandEvent : GameEvent
 {
     public CardsTakenToHandEvent(
         UserId playerId,
-        GameId gameId)
+        GameId gameId) : base(gameId, playerId)
     {
-        PlayerId = playerId;
-        GameId = gameId;
     }
-
-    public UserId PlayerId { get; }
-    public GameId GameId { get; }
 }

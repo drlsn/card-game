@@ -4,11 +4,13 @@ using Corelibs.MongoDB;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Mediator;
-using Trinica.UI.Server.Data;
 using System.Reflection;
 using System.Security.Claims;
-using Trinica.UseCases.Gameplay;
 using Trinica.Entities.Gameplay;
+using Trinica.Entities.Users;
+using Trinica.Infrastructure.UseCases.Gameplay;
+using Trinica.UI.Server.Data;
+using Trinica.UseCases.Gameplay;
 
 namespace Trinica.UI.Server;
 
@@ -21,9 +23,7 @@ public static class Startup
 
         services.AddScoped<IAccessorAsync<ClaimsPrincipal>, ClaimsPrincipalAccessor>();
         
-        services.AddFluentValidationAutoValidation(config =>
-        {
-        });
+        services.AddFluentValidationAutoValidation();
         services.AddValidatorsFromAssembly(useCasesAssembly);
 
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
@@ -34,10 +34,15 @@ public static class Startup
         services.AddScoped<ICommandExecutor, MediatorCommandExecutor>();
 
         services.AddMediator(opts => opts.ServiceLifetime = ServiceLifetime.Scoped);
-
         services.AddRepositories(environment, entitiesAssembly);
 
-        services.AddSingleton<BotHub>();
+        var botHub = new BotHub(_userMemoryRepository);
+        services.AddSingleton<IBotHub>(sp => botHub);
+        services.AddScoped<IBotHub>(sp => botHub);
+        services.AddScoped<BotHub>(sp => botHub);
+        services.AddHostedService(sp => 
+            new BotHubWorker(
+                sp.GetRequiredService<IServiceScopeFactory>()));
     }
 
     public static void AddRepositories(this IServiceCollection services, IWebHostEnvironment environment, Assembly assembly)
@@ -47,7 +52,27 @@ public static class Startup
 
         MongoConventionPackExtensions.AddIgnoreConventionPack();
 
-        services.AddSingleton<IRepository<Game, GameId>, InMemoryRepository<Game, GameId>>();
+        services.AddUserRepository();
+        services.AddSingleton<IRepository<Game, GameId>, MemoryRepository<Game, GameId>>();
         services.AddMongoRepositories(assembly, mongoConnectionString, databaseName);
+    }
+
+    private static MemoryRepository<User, UserId> _userMemoryRepository;
+    private static void AddUserRepository(this IServiceCollection services)
+    {
+        _userMemoryRepository = new MemoryRepository<User, UserId>();
+
+        services.AddScoped<IRepository<User, UserId>>(sp =>
+        {
+            var mongoRepository = new MongoDbRepository<User, UserId>(
+                sp.GetRequiredService<MongoConnection>(), User.DefaultCollectionName);
+
+            var memoryRepositoryDecorator = new MemoryRepositoryDecorator<User, UserId>(
+                _userMemoryRepository, mongoRepository);
+
+            return memoryRepositoryDecorator;
+        });
+
+        services.AddScoped<IMemoryRepository<User, UserId>>(sp => _userMemoryRepository);
     }
 }
