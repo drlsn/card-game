@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
+using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Users;
 
 namespace Trinica.UseCases.Gameplay;
@@ -17,15 +18,18 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
     private readonly IRepository<User, UserId> _userRepository;
     private readonly IRepository<Game, GameId> _gameRepository;
     private readonly IBotHub _botHub;
+    private readonly IPublisher _publisher;
 
     public StartBotGameCommandHandler(
         IBotHub botHub,
         IRepository<User, UserId> userRepository,
-        IRepository<Game, GameId> gameRepository)
+        IRepository<Game, GameId> gameRepository,
+        IPublisher publisher)
     {
         _botHub = botHub;
         _userRepository = userRepository;
         _gameRepository = gameRepository;
+        _publisher = publisher;
     }
 
     public async ValueTask<Result> Handle(StartBotGameCommand command, CancellationToken ct)
@@ -56,12 +60,14 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
         if (!game.TakeCardsToCommonPool())
             return result.Fail();
 
-        _botHub.AddGame(bot.Id, game.Id, game.ActionController);
+        await _botHub.AddGame(bot.Id, game.Id, game.ActionController);
 
         await _gameRepository.Save(game, result);
 
         user.ChangeLastGame(game.Id);
         await _userRepository.Save(user, result);
+
+        await _publisher.Publish(new GameStartedEvent(game.Id));
 
         return result;
     }

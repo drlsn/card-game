@@ -39,13 +39,13 @@ public class SpellCard : Card, ICard, ICombatCard, ICardWithElements
         Damage = damage;
     }
 
-    public Element[] RequiredElements { get; }
+    public Element[] RequiredElements { get; init; }
 
     CardId ICard.Id => Id;
     CardId ICombatCard.Id => Id;
 
     public bool DoesDamage => Damage > 0;
-    public int Damage { get; }
+    public int Damage { get; init; }
 
     public bool DoesPowerDamage(int skillIndex) => DoesDamage;
 

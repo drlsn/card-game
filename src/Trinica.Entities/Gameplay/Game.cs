@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
+using Corelibs.Basic.Repository;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
@@ -18,6 +19,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
     public int CenterCardRoundsAlive { get; private set; }
     public UserId[] CardsLayOrderPerPlayer { get; private set; }
 
+    [Ignore]
     public RoundSettings RoundSettings { get; private set; } = new();
 
     public GameActionController ActionController { get; private set; }
@@ -89,7 +91,11 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             if (card.Source == CardSource.Own)
             player.TakeCardToHand(random ?? new());
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardToHand, TakeCardsToHand, CalculateLayDownOrderPerPlayer);
+        var canMoveOn = Players.All(p => p.HandDeck.Count == 6 || p.IdleDeck.Count == 0);
+        if (canMoveOn)
+            return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
+
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardToHand, TakeCardsToHand);
     }
 
     public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random = null)
@@ -98,8 +104,15 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             return false;
 
         var player = Players.OfId(playerId);
+
+        if (!player.CanTakeCardToHand(out int max))
+            return false;
+
         cards.ForEach(card =>
         {
+            if (!player.CanTakeCardToHand(out int max))
+                return;
+
             if (card.Source == CardSource.CommonPool)
                 player.AddCardToHand(CommonPool.TakeCard(random ?? new()));
             else
@@ -107,7 +120,11 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 player.TakeCardToHand(random ?? new());
         });
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
+        var canMoveOn = Players.All(p => p.HandDeck.Count == 6 || p.IdleDeck.Count == 0);
+        if (canMoveOn)
+            return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
+
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardToHand, TakeCardsToHand);
     }
 
     public bool CalculateLayDownOrderPerPlayer()

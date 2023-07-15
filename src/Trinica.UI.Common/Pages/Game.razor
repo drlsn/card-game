@@ -32,6 +32,25 @@
     {
         var result = await CommandExecutor.Execute(new StartBotGameCommand(await Auth.GetUserId()));
         await RefreshView();
+
+        RunJob(_cancellationTokenSource.Token);
+    }
+
+    private CancellationTokenSource _cancellationTokenSource = new();
+    private async Task RunJob(CancellationToken ct)
+    {
+        var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        while (await timer.WaitForNextTickAsync(ct) && 
+            !ct.IsCancellationRequested)
+        {
+            await RefreshView();
+            Console.WriteLine("View Refreshed");
+        }
+    }
+
+    public void Dispose()
+    {
+        _cancellationTokenSource.Cancel();
     }
 
     private async Task OnActionButtonClick(Board.ActionType actionType) {}

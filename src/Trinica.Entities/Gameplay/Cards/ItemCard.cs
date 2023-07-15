@@ -26,7 +26,7 @@ public class ItemCard : Card, ICard
     public ItemCardId Id { get; private set; }
     CardId ICard.Id => Id;
     public StatisticPointGroup Statistics { get; private set; }
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; private set; } = true;
 
     public override string ToString() => Id.Value;
 }

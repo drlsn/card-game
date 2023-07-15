@@ -25,14 +25,36 @@ public class Player : Entity<UserId>
     public Dictionary<CardId, CardAssignment> CardAssignments { get; private set; } = new();
 
     public Player(
-        UserId playerId,
+        UserId id,
         DeckId deckId,
         HeroCard heroCard,
-        FieldDeck idleDeck) : base(playerId)
+        FieldDeck idleDeck) : base(id)
     {
         DeckId = deckId;
         HeroCard = heroCard;
         IdleDeck = idleDeck;
+    }
+
+    public Player(
+        UserId playerId,
+        uint version,
+        DeckId deckId,
+        HeroCard heroCard,
+        FieldDeck idleDeck,
+        FieldDeck handDeck,
+        FieldDeck battlingDeck,
+        FieldDeck deadDeck,
+        List<DiceOutcome> diceOutcomesToAssign,
+        Dictionary<CardId, CardAssignment> cardAssignments) : base(playerId, version)
+    {
+        DeckId = deckId;
+        HeroCard = heroCard;
+        IdleDeck = idleDeck;
+        HandDeck = handDeck;
+        BattlingDeck = battlingDeck;
+        DeadDeck = deadDeck;
+        DiceOutcomesToAssign = diceOutcomesToAssign;
+        CardAssignments = cardAssignments;
     }
 
     public FieldDeck ShuffleAllAndTakeHalfCards(Random random)

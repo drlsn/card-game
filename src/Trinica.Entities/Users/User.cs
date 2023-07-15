@@ -1,5 +1,4 @@
 ﻿using Corelibs.Basic.DDD;
-using Newtonsoft.Json;
 using Trinica.Entities.Gameplay;
 
 namespace Trinica.Entities.Users;

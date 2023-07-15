@@ -1,6 +1,7 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
 using Corelibs.Basic.UseCases;
+using FluentValidation;
 using Mediator;
 using System.Security.Claims;
 using Trinica.Entities.Gameplay;
@@ -50,8 +51,7 @@ public class TakeCardToHandCommandHandler : ICommandHandler<TakeCardToHandComman
 
 public record TakeCardToHandCommand(string GameId, string PlayerId, string CardToTake) : ICommand<Result>;
 
-public class TakeCardToHandCommandValidator : UserRequestValidator<TakeCardToHandCommand>
+public class TakeCardToHandCommandValidator : AbstractValidator<TakeCardToHandCommand>
 {
     public TakeCardToHandCommandValidator()  { }
-    public TakeCardToHandCommandValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
 }
