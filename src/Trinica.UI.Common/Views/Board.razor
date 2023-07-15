@@ -7,7 +7,7 @@
         <section class="cards">
             @{ var enemy = Game.Enemies[0]; }
             <div class="col hand-deck">
-                <Card IsTransparent=true />
+                @GetTransparentCard()
                 @GetCardRow(enemy.HandDeck.Cards, Card.CardDeckType.HandDeck, reversed: true)
             </div>
             <div class="col battling-deck">
@@ -32,7 +32,7 @@
                     @GetCardRow(Game.Player.BattlingDeck.Cards, Card.CardDeckType.BattlingDeck)
                 </div>
                 <div class="col hand-deck">
-                    <Card IsTransparent=true />
+                    @GetTransparentCard()
                     @GetCardRow(Game.Player.HandDeck.Cards, Card.CardDeckType.HandDeck)
                 </div>
             </section>
@@ -65,7 +65,7 @@
     {
         return builder =>
         {
-            <Card IsTransparent=true />
+            <Card class_topmost="card-small" IsTransparent=true />
         };
     }
 
@@ -82,6 +82,7 @@
                 cardId = Guid.NewGuid().ToString();
 
             <Card 
+                class_topmost="card-small"
                 @ref=_cards[cardId]
                 Id=@cardId
                 Name=@name

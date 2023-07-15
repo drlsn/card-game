@@ -1,0 +1,115 @@
+﻿@using Corelibs.Basic.Functional;
+
+@inherits BaseElement
+
+@if (IsReversed)
+{
+    <div class="card @_grayedOutCssClass @_transparentCssClass @class_topmost"></div>
+    return;
+}
+
+<div class="card card-avers @_grayedOutCssClass @_transparentCssClass @class_topmost" @onclick=@OnCardClickInternal>
+    <h2 class="name">Roodie the Coopier</h2>
+    <section class="info-panel">
+        <h6 class="info-panel-text race-text">Magus</h6>
+        <h6 class="info-panel-text class-text">Assasin</h6>
+        <h6 class="info-panel-text fraction-text">Red House</h6>
+    </section>
+    <section class="stats-panel">
+        <div class="stat-panel hp-stat-row">
+            <div class="stat-values-row">
+                <span class="stat-text">100</span>
+                <span class="stat-text">/</span>
+                <span class="stat-text">200</span>
+            </div>
+            <span class="stat-name">HP</span>
+        </div>
+        <div class="stat-panel">
+            <div class="stat-values-row">
+                <span class="stat-text">50</span>
+            </div>
+            <span class="stat-name">AT</span>
+        </div>
+        <div class="stat-panel">
+            <div class="stat-values-row">
+                <span class="stat-text">80</span>
+            </div>
+            <span class="stat-name">SP</span>
+        </div>
+        <div class="stat-panel">
+            <div class="stat-values-row">
+                <span class="stat-text">15</span>
+            </div>
+            <span class="stat-name">PW</span>
+        </div>
+    </section>@*
+    <section class="row">
+        <ul class="card-list effects">
+            <li class="el">
+                <img src="icon.svg" alt="effect icon" class="card-icon" />
+            </li>
+            <li class="el">
+                <img src="icon.svg" alt="effect icon" class="card-icon" />
+            </li>
+            <li class="el">
+                <img src="icon.svg" alt="effect icon" class="card-icon" />
+            </li>
+        </ul>
+        <ul class="card-list">
+            <li class="el number">200</li>
+            <li class="el number">20</li>
+            <li class="el number">0</li>
+            <li class="el number">2</li>
+        </ul>
+    </section>
+    <section class="row">
+        <p class="card-description">
+            Lorem, ipsum dolor sit amet consectetur adipisicing elit.
+        </p>
+    </section>*@
+</div>
+
+@code {
+    public delegate Task OnCardClickDelegate(string cardId, Card.CardDeckType deckType);
+
+    [Parameter] public string? class_topmost { get; set; }
+
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string? PlayerId { get; set; }
+    [Parameter] public string? Name { get; set; }
+    [Parameter] public CardDeckType? DeckType { get; set; }
+    [Parameter] public bool IsTransparent { get; set; } = false;
+    [Parameter] public bool IsReversed { get; set; } = false;
+    [Parameter] public bool IsGrayedOut { get; set; } = false;
+    [Parameter] public bool IsWholeCardClickOnly { get; set; } = true;
+
+    [Parameter] public OnCardClickDelegate? OnCardClick { get; set; }
+
+    private string? _transparentCssClass => IsTransparent ? "card-hidden" : "";
+    private string? _grayedOutCssClass => IsGrayedOut ? "card-grayed-out" : "";
+
+    private async Task OnCardClickInternal()
+    {
+        if (IsWholeCardClickOnly && OnCardClick is not null)
+            await OnCardClick?.Invoke(Id, DeckType);
+    }
+
+    public record CardDeckType(string Value)
+    {
+        public static readonly CardDeckType BattlingDeck = new("Battling");
+        public static readonly CardDeckType HandDeck = new("Hand");
+        public static readonly CardDeckType Hero = new("Hero");
+        public static readonly CardDeckType OwnDeck = new("Own Deck");
+        public static readonly CardDeckType EnemyDeck = new("Enemy Deck");
+        public static readonly CardDeckType CommonDeck = new("Common Deck");
+        public static readonly CardDeckType Center = new("Center");
+    }
+
+    public Task Render() => InvokeAsync(StateHasChanged);
+
+    public Task SetGreyOut(bool value = true)
+    {
+        IsGrayedOut = value;
+        return InvokeAsync(StateHasChanged);
+    }
+}

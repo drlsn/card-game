@@ -1,0 +1,160 @@
+﻿.card {
+    display: grid;
+
+    width: 80px;
+    height: 120px;
+
+    height: 825px;
+    width: 550px;
+
+    background-color: tan;
+    border-radius: 8px;
+    border: none;
+    padding-left: 5px;
+    padding-right: 5px;
+    cursor: pointer;
+    transition: all .1s ease-in-out;
+
+    position: relative;
+}
+
+.card:hover {
+    transform: scale(1.1);
+    transition: all .1s ease-in-out;
+}
+
+.card-avers {
+    background: rgb(180, 180, 180);
+}
+
+.card-revers {
+    background: rgb(20, 20, 20);
+}
+
+.card-hidden {
+    opacity: 0;
+    cursor: default;
+}
+
+.card-grayed-out {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.info-panel {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    left: 16px;
+    top: 14px;
+    gap: 3px;
+}
+
+.info-panel-text {
+    padding: 0;
+    margin: 0;
+    font-size: 16px;
+}
+
+.race-text {
+    font-size: 20px;
+}
+
+.class-text {
+    color: rgb(80, 80, 80);
+}
+
+.fraction-text {
+    text-transform: uppercase;
+    color: rgb(110, 110, 110);
+}
+
+.card-icon {
+  max-width: 10px;
+}
+
+.stats-panel {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    right: 16px;
+    bottom: 14px;
+    gap: 5px;
+}
+
+.stat-panel {
+    text-align: right;
+    display: flex;
+    gap: 5px;
+}
+
+.stat-values-row {
+    display: flex;
+    gap: 3px;
+}
+
+.stat-name {
+    text-align: right;
+    font-size: 20px;
+}
+
+.stat-text {
+    margin: 0;
+    padding: 0;
+    font-size: 20px;
+}
+
+.stat-row {
+    
+}
+
+.hp-stat-row {
+    
+}
+
+.card-list {
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-list .el {
+  font-size: 0.5vw;
+  display: flex;
+}
+
+.name {
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    right: 16px;
+    top: 14px;
+    font-weight: bold;
+    font-size: 25px;
+    font-weight: 500;
+    text-align: right;
+}
+
+.card-description {
+  text-align: center;
+  font-size: 0.5vw;
+}
+
+.card-slot {
+  width: 10px;
+  height: 10px;
+  background-color: black;
+  border-radius: 2px;
+}
+
+.card-list .number {
+  border: 1px solid black;
+  background-color: orange;
+  padding: 2px;
+}
+
+.effects .card-icon{
+  filter: invert(1);
+}

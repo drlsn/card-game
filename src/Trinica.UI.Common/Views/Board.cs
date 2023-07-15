@@ -4,7 +4,7 @@ using Trinica.UseCases.Gameplay;
 
 using GameEntity = Trinica.Entities.Gameplay.Game;
 
-namespace Trinica.UI.Common.Components;
+namespace Trinica.UI.Common.Views;
 
 public partial class Board : BaseElement
 {
