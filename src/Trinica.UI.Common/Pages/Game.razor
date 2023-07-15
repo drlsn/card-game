@@ -43,6 +43,9 @@
         while (await timer.WaitForNextTickAsync(ct) && 
             !ct.IsCancellationRequested)
         {
+            if (!await ShouldRefresh())
+                continue;
+
             await RefreshView();
             Console.WriteLine("View Refreshed");
         }
@@ -75,8 +78,16 @@
     {
         _user = await QueryExecutor.Execute<GetUserQuery, GetUserQueryResponse>(
             new GetUserQuery(await Auth.GetUserId()));
-        
+
         _game = await QueryExecutor.Execute<GetGameStateQuery, GetGameStateQueryResponse>(
                 new GetGameStateQuery(_user.LastGameId, _user.Id));
+    }
+
+    private async Task<bool> ShouldRefresh()
+    {
+        var response = await QueryExecutor.Execute<GetGameUpdateCheckQuery, GetGameUpdateCheckQueryResponse>(
+            new GetGameUpdateCheckQuery(_game.Id, _game.Version));
+
+        return response.hasToUpdate;
     }
 }

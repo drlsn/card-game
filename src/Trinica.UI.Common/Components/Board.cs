@@ -28,9 +28,9 @@ public partial class Board : BaseElement
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
-            return;
+            ;// return;
         
-        await SetState();
+        await SetState(firstRender);
     }
 
     private async Task OnCardClickInternal(string cardId, Card.CardDeckType deckType)
@@ -39,7 +39,7 @@ public partial class Board : BaseElement
             await OnCardClick?.Invoke(cardId, deckType);
     }
 
-    private async Task SetState()
+    private async Task SetState(bool firstRender)
     {
         var haveToWait = DoesHaveToWaitForAnotherPlayer();
         if (haveToWait)
@@ -51,10 +51,17 @@ public partial class Board : BaseElement
             if (!haveToWait && Game.Player.HandDeck.Cards.Length < 6)
                 _actionHint = "Select Deck to take a card from!";
 
-            await GreyOutNonDeckCards();
+            if (!haveToWait && Game.Enemies.First().HandDeck.Cards.Length < 6 &&
+                Game.Player.HandDeck.Cards.Length == 6)
+                _actionHint = "Wait for another player action";
+
+            if (firstRender)
+                await GreyOutNonDeckCards();
+
             await InvokeAsync(StateHasChanged);
         }
     }
+
 
     public Task GreyOutNonDeckCards()
     {

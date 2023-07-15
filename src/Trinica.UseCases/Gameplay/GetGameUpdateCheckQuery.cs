@@ -21,8 +21,10 @@ public class GetGameUpdateCheckQueryHandler : IQueryHandler<GetGameUpdateCheckQu
 
         var game = await _gameRepository.Get(new GameId(query.GameId), result);
         
+        bool hasToUpdate = game.Version != query.Version;
+
         return result.With(
-            new GetGameUpdateCheckQueryResponse(game.Version == query.Version));
+            new GetGameUpdateCheckQueryResponse(hasToUpdate));
     }
 }
 
@@ -30,4 +32,4 @@ public record GetGameUpdateCheckQuery(
     string GameId,
     uint Version) : IQuery<Result<GetGameUpdateCheckQueryResponse>>;
 
-public record GetGameUpdateCheckQueryResponse(bool HasUpdated);
+public record GetGameUpdateCheckQueryResponse(bool hasToUpdate);
