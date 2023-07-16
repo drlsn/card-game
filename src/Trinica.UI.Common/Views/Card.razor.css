@@ -42,6 +42,7 @@
     flex-direction: column;
     left: 3%;
     top: 2%;
+    top: 10%;
     gap: 0.2em;
 }
 
@@ -150,6 +151,6 @@
     position: absolute;
     left: 50%;
     top: 50%;
-
+    text-align:center;
     transform: translate(-50%, -50%);
 }

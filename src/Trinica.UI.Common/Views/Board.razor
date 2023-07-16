@@ -43,15 +43,15 @@
     <aside>
         @if (enemy.HasIdleCards)
         {
-            @GetCard("", enemy.PlayerId, "Enemy Deck", Card.CardDeckType.EnemyDeck, reversed: true)
+            @GetCard("", enemy.PlayerId, "Enemy Deck", Card.CardDeckType.EnemyDeck, reversed: true, reverseName: "Enemy Deck")
         }
         @if (Game.HasCommonCards)
         {
-            @GetCard("", "", "Common Deck", Card.CardDeckType.CommonDeck, reversed: true)
+            @GetCard("", "", "Common Deck", Card.CardDeckType.CommonDeck, reversed: true, reverseName: "Common Deck")
         }
         @if (Game.Player.HasIdleCards)
         {
-            @GetCard("", Game.Player.PlayerId, "Own Deck", Card.CardDeckType.OwnDeck, reversed: true)
+            @GetCard("", Game.Player.PlayerId, "Own Deck", Card.CardDeckType.OwnDeck, reversed: true, reverseName: "Own Deck")
         }
     </aside>
 
@@ -118,7 +118,8 @@
         string playerId,
         string name,
         Card.CardDeckType deckType,
-        bool reversed = false)
+        bool reversed = false,
+        string? reverseName = null)
     {
         return builder =>
         {
@@ -128,6 +129,7 @@
               PlayerId=@playerId
               DeckType=@deckType
               IsReversed=@reversed
+              ReverseName=@reverseName
               OnCardClick=@OnCardClickInternal />
         };
     }

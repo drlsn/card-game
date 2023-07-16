@@ -58,27 +58,33 @@ public partial class Board : BaseElement
             if (firstRender)
                 await GreyOutNonDeckCards();
 
-            await InvokeAsync(StateHasChanged);
         }
-    }
+        else
+        if (actions.Contains(nameof(GameEntity.CalculateLayDownOrderPerPlayer)))
+        {
+            _actionHint = "Calculating which player should start laying cards first...";
+        }
+        else
+        if (actions.Contains(nameof(GameEntity.LayCardsToBattle)))
+        {
+            await ClearOutAllCards();
+            if (!haveToWait && Game.Player.BattlingDeck.Cards.Length < 6)
+                _actionHint = "Lay The Cards Down or Skip";
+        }
 
+        await InvokeAsync(StateHasChanged);
+    }
 
     public Task GreyOutNonDeckCards()
     {
-        var cardsToGrayOut = Cards.Where(c =>
-        {
-            if (c.DeckType == Card.CardDeckType.CommonDeck)
-                return false;
-
-            if (c.DeckType == Card.CardDeckType.OwnDeck && c.PlayerId == Game.Player.PlayerId)
-                return false;
-
-            return true;
-        })
-        .ToArray();
+        var cardsToGrayOut = Cards
+            .Where(c => c.DeckType != Card.CardDeckType.CommonDeck && c.DeckType != Card.CardDeckType.OwnDeck)
+            .ToArray();
 
         return Task.WhenAll(cardsToGrayOut.Select(c => c.SetGreyOut()).ToArray());
     }
+
+    public Task ClearOutAllCards() =>Task.WhenAll(Cards.Select(c => c.SetGreyOut(false)).ToArray());
 
     private bool DoesHaveToWaitForAnotherPlayer()
     {

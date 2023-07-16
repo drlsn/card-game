@@ -136,6 +136,7 @@
 
         var rect = await JSRuntime.GetRect(Id);
         _baseFontSize = rect.Height * 0.03;
+        _baseFontSize = rect.Height * 0.07;
         _fontSizeStyle = $"font-size: {_baseFontSize}px;";
 
         await InvokeAsync(StateHasChanged);
