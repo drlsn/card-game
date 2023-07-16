@@ -1,6 +1,7 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
 using Mediator;
+using System.Numerics;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Users;
@@ -74,6 +75,12 @@ public record CardDeckDTO(
     CardDTO[] Cards);
 
 public record CardDTO(
+    string Id,
+    string Name,
+    string Race,
+    string Class,
+    string Fraction,
+    string Description,
     string Type,
     CardStatisticsDTO? Statistics = null);
 
@@ -125,9 +132,24 @@ public static class Card_ToDTO_Converter
 
         var type = card.ToTypeString();
         if (card is ICardWithStats cardWithStats)
-            return new CardDTO(type, cardWithStats.Statistics.ToDTO());
+            return new CardDTO(
+                card.Id.Value,
+                card.Name,
+                card.Race.Name,
+                card.Class.Name,
+                card.Fraction.Name,
+                Description: "",
+                type, 
+                cardWithStats.Statistics.ToDTO());
 
-        return new CardDTO(type);
+        return new CardDTO(
+            card.Id.Value,
+            card.Name,
+            card.Race.Name,
+            card.Class.Name,
+            card.Fraction.Name,
+            Description: "",
+            type);
     }
 }
 
@@ -136,7 +158,7 @@ public static class Player_ToDTO_Converter
     public static PlayerDTO? ToDTO(this Player player) => !player ? null :
         new PlayerDTO(
             player.Id.Value,
-            Hero: new(player.HeroCard.ToTypeString(), player.HeroCard.Statistics.ToDTO()),
+            Hero: player.HeroCard.ToDTO(),
             BattlingDeck: player.BattlingDeck.ToDTO(),
             HandDeck: player.HandDeck.ToDTO(),
             HasIdleCards: player.IdleDeck.Count > 0);

@@ -3,6 +3,7 @@
 @inherits BaseElement
 
 <div id="board-container">
+    @*<Card class_topmost="card-view" Id="nigin" />*@
     <div id="board">
         <section class="cards">
             @{ var enemy = Game.Enemies[0]; }
@@ -11,7 +12,7 @@
                 @GetCardRow(enemy.HandDeck.Cards, Card.CardDeckType.HandDeck, reversed: true)
             </div>
             <div class="col battling-deck">
-                @GetCard("", enemy.PlayerId, "Hero", Card.CardDeckType.Hero)
+                @GetCardByDTO(enemy.Hero, enemy.PlayerId, Card.CardDeckType.Hero)
                 @GetCardRow(enemy.BattlingDeck.Cards, Card.CardDeckType.BattlingDeck)
             </div>
         </section>
@@ -28,7 +29,7 @@
         <section class="cards">
             <section class="cards">
                 <div class="col battling-deck">
-                    @GetCard("", Game.Player.PlayerId, "Hero", Card.CardDeckType.Hero)
+                    @GetCardByDTO(Game.Player.Hero, Game.Player.PlayerId, Card.CardDeckType.Hero)
                     @GetCardRow(Game.Player.BattlingDeck.Cards, Card.CardDeckType.BattlingDeck)
                 </div>
                 <div class="col hand-deck">
@@ -42,15 +43,15 @@
     <aside>
         @if (enemy.HasIdleCards)
         {
-            @GetCard("", enemy.PlayerId, "Enemy Deck", Card.CardDeckType.EnemyDeck)
+            @GetCard("", enemy.PlayerId, "Enemy Deck", Card.CardDeckType.EnemyDeck, reversed: true)
         }
         @if (Game.HasCommonCards)
         {
-            @GetCard("", "", "Common Deck", Card.CardDeckType.CommonDeck)
+            @GetCard("", "", "Common Deck", Card.CardDeckType.CommonDeck, reversed: true)
         }
         @if (Game.Player.HasIdleCards)
         {
-            @GetCard("", Game.Player.PlayerId, "Own Deck", Card.CardDeckType.OwnDeck)
+            @GetCard("", Game.Player.PlayerId, "Own Deck", Card.CardDeckType.OwnDeck, reversed: true)
         }
     </aside>
 
@@ -65,32 +66,69 @@
     {
         return builder =>
         {
-            <Card class_topmost="card-small" IsTransparent=true />
+            <Card IsTransparent=true />
+        };
+    }
+
+    RenderFragment GetCardByDTO(
+        CardDTO card,
+        string playerId, 
+        Card.CardDeckType deckType,
+        bool reversed = false)
+    {
+        return builder =>
+        {
+            if (card.Statistics is not null)
+            {
+                <Card @ref=_cards[card.Id]
+                    Id=@(!card.Id.IsNullOrEmpty() ? card.Id : Guid.NewGuid().ToString())
+                    Name=@card.Name
+                    RaceName=@card.Race
+                    ClassName=@card.Class
+                    FractionName=@card.Fraction
+                    HP=@(new Card.Stat(@card.Statistics.HP.Current, @card.Statistics.HP.Original))
+                    Attack=@(new Card.Stat(@card.Statistics.Attack.Current))
+                    Speed=@(new Card.Stat(@card.Statistics.Speed.Current))
+                    Power=@(new Card.Stat(@card.Statistics.Power.Current))
+                    PlayerId=@playerId
+                    DeckType=@deckType
+                    IsReversed=@reversed
+                    Type=@card.Type
+                    OnCardClick=@OnCardClickInternal />
+            }
+            else
+            {
+                <Card @ref=_cards[card.Id]
+                    Id=@(!card.Id.IsNullOrEmpty() ? card.Id : Guid.NewGuid().ToString())
+                    Name=@card.Name
+                    RaceName=@card.Race
+                    ClassName=@card.Class
+                    FractionName=@card.Fraction
+                    PlayerId=@playerId
+                    DeckType=@deckType
+                    IsReversed=@reversed
+                    Type=@card.Type
+                    OnCardClick=@OnCardClickInternal />
+            }
         };
     }
 
     RenderFragment GetCard(
-        string cardId, 
-        string playerId, 
+        string cardId,
+        string playerId,
         string name,
         Card.CardDeckType deckType,
         bool reversed = false)
     {
         return builder =>
         {
-            if (cardId.IsNullOrEmpty())
-                cardId = Guid.NewGuid().ToString();
-
-            <Card 
-                class_topmost="card-small"
-                @ref=_cards[cardId]
-                Id=@cardId
-                Name=@name
-                PlayerId=@playerId
-                DeckType=@deckType  
-                IsReversed=@reversed 
-                
-                OnCardClick=@OnCardClickInternal/>
+            <Card @ref=_cards[cardId]
+              Id=@(!cardId.IsNullOrEmpty() ? cardId : Guid.NewGuid().ToString())
+              Name=@name
+              PlayerId=@playerId
+              DeckType=@deckType
+              IsReversed=@reversed
+              OnCardClick=@OnCardClickInternal />
         };
     }
 
@@ -103,7 +141,7 @@
         {
             @for (int i = 0; i < cards.Length; i++)
             {
-                @GetCard("", Game.Player.PlayerId, deckType.Value, deckType, reversed)
+                @GetCardByDTO(cards[i], Game.Player.PlayerId, deckType, reversed)
             }
             @for (int i = 0; i < 6 - cards.Length; i++)
             {

@@ -6,6 +6,10 @@ namespace Trinica.Entities.Gameplay;
 public interface ICard
 {
     CardId Id { get; }
+    string Name { get; }
+    Race Race { get; }
+    Class Class { get; }
+    Fraction Fraction { get; }
 }
 
 public static class CardExtensions
