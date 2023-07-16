@@ -36,7 +36,7 @@ public static class DefaultCards
         new StatisticPointGroup(
             attack: 20,
             hp: 200,
-            speed: 20,
+            speed: 15,
             power: 0));
 
 
@@ -325,7 +325,7 @@ public static class DefaultCards
         new StatisticPointGroup(
             attack: 20,
             power: 0,
-            speed: 20,
+            speed: 25,
             hp: 200
         )
     );
@@ -339,7 +339,7 @@ public static class DefaultCards
         new StatisticPointGroup(
             attack: 20,
             power: 0,
-            speed: 20,
+            speed: 24,
             hp: 200
         )
     );
@@ -616,7 +616,7 @@ public static class DefaultCards
         new StatisticPointGroup(
             attack: 20,
             power: 0,
-            speed: 20,
+            speed: 22,
             hp: 200
         )
     );
@@ -630,7 +630,7 @@ public static class DefaultCards
         new StatisticPointGroup(
             attack: 20,
             power: 0,
-            speed: 20,
+            speed: 18,
             hp: 200
         )
     );

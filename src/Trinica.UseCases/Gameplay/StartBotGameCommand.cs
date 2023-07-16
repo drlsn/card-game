@@ -85,17 +85,16 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
 
     public static ((HeroCard, FieldDeck), (HeroCard, FieldDeck)) GetDecks()
     {
-        var all = DefaultCards.All.ToRemoveOnlyList();
+        var all = DefaultCards.All.Shuffle().ToRemoveOnlyList();
 
         var hero1 = all.Take(c => c is HeroCard) as HeroCard;
         var hero2 = all.Take(c => c is HeroCard) as HeroCard;
 
         var allButNoHeroes = all.Where(c => c is not HeroCard).ToArray();
-        var allButNoHeroesShuffled = allButNoHeroes.Shuffle().ToArray();
 
         var count = allButNoHeroes.Length;
-        var halfCards1 = allButNoHeroesShuffled.Take(count / 2).ToArray();
-        var halfCards2 = allButNoHeroesShuffled.Skip(count / 2).ToArray();
+        var halfCards1 = allButNoHeroes.Take(count / 2).ToArray();
+        var halfCards2 = allButNoHeroes.Skip(count / 2).ToArray();
 
         var deck1 = new FieldDeck(halfCards1);
         var deck2 = new FieldDeck(halfCards2);
