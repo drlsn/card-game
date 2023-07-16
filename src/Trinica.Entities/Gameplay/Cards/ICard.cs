@@ -1,7 +1,7 @@
 ﻿using Corelibs.Basic.Collections;
 using Trinica.Entities.Shared;
 
-namespace Trinica.Entities.Gameplay;
+namespace Trinica.Entities.Gameplay.Cards;
 
 public interface ICard
 {
@@ -15,5 +15,5 @@ public interface ICard
 public static class CardExtensions
 {
     public static bool ContainsOfId(this IEnumerable<ICard> cards, CardId id) =>
-        cards.Contains(card => card.Id == id);   
+        cards.Contains(card => card.Id == id);
 }

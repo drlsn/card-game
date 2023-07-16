@@ -1,4 +1,5 @@
 ﻿using Corelibs.Basic.Collections;
+using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.Gameplay;

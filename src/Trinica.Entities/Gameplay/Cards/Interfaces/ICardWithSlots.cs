@@ -1,4 +1,4 @@
-﻿namespace Trinica.Entities.Gameplay;
+﻿namespace Trinica.Entities.Gameplay.Cards;
 
 public interface ICardWithSlots
 {
