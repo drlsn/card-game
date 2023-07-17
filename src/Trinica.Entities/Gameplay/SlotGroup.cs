@@ -19,9 +19,17 @@ public class SlotGroup
     public void AddCards(ICard[] cards) =>
         cards.ForEach(c => AddCard(c));
 
-    public bool AddCard(ICard card)
+    public bool CanAddCard()
     {
         if (OrderedCards.Count >= MaxSlots)
+            return false;
+
+        return true;
+    }
+
+    public bool AddCard(ICard card)
+    {
+        if (!CanAddCard())
             return false;
 
         OrderedCards ??= new();

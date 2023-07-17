@@ -1,5 +1,4 @@
-﻿using Mediator;
-using Trinica.Entities.Users;
+﻿using Trinica.Entities.Gameplay.Cards;
 
 namespace Trinica.Entities.Gameplay.Events;
 
@@ -7,10 +6,20 @@ public class LayCardDownOrderCalculatedEvent : GameEvent
 {
     public LayCardDownOrderCalculatedEvent(
         GameId gameId,
-        UserId[] playerIds) : base(gameId)
+        PlayerData[] players) : base(gameId)
     {
-        PlayerIds = playerIds;
+        Players = players;
     }
 
-    public UserId[] PlayerIds { get; }
+    public PlayerData[] Players { get; }
+}
+
+public static class LayCardDownOrderCalculatedEventExtensions
+{
+    public static PlayerData[] ToPlayerData(this Player[] players, Func<ICard, string> toTypeStringFunc) =>
+        players.Select(p => new PlayerData(
+            p.Id,
+            p.HandDeck.GetAllCards().Select(c => new CardData(c.Id, toTypeStringFunc(c))).ToArray(),
+            p.BattlingDeck.GetAllCards().Select(c => new CardData(c.Id, toTypeStringFunc(c))).ToArray()))
+        .ToArray();
 }

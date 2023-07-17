@@ -80,10 +80,10 @@ public class FieldDeck
     public FieldDeck TakeCards(CardId[] cardsToTake)
     {
         var deckToTake = new FieldDeck(
-            UnitCards.Where(c => cardsToTake.Contains(c.Id)).ToList(),
-            SkillCards.Where(c => cardsToTake.Contains(c.Id)).ToList(),
-            ItemCards.Where(c => cardsToTake.Contains(c.Id)).ToList(),
-            SpellCards.Where(c => cardsToTake.Contains(c.Id)).ToList());
+            UnitCards.Where(c => cardsToTake.Any(ctt => ctt.Value == c.Id.Value)).ToList(),
+            SkillCards.Where(c => cardsToTake.Any(ctt => ctt.Value == c.Id.Value)).ToList(),
+            ItemCards.Where(c => cardsToTake.Any(ctt => ctt.Value == c.Id.Value)).ToList(),
+            SpellCards.Where(c => cardsToTake.Any(ctt => ctt.Value == c.Id.Value)).ToList());
 
         var leftDeck = this - deckToTake;
 

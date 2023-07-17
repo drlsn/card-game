@@ -32,7 +32,7 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
         var enemyPlayers = game.Players.NotOfId(new UserId(query.PlayerId));
         var enemyPlayersDtos = enemyPlayers.ToDTOs();
 
-        var centerCardDto = game.CenterCard.ToDTO();
+        var centerCardDto = game.CenterCard?.Card.ToDTO();
 
         return result.With(
             new GetGameStateQueryResponse(
@@ -42,7 +42,8 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
                 playerDto, 
                 enemyPlayersDtos!, 
                 HasCommonCards: game.CommonPool.Count > 0,
-                centerCardDto));
+                centerCardDto,
+                game.CenterCard?.PlayerId?.Value));
     }
 }
 
@@ -56,7 +57,8 @@ public record GetGameStateQueryResponse(
     PlayerDTO Player,
     PlayerDTO[] Enemies,
     bool HasCommonCards,
-    CardDTO? CenterCard = null);
+    CardDTO? CenterCard = null,
+    string? CenterCardPlayerId = null);
 
 public record GameStateDTO(
     string[] ExpectedActionTypes,

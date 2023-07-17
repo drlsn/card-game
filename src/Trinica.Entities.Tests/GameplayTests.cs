@@ -75,8 +75,8 @@ public class GameplayTests
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player2Id));
         {
-            Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
-            Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
+            Assert.IsFalse(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
+            Assert.IsFalse(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
         }
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player1Id));
@@ -220,8 +220,8 @@ public class GameplayTests
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player2Id));
         {
-            Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
-            Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
+            Assert.IsFalse(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
+            Assert.IsFalse(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
         }
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player1Id));

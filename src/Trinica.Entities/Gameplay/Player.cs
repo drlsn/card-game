@@ -3,6 +3,7 @@ using Corelibs.Basic.DDD;
 using Corelibs.Basic.Maths;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay.Cards;
+using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
@@ -111,6 +112,52 @@ public class Player : Entity<UserId>
         HandDeck += IdleDeck.TakeCards(random, n);
     }
 
+    public bool CanLayCardDownToTarget(CardAndOwner targetCard)
+    {
+        var handCards = HandDeck.GetAllCards();
+        if (targetCard is not null)
+        {
+            if (targetCard.PlayerId != Id)
+                return false;
+
+            if (targetCard is not ICardWithSlots targetCardWithSlots)
+                return false;
+
+            if (!targetCardWithSlots.Slots.CanAddCard())
+                return false;
+
+            return handCards.Any(card => card is SkillCard || card is ItemCard);
+        }
+
+        return handCards.Any(card => card is ICombatCard);
+    }
+
+    public bool CanLayCardDown()
+    {
+        if (HandDeck.Count == 0)
+            return false;
+
+        var handCards = HandDeck.GetAllCards();
+        // Has Free Battling Spot and Combat Card in Hand
+        if (BattlingDeck.Count < MaxBattlingCardsCount &&
+            HandDeck.Count > 0 &&
+            handCards.Any(card => card is ICombatCard))
+            return true;
+
+        // Has Some or No Battling Spots, Battling Cards with Slots Free and Skills or Items Cards in Hand
+        var battlingCards = BattlingDeck.GetAllCards();
+        var battlingCardsWithSlots = battlingCards.OfType<ICardWithSlots>().ToArray();
+        var haveAnyBattlingCardWithFreeSlot = battlingCardsWithSlots.Any(card => card.Slots.CanAddCard());
+        if (haveAnyBattlingCardWithFreeSlot &&
+            handCards.Any(card => card is ItemCard || card is SkillCard))
+            return true;
+
+        return false;
+    }
+
+    public bool LayCardToBattle(CardToLay card) =>
+        LayCardsToBattle(new[] { card });
+
     public bool LayCardsToBattle(CardToLay[] cards)
     {
         if (cards.Length == 0)
@@ -128,13 +175,13 @@ public class Player : Entity<UserId>
         var cardsToAdd = new List<ICard>();
         foreach (var cardToLay in cards)
         {
-            if (!handCards.TryGetValue(cardToLay.SourceCardId, out var handCard))
+            if (!handCards.TryGetValue(cardToLay.SourceCardId.Value, out var handCard))
                 continue;
 
-            var hasTargetCard = cardToLay.TargetCardId is not null;
+            var hasTargetCard = cardToLay.TargetCardId is not null && !cardToLay.TargetCardId.Value.IsNullOrEmpty();
             if (hasTargetCard)
             {
-                var doesTargetCardExist = battlingCards.TryGetValue(cardToLay.TargetCardId, out var battlingCard);
+                var doesTargetCardExist = battlingCards.TryGetValue(cardToLay.TargetCardId!.Value, out var battlingCard);
                 var cardWithSlots = battlingCard as ICardWithSlots;
                 var canTargetCardBePutToSlot = handCard is SkillCard || handCard is ItemCard;
                 if (hasTargetCard &&
@@ -147,7 +194,8 @@ public class Player : Entity<UserId>
                 }
             }
             
-            cardsToAdd.Add(handCard);
+            if (handCard is not SkillCard && handCard is not ItemCard)
+                cardsToAdd.Add(handCard);
         }
 
         BattlingDeck += cardsToAdd;
@@ -343,6 +391,6 @@ public static class CardsExtensions
     public static CardId[] ToCardIds(this IEnumerable<CardToLay> cards) =>
         cards.Select(c => c.SourceCardId).ToArray();
 
-    public static IDictionary<CardId, ICard> ToIdDict(this IEnumerable<ICard> cards) =>
-        cards.ToDictionary(c => c.Id);
+    public static IDictionary<string, ICard> ToIdDict(this IEnumerable<ICard> cards) =>
+        cards.ToDictionary(c => c.Id.Value);
 }

@@ -1,10 +1,13 @@
 ﻿using Corelibs.Basic.Blocks;
+using Corelibs.Basic.Collections;
 using Corelibs.Basic.Functional;
 using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Events;
+using Trinica.Entities.Shared;
 using Trinica.UseCases.Gameplay;
 
 namespace Trinica.Infrastructure.UseCases.Gameplay;
@@ -50,6 +53,18 @@ public class BotHubWorker : BackgroundService
                     await PostHandle(gameStartedEvent, game, mediator, stoppingToken);
                     break;
 
+                case LayCardDownOrderCalculatedEvent layCardDownOrderCalculatedEvent:
+                    await PostHandle(layCardDownOrderCalculatedEvent, game, mediator, stoppingToken);
+                    break;
+
+                case CardsLayPassedByPlayerEvent cardsLayPassedByPlayerEvent:
+                    await PostHandle(cardsLayPassedByPlayerEvent, game, mediator, stoppingToken);
+                    break;
+
+                case CardsLaidDownEvent cardsLaidDownEvent:
+                    await PostHandle(cardsLaidDownEvent, game, mediator, stoppingToken);
+                    break;
+
                 default:
                     continue;
             }//todo: remove obsolete games!
@@ -58,39 +73,85 @@ public class BotHubWorker : BackgroundService
 
     #region Event Handlers
 
-    public async ValueTask PostHandle(
+    public ValueTask PostHandle(
         GameStartedEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
     {
-        var random = new Random();
-        var delays = Enumerable.Range(0, 6).Select(i => random.Next(3000, 8000)).ToArray();
-        Task.Run(Send, ct);
-
-        async Task Send()
+        Task.Run(() => RunPeriodicTask(async random =>
         {
-            try
-            {
-                var result = Result.Success();
-                while (result.IsSuccess && !ct.IsCancellationRequested)
-                {
-                    var delay = random.Next(500, 1500);
-                    var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(delay));
-                    
-                    await timer.WaitForNextTickAsync(ct);
-                    
-                    var source = random.Next(2) == 0 ? CardSource.Own.Value : CardSource.CommonPool.Value;
-                    result = await mediator.Send(
-                        new TakeCardToHandCommand(game.GameId.Value, game.BotId.Value, source));
+            var source = random.Next(2) == 0 ? CardSource.Own.Value : CardSource.CommonPool.Value;
+            return await mediator.Send(
+                new TakeCardToHandCommand(game.GameId.Value, game.BotId.Value, source));
+        }, ct));
 
-                    Console.WriteLine($"Bot made take card. Result - {result.IsSuccess}");
-                }
-            }
-            catch (Exception ex)
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask PostHandle(
+        LayCardDownOrderCalculatedEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
+    {
+        if (ev.Players.First().Id != game.BotId)
+            return ValueTask.CompletedTask;
+
+        var botPlayer = ev.Players.First(p => p.Id == game.BotId);
+        var handCards = new Queue<CardData>(botPlayer.HandDeck);
+        Task.Run(() => RunPeriodicTask(async random =>
+        {
+            if (handCards.IsEmpty())
             {
-                Console.WriteLine(ex);
+                var result2 = await mediator.Send(
+                    new PassLayCardToBattleCommand(game.GameId.Value, game.BotId.Value));
+
+                return Result.Failure();
             }
-            Console.WriteLine($"Finished Taking Cards for bot - {game.BotId.Value}");
-        }
+
+            var handCard = handCards.Dequeue();
+            var result = await mediator.Send(
+                new LayCardToBattleCommand(game.GameId.Value, game.BotId.Value, handCard.Id.Value));
+
+            return Result.Success();
+        }, ct));
+
+        return ValueTask.CompletedTask;
+    }
+
+    public async ValueTask PostHandle(
+        CardsLayPassedByPlayerEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
+    {
+
+    }
+
+    public async ValueTask PostHandle(
+        CardsLaidDownEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
+    {
+
     }
 
     #endregion
+
+    private static async Task<Result> RunPeriodicTask(Func<Random, Task<Result>> action, CancellationToken ct)
+    {
+        try
+        {
+            var result = Result.Success();
+            var random = new Random();
+
+            while (result.IsSuccess && !ct.IsCancellationRequested)
+            {
+                var delay = random.Next(500, 1500);
+                var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(delay));
+
+                await timer.WaitForNextTickAsync(ct);
+
+                result = await action(random);
+
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return Result.Failure();
+        }
+    }
 }

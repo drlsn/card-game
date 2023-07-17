@@ -11,6 +11,8 @@ namespace Trinica.Infrastructure.UseCases.Gameplay;
 public class BotHub : IBotHub, 
     INotificationHandler<CardsTakenToHandEvent>,
     INotificationHandler<LayCardDownOrderCalculatedEvent>,
+    INotificationHandler<CardsLaidDownEvent>,
+    INotificationHandler<CardsLayPassedByPlayerEvent>,
     INotificationHandler<GameStartedEvent>
 {
     private readonly IMemoryRepository<User, UserId> _userRepository;
@@ -35,6 +37,8 @@ public class BotHub : IBotHub,
     public ValueTask Handle(CardsTakenToHandEvent ev, CancellationToken ct) => TryEnqueue(ev);
     public ValueTask Handle(LayCardDownOrderCalculatedEvent ev, CancellationToken ct) => TryEnqueue(ev);
     public ValueTask Handle(GameStartedEvent ev, CancellationToken ct) => TryEnqueue(ev);
+    public ValueTask Handle(CardsLaidDownEvent ev, CancellationToken ct) => TryEnqueue(ev);
+    public ValueTask Handle(CardsLayPassedByPlayerEvent ev, CancellationToken ct) => TryEnqueue(ev);
 
     private bool CanEnqueue(GameEvent ev)
     {

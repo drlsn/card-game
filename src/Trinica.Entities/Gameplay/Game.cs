@@ -1,7 +1,10 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
+using System.Linq;
+using System.Numerics;
 using Trinica.Entities.Gameplay.Cards;
+using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
@@ -15,7 +18,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
     public Player[] Players { get; private set; }
     public FieldDeck CommonPool { get; private set; }
-    public ICard CenterCard { get; private set; }
+    public CardAndOwner CenterCard { get; private set; }
     public int CenterCardRoundsAlive { get; private set; }
     public UserId[] CardsLayOrderPerPlayer { get; private set; }
 
@@ -47,7 +50,14 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
         CommonPool = Players.ShuffleAllAndTakeHalfCards(random ?? new());
 
-        return ActionController.SetNextExpectedAction(TakeCardsToHand, TakeCardToHand);
+        return ActionController.SetNextExpectedAction(Players.ToIds(), TakeCardsToHand, TakeCardToHand);
+
+        // return ActionController.SetNextExpectedActions(TakeCardsToHand, TakeCardToHand);
+        // return ActionController.SetNextExpectedActions(TakeCardsToHand, TakeCardToHand)
+        //          .By(Players);
+        
+        // return ActionController.SetUserDoneCurrentAction(TakeCardsToHand, TakeCardToHand);
+
     }
 
     public bool StartRound(Random random)
@@ -95,7 +105,11 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         if (canMoveOn)
             return ActionController.SetNextExpectedAction(CalculateLayDownOrderPerPlayer);
 
-        return ActionController.SetNextExpectedAction(TakeCardToHand, TakeCardsToHand);
+        return ActionController.SetNextExpectedAction(Players.ToIds(), TakeCardToHand, TakeCardsToHand);
+
+        // return ActionController
+        //      .SetUserDoneAction(playerId, TakeCardToHand)
+        //      .SetNextExpectionAction(CalculateLayDownOrderPerPlayer);
     }
 
     public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random = null)
@@ -106,7 +120,11 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         var player = Players.OfId(playerId);
 
         if (!player.CanTakeCardToHand(out int max))
+        {
+            ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardToHand, TakeCardsToHand);
+            ActionController.SetNextExpectedAction(CalculateLayDownOrderPerPlayer);
             return false;
+        }
 
         cards.ForEach(card =>
         {
@@ -126,7 +144,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
         return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardToHand, TakeCardsToHand);
     }
-
+     
     public bool CalculateLayDownOrderPerPlayer()
     {
         if (!ActionController.CanDo(CalculateLayDownOrderPerPlayer))
@@ -136,7 +154,33 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             .GetPlayersOrderedByHeroSpeed()
             .ToIds();
 
-        return ActionController.SetNextExpectedAction(LayCardsToBattle, CardsLayOrderPerPlayer, mustObeyOrder: true);
+        return ActionController.SetNextExpectedAction(CardsLayOrderPerPlayer, mustObeyOrder: true, LayCardsToBattle, LayCardToBattle);
+    }
+
+    public bool CanLayCardDown(UserId playerId)
+    {
+        var player = Players.OfId(playerId);
+        if (player.CanLayCardDownToTarget(CenterCard))
+            return true;
+
+        return player.CanLayCardDown();
+    }
+
+    public bool LayCardToBattle(UserId playerId, CardToLay card)
+    {
+        if (!ActionController.CanDo(LayCardToBattle, playerId))
+            return false;
+
+        var player = Players.OfId(playerId);
+        var cards = TryLayCardToCenter(player, new[] { card });
+        if (!cards.IsNullOrEmpty())
+            if (!player.LayCardsToBattle(cards))
+                return false;
+
+        if (player.BattlingDeck.Count == 7 || player.HandDeck.Count == 0)
+            return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, nameof(PlayDices), Players.ToIds());
+
+        return ActionController.SetNextExpectedAction(CardsLayOrderPerPlayer, mustObeyOrder: true, LayCardsToBattle, LayCardToBattle);
     }
 
     public bool LayCardsToBattle(UserId playerId, CardToLay[] cards)
@@ -145,18 +189,54 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             return false;
 
         var player = Players.OfId(playerId);
-        if (CenterCard is not null)
+        cards = TryLayCardToCenter(player, cards);
+
+        if (!player.LayCardsToBattle(cards))
+            return false;
+
+        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, nameof(PlayDices), Players.ToIds());
+    }
+
+    private CardToLay[] TryLayCardToCenter(Player player, CardToLay[] cards)
+    {
+        var cardToCenterToLay = cards.FirstOrDefault(c => c.ToCenter);
+        if (cardToCenterToLay is null)
+            return cards;
+
+        var handCards = player.HandDeck.GetAllCards();
+        var cardToCenter = handCards.FirstOrDefault(c => c.Id == cardToCenterToLay.SourceCardId);
+        if (cardToCenter is null)
+            return cards;
+
+        if (CenterCard is not null &&
+            CenterCard.PlayerId == player.Id &&
+            CenterCard.Card is ICardWithSlots centerCardWithSlots)
         {
-            var cardToCenter = cards.FirstOrDefault(c => c.ToCenter);
-            if (cardToCenter is not null)
+            if (cardToCenter is SkillCard || cardToCenter is ItemCard)
             {
-                CenterCard = player.TakeCardFromHand(cardToCenter.SourceCardId);
-                cards = cards.Except(cardToCenter).ToArray();
-                CenterCardRoundsAlive = 0;
+                var slots = centerCardWithSlots.Slots;
+                if (slots.AddCard(cardToCenter))
+                {
+                    player.TakeCardFromHand(cardToCenter.Id);
+                    return cards;
+                }
             }
         }
 
-        if (!player.LayCardsToBattle(cards))
+        if (cardToCenter is not UnitCard)
+            return cards;
+
+        CenterCard = new(player.TakeCardFromHand(cardToCenter.Id), player.Id);
+        cards = cards.Except(cardToCenterToLay).ToArray();
+        CenterCardRoundsAlive = 0;
+
+        return cards;
+    }
+
+    public bool PassLayCardToBattle(UserId playerId)
+    {
+        if (!ActionController.CanDo(LayCardToBattle) &&
+            !ActionController.CanDo(LayCardsToBattle))
             return false;
 
         return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, nameof(PlayDices), Players.ToIds());

@@ -39,7 +39,11 @@ public class TakeCardsToHandCommandHandler : ICommandHandler<TakeCardsToHandComm
         if (game.CanDo(game.CalculateLayDownOrderPerPlayer))
         {
             if (game.CalculateLayDownOrderPerPlayer())
-                await _publisher.Publish(new LayCardDownOrderCalculatedEvent(game.Id, game.CardsLayOrderPerPlayer.ToArray()));
+                await _publisher.Publish(new LayCardDownOrderCalculatedEvent(
+                    game.Id, game.Players.Select(p => new PlayerData(
+                        p.Id,
+                        p.HandDeck.GetAllCards().Select(c => new CardData(c.Id, c.ToTypeString())).ToArray(),
+                        p.BattlingDeck.GetAllCards().Select(c => new CardData(c.Id, c.ToTypeString())).ToArray())).ToArray()));
         }
 
         await _gameRepository.Save(game, result);
