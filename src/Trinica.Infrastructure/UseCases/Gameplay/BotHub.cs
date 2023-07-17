@@ -26,7 +26,7 @@ public class BotHub : IBotHub,
     }
 
     public async Task AddGame(
-        UserId botId, GameId gameId, GameActionController gameActionController)
+        UserId botId, GameId gameId, IActionController gameActionController)
     {
         await _userRepository.Save(new User(botId));
         Games.Add(gameId, new(botId, gameId, gameActionController));

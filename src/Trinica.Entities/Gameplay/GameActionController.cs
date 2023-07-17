@@ -5,132 +5,16 @@ namespace Trinica.Entities.Gameplay;
 
 public class GameActionController : IActionController
 {
-    public Action ExpectedAction = new();
-
-    public GameActionController() {}
-    public GameActionController(Delegate @delegate, ActionRepeat repeat = default)
-    {
-        SetNextExpectedAction(@delegate.Method.Name);
-        SetActionExpectedNext(@delegate.Method.Name, repeat);
-    }
-    public GameActionController(Delegate @delegate, UserId[] expectedPlayers) => SetNextExpectedAction(@delegate.Method.Name, expectedPlayers);
-    public GameActionController(string name, ActionRepeat repeat = default)
-    {
-        SetNextExpectedAction(name);
-        SetActionExpectedNext(name, repeat);
-    }
-
-    public bool CanDo(Delegate @delegate, UserId userId = null) =>
-        CanDo(@delegate.Method.Name, userId);
-
-    public bool CanDo(string actionType, UserId userId = null)
-    {
-        if (!ExpectedAction.Types.Contains(actionType))
-            return false;
-
-        if (ExpectedAction.ExpectsUserAction())
-        {
-            if (!ExpectedAction.ExpectedPlayers.Contains(userId))
-                return false;
-
-            return ExpectedAction.CanMakeAction(userId, actionType);
-        }
-
-        return true;
-    }
-
-    public bool SetPlayerDoneOrNextExpectedAction(UserId userId, params Delegate[] @delegates) =>
-        SetPlayerDoneOrNextExpectedAction(userId, @delegates.Select(d => d.Method.Name).ToArray());
-
-    public bool SetPlayerDoneOrNextExpectedAction(UserId userId, UserId[] expectedPlayers, params Delegate[] @delegates) =>
-        SetPlayerDoneOrNextExpectedAction(userId, @delegates.Select(d => d.Method.Name).ToArray(), expectedPlayers);
-
-    public bool SetPlayerDoneOrNextExpectedAction(UserId userId, UserId[] expectedPlayers, bool mustObeyOrder = false, params Delegate[] @delegates) =>
-        SetPlayerDoneOrNextExpectedAction(userId, @delegates.Select(d => d.Method.Name).ToArray(), expectedPlayers, mustObeyOrder);
-
-    public bool SetPlayerDoneOrNextExpectedAction(UserId userId, Delegate[] @delegates, UserId[] expectedPlayers = null, bool mustObeyOrder = false) =>
-        SetPlayerDoneOrNextExpectedAction(userId, @delegates.Select(d => d.Method.Name).ToArray(), expectedPlayers, mustObeyOrder);
-
-    public bool SetPlayerDoneOrNextExpectedAction(UserId userId, Delegate @delegate, UserId[] expectedPlayers = null, bool mustObeyOrder = false) =>
-        SetPlayerDoneOrNextExpectedAction(userId, @delegate.Method.Name, expectedPlayers, mustObeyOrder);
-
-    public bool SetNextExpectedAction(
-        UserId[] expectedPlayers,
-        params Delegate[] @delegates) => SetNextExpectedAction(@delegates.Select(d => d.Method.Name).ToArray(), expectedPlayers);
-
-    public bool SetNextExpectedAction(
-        UserId[] expectedPlayers,
-        bool mustObeyOrder,
-        params Delegate[] @delegates) => SetNextExpectedAction(@delegates.Select(d => d.Method.Name).ToArray(), expectedPlayers, mustObeyOrder);
-
-    public bool SetNextExpectedAction(params Delegate[] @delegates) => SetNextExpectedAction(@delegates.Select(d => d.Method.Name).ToArray());
-    public bool SetNextExpectedAction(
-        Delegate @delegate,
-        UserId[] expectedPlayers) => SetNextExpectedAction(@delegate.Method.Name, expectedPlayers);
-    public bool SetNextExpectedAction(
-        Delegate @delegate,
-        UserId[] expectedPlayers,
-        bool mustObeyOrder) => SetNextExpectedAction(@delegate.Method.Name, expectedPlayers, mustObeyOrder);
-
-    public bool SetNextExpectedAction(
-        string type,
-        UserId[] expectedPlayers = null,
-        bool mustObeyOrder = false) => SetNextExpectedAction(new[] { type }, expectedPlayers, mustObeyOrder);
-
-    public bool SetNextExpectedAction(
-        string[] types,
-        UserId[] expectedPlayers = null,
-        bool mustObeyOrder = false)
-    {
-        if (!ExpectedAction.HasUsersDoneActions())
-            return false;
-
-        ExpectedAction = new()
-        {
-            Types = types,
-            ExpectedPlayers = expectedPlayers ?? Array.Empty<UserId>(),
-            MustObeyOrder = mustObeyOrder
-        };
-
-        return true;
-    }
-
-    public bool SetPlayerDoneOrNextExpectedAction(
-        UserId userId,
-        string type,
-        UserId[] expectedPlayers = null,
-        bool mustObeyOrder = false) => SetPlayerDoneOrNextExpectedAction(userId, new[] { type }, expectedPlayers, mustObeyOrder);
-
-    public bool SetPlayerDoneOrNextExpectedAction(
-        UserId userId,
-        string[] types,
-        UserId[] expectedPlayers = null,
-        bool mustObeyOrder = false)
-    {
-        if (!ExpectedAction.HasUsersDoneActions())
-        {
-            if (ExpectedAction.CanMakeAction(userId))
-                ExpectedAction.AlreadyMadeActionsPlayers.Add(userId);
-            else
-                return false;
-        }
-
-        if (!ExpectedAction.HasUsersDoneActions())
-            return true;
-
-        ExpectedAction = new()
-        {
-            Types = types,
-            ExpectedPlayers = expectedPlayers ?? Array.Empty<UserId>(),
-            MustObeyOrder = mustObeyOrder
-        };
-
-        return true;
-    }
-
-    #region New Actions
+    private bool _canSetMore;
 
     public ActionInfo ActionInfo { get; private set; } = new();
+
+    public GameActionController() {}
+    public GameActionController(Delegate @delegate) =>
+        SetActionExpectedNext(@delegate.Method.Name);
+
+    public GameActionController(string actionName) =>
+        SetActionExpectedNext(actionName);
 
     public bool IsUserAction() =>
         !ActionInfo.ExpectedPlayers.IsNullOrEmpty() &&
@@ -138,6 +22,8 @@ public class GameActionController : IActionController
 
     public IChainedOperation SetActionDone(string name, UserId? userId = null)
     {
+        _canSetMore = false;
+
         var requiresUserAction = ActionInfo.RequiresUserAction();
         if (requiresUserAction && userId is null ||
            !requiresUserAction && userId is not null)
@@ -149,13 +35,15 @@ public class GameActionController : IActionController
         if (userId is not null && !ActionInfo.HasUser(userId))
             return this.Failure();
 
-        if (!ActionInfo.CanMakeAction(userId, name)) 
+        if (!ActionInfo.CanMakeAction(name, userId)) 
             return this.Failure();
 
         var action = ActionInfo.Actions.First(a => a.Name == name);
         var otherActions = ActionInfo.Actions.Except(action).ToArray();
 
-        action = new(action.Name, action.IsUserAction, DoneBefore: true, action.AlreadyMadeActionByPlayers, action.Repeat);
+        action = new(action.Name, action.IsUserAction, DoneBefore: true, 
+            action.AlreadyMadeActionByPlayers.Append(userId).ToArray(),
+            action.Repeat);
 
         ActionInfo = new()
         {
@@ -169,16 +57,14 @@ public class GameActionController : IActionController
 
     public IChainedOperation SetActionExpectedNext(string name, ActionRepeat repeat = default)
     {
-        if (ActionInfo.RequiresUserAction())
-            return this.Failure();
-
         if (!ActionInfo.HasDoneActions())
-            return this.Failure();
+            return this.Success();
+
+        _canSetMore = true;
 
         ActionInfo = new()
         {
-            Actions = ActionInfo.Actions.Append(
-                   new(name, IsUserAction: false, DoneBefore: false, Array.Empty<UserId>(), repeat)).ToArray(),
+            Actions = new[] { new ActionData(name, IsUserAction: false, DoneBefore: false, Array.Empty<UserId>(), repeat) },
         };
 
         return this.Success();
@@ -186,6 +72,9 @@ public class GameActionController : IActionController
 
     public IChainedOperation Or(string name, ActionRepeat repeat = default)
     {
+        if (!_canSetMore)
+            return this.Success();
+
         ActionInfo = new()
         {
             Actions = ActionInfo.Actions.Append(
@@ -203,7 +92,7 @@ public class GameActionController : IActionController
             return this.Failure();
 
         if (ActionInfo.ExpectedPlayers.Any())
-            return this.Failure();
+            return this.Success();
 
         ActionInfo = new()
         {
@@ -216,8 +105,6 @@ public class GameActionController : IActionController
 
         return this.Success();
     }
-
-    #endregion
 }
 
 public interface IActionController
@@ -236,7 +123,7 @@ public interface IActionController
     IChainedOperation SetActionDone(Delegate @delegate, UserId? userId = null) => SetActionDone(@delegate.Method.Name, userId);
     IChainedOperation SetActionExpectedNext(Delegate @delegate, ActionRepeat repeat = default) => SetActionExpectedNext(@delegate.Method.Name, repeat);
     IChainedOperation Or(Delegate @delegate, ActionRepeat repeat = default) => Or(@delegate.Method.Name, repeat);
-    bool CanDoAction(Delegate @delegate, UserId? user = null) => CanMakeAction(@delegate.Method.Name, user);
+    bool CanMakeAction(Delegate @delegate, UserId? user = null) => CanMakeAction(@delegate.Method.Name, user);
 
     #endregion
 
@@ -274,7 +161,7 @@ public class ChainedOperation : IChainedOperation
     public IChainedOperation SetActionDone(string name, UserId? userId = null)
     {
         if (!IsSuccess)
-            return this;
+            ;// return this;
 
         return _controller.SetActionDone(name, userId);
     }
@@ -282,7 +169,7 @@ public class ChainedOperation : IChainedOperation
     public IChainedOperation SetActionExpectedNext(string name, ActionRepeat repeat = default)
     {
         if (!IsSuccess)
-            return this;
+            ;// return this;
 
         return _controller.SetActionExpectedNext(name, repeat);
     }
@@ -293,7 +180,7 @@ public class ChainedOperation : IChainedOperation
     public IChainedOperation By(UserId[] userIds, bool mustObeyOrder = false)
     {
         if (!IsSuccess)
-            return this;
+            ;// return this;
 
         return _controller.By(userIds, mustObeyOrder);
     }
@@ -301,7 +188,7 @@ public class ChainedOperation : IChainedOperation
     public IChainedOperation Or(string name, ActionRepeat repeat = ActionRepeat.Single)
     {
         if (!IsSuccess)
-            return this;
+            ;// return this;
 
         return _controller.Or(name, repeat);
     }
@@ -326,62 +213,32 @@ public enum ActionRepeat
     Multiple
 }
 
-public class Action
-{
-    public string[] Types { get; init; }
-    public UserId[] ExpectedPlayers { get; init; } = Array.Empty<UserId>();
-    public bool MustObeyOrder { get; init; }
-    public List<UserId> AlreadyMadeActionsPlayers { get; } = new();
-
-    public bool ExpectsUserAction() => !ExpectedPlayers.IsNullOrEmpty();
-    public bool HasUsersDoneActions()
-    {
-        if (ExpectedPlayers.IsNullOrEmpty())
-            return true;
-
-        return ExpectedPlayers.HasSameElements(AlreadyMadeActionsPlayers);
-    }
-
-    public bool CanMakeAction(UserId? userId = null, string name = "") 
-    {
-        if (!name.IsNullOrEmpty() && !Types.Contains(name))
-            return false;
-
-        if (userId is not null && ExpectedPlayers.IsNullOrEmpty())
-            return false;
-
-        if (MustObeyOrder)
-        {
-            int expectedOrderIndex = Array.FindIndex(ExpectedPlayers, id => id == userId);
-            if (AlreadyMadeActionsPlayers.Count == expectedOrderIndex)
-                return true;
-        }
-        else
-        {
-            if (!AlreadyMadeActionsPlayers.Contains(userId))
-                return true;
-        }
-
-        return false;
-    }
-}
-
 public class ActionInfo
 {
     public ActionData[] Actions { get; init; } = Array.Empty<ActionData>();
     public bool MustObeyOrder { get; init; }
     public UserId[] ExpectedPlayers { get; init; } = Array.Empty<UserId>();
 
-    public bool CanMakeAction(UserId userId, string name = "")
+    public bool CanMakeAction(string name, UserId? userId = null)
     {
-        // Check if given action is even expected 
-        var action = Actions.FirstOrDefault(a => a.Name == name);
-        if (!name.IsNullOrEmpty() && action is null)
+        if (name.IsNullOrEmpty())
+            return false;
+
+        if (userId is null && !ExpectedPlayers.IsNullOrEmpty())
+            return false;
+
+        if (userId is not null && ExpectedPlayers.IsNullOrEmpty())
             return false;
 
         // Check if user done any single time action before, which forbids to make any more
         var singleTimeActions = Actions.Where(a => a.Repeat is ActionRepeat.Single).ToArray();
-        if (singleTimeActions.Any(a => a.AlreadyMadeActionByPlayers.Contains(userId)))
+        if (singleTimeActions.Any(a => !a.IsUserAction && a.DoneBefore) ||
+            singleTimeActions.Any(a => a.IsUserAction && a.AlreadyMadeActionByPlayers.Contains(userId)))
+            return false;
+
+        // Check if given action is even expected 
+        var action = Actions.FirstOrDefault(a => a.Name == name);
+        if (!name.IsNullOrEmpty() && action is null)
             return false;
 
         if (MustObeyOrder)
@@ -402,27 +259,6 @@ public class ActionInfo
         return false;
     }
 
-    public bool CanMakeAction(string name, UserId? user = null)
-    {
-        if (name.IsNullOrEmpty())
-            return false;
-
-        if (user is not null && ExpectedPlayers.IsNullOrEmpty())
-            return false;
-
-        // Check if user done any single time action before, which forbids to make any more
-        var singleTimeActions = Actions.Where(a => a.Repeat is ActionRepeat.Single).ToArray();
-        if (singleTimeActions.Any(a => !a.IsUserAction && a.DoneBefore))
-            return false;
-
-        // Check if given action is even expected 
-        var action = Actions.FirstOrDefault(a => a.Name == name);
-        if (!name.IsNullOrEmpty() && action is null)
-            return false;
-
-        return true;
-    }
-
     public bool HasDoneActions()
     {
         if (Actions.IsNullOrEmpty())
@@ -436,7 +272,12 @@ public class ActionInfo
         }
         else
         {
-            if (!singleTimeActions.Any(a => a.AlreadyMadeActionByPlayers.HasSameElements(ExpectedPlayers)))
+            var alreadyMadeActionPlayers = singleTimeActions
+                .SelectMany(a => a.AlreadyMadeActionByPlayers)
+                .Distinct()
+                .ToArray();
+
+            if (!alreadyMadeActionPlayers.HasSameElements(ExpectedPlayers))
                 return false;
         }
 
@@ -455,7 +296,10 @@ public class ActionInfo
     public bool RequiresUserAction() => ExpectedPlayers.Any();
 
     public ActionData GetAction(string name) =>
-        Actions.First(a => a.Name == name);
+        Actions.FirstOrDefault(a => a.Name == name);
+
+    public string[] GetActionNames() =>
+        Actions.Select(a => a.Name).ToArray();
 }
 
 public record ActionData(

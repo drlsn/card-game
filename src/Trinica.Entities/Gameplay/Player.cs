@@ -95,9 +95,12 @@ public class Player : Entity<UserId>
         HandDeck += card;
     }
 
-    public bool CanTakeCardToHand(out int max)
+    public bool CanTakeCardToHand(out int max, int commonPoolCount)
     {
         max = MaxHandCardsCount - HandDeck.Count;
+        if (max > 0 && commonPoolCount > 0)
+            return true;
+
         max = max.Clamp(IdleDeck.Count);
         return max != 0;
     }

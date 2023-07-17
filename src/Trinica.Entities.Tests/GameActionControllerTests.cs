@@ -12,14 +12,14 @@ public class GameActionControllerTests
     public void CanDoAction_IsTrue_IfConstructedWithIt()
     {
         var controller = new GameActionController(DoSomething) as IActionController;
-        Assert.IsTrue(controller.CanDoAction(DoSomething));
+        Assert.IsTrue(controller.CanMakeAction(DoSomething));
     }
 
     [Test]
     public void CanDoAction_IsFalse_IfNotConstructedWithIt()
     {
         var controller = new GameActionController(DoSomethingElse) as IActionController;
-        Assert.IsFalse(controller.CanDoAction(DoSomething));
+        Assert.IsFalse(controller.CanMakeAction(DoSomething));
     }
 
     [Test]
@@ -45,13 +45,6 @@ public class GameActionControllerTests
             .SetActionExpectedNext(DoSomethingElse)
             .IsSuccess
         );
-    }
-
-    [Test]
-    public void SetActionExpectedNext_IsNotSuccess_IfNotSetPreviousActionDone()
-    {
-        var controller = new GameActionController(DoSomething) as IActionController;
-        Assert.IsFalse(controller.SetActionExpectedNext(DoSomethingElse).IsSuccess);
     }
 
     [Test]
@@ -110,13 +103,15 @@ public class GameActionControllerTests
     }
 
     [Test]
-    public void SetActionExpectedNext_IsNotSuccess_IfCalledMultipleTimes()
+    public void SetActionExpectedNext_DoesNotChangeAction_IfCalledMultipleTimes()
     {
         var controller = new GameActionController() as IActionController;
-        Assert.IsFalse(controller
+        Assert.IsTrue(controller
             .SetActionExpectedNext(DoSomething)
             .SetActionExpectedNext(DoSomethingElse)
             .IsSuccess);
+
+        Assert.IsNull(controller.ActionInfo.GetAction(nameof(DoSomethingElse)));
     }
 
     [Test]
@@ -133,7 +128,7 @@ public class GameActionControllerTests
     }
 
     [Test]
-    public void SetActionExpectedNext_IsNotSuccess_IfOnlyMultipleRepeatActionDone()
+    public void SetActionExpectedNext_DoesNotChangeAction_IfOnlyMultipleRepeatActionDone()
     {
         var controller = new GameActionController() as IActionController;
         Assert.IsTrue(controller
@@ -145,7 +140,8 @@ public class GameActionControllerTests
         Assert.IsTrue(controller.SetActionDone(DoSomething).IsSuccess);
         Assert.IsTrue(controller.ActionInfo.GetAction(nameof(DoSomething)).DoneBefore);
 
-        Assert.IsFalse(controller.SetActionExpectedNext(DoSomethingElseElse).IsSuccess);
+        Assert.IsTrue(controller.SetActionExpectedNext(DoSomethingElseElse).IsSuccess);
+        Assert.IsNull(controller.ActionInfo.GetAction(nameof(DoSomethingElseElse)));
     }
 
     [Test]
@@ -155,18 +151,6 @@ public class GameActionControllerTests
         Assert.IsFalse(controller
             .By(new[] { new Users.UserId("id-1") })
             .IsSuccess);
-    }
-
-    [Test]
-    public void SetByUserIds_IsNotSuccess_IfAlreadySet()
-    {
-        var controller = new GameActionController() as IActionController;
-        Assert.IsTrue(controller
-            .SetActionExpectedNext(DoSomething)
-            .By(new[] { new Users.UserId("id-1") })
-            .IsSuccess);
-
-        Assert.IsFalse(controller.By(new[] { new Users.UserId("id-2") }).IsSuccess);
     }
 
     [Test]

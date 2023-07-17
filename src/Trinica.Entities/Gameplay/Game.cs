@@ -25,74 +25,49 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
     [Ignore]
     public RoundSettings RoundSettings { get; private set; } = new();
 
-    public GameActionController ActionController { get; private set; }
+    public IActionController ActionController { get; private set; } = new GameActionController();
 
     public Game(
         GameId id,
         Player[] players) : base(id)
     {
         Players = players;
-        ActionController = new(StartGame, Players.ToIds());
+        ActionController.SetActionExpectedNext(StartGame).By(Players.ToIds());
     }
 
     public bool StartGame(UserId playerId, Random random = null)
     {
-        if (!ActionController.CanDo(StartGame, playerId))
+        if (!ActionController.CanMakeAction(StartGame, playerId))
             return false;
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardsToCommonPool);
+        return ActionController
+            .SetActionDone(StartGame, playerId)
+            .SetActionExpectedNext(TakeCardsToCommonPool)
+            .IsSuccess;
     }
 
     public bool TakeCardsToCommonPool(Random random = null)
     {
-        if (!ActionController.CanDo(TakeCardsToCommonPool))
+        if (!ActionController.CanMakeAction(TakeCardsToCommonPool))
             return false;
 
         CommonPool = Players.ShuffleAllAndTakeHalfCards(random ?? new());
 
-        return ActionController.SetNextExpectedAction(Players.ToIds(), TakeCardsToHand, TakeCardToHand);
-
-        // return ActionController.SetNextExpectedActions(TakeCardsToHand, TakeCardToHand);
-        // return ActionController.SetNextExpectedActions(TakeCardsToHand, TakeCardToHand)
-        //          .By(Players);
-        
-        // return ActionController.SetUserDoneCurrentAction(TakeCardsToHand, TakeCardToHand);
-
-    }
-
-    public bool StartRound(Random random)
-    {
-        if (!ActionController.CanDo(StartRound))
-            return false;
-
-        if (CenterCard is not null)
-        {
-            CenterCardRoundsAlive++;
-            if (CenterCardRoundsAlive >= 6)
-                return ActionController.SetNextExpectedAction(FinishGame);
-        }
-
-        _cardIndex = 0;
-        _cards = Players.GetBattlingCardsBySpeed(random);
-        _cards.ForEach(card =>
-        {
-            if (card is not ICombatCard combatCard)
-                return;
-
-            combatCard.Effects.ForEach(effect =>
-                effect.OnRoundStart(combatCard, null, null, RoundSettings));
-        });
-
-        return ActionController.SetNextExpectedAction(PerformRound, PerformMove);
+        return ActionController
+            .SetActionDone(TakeCardsToCommonPool)
+            .SetActionExpectedNext(TakeCardsToHand)
+            .Or(TakeCardToHand, ActionRepeat.Multiple)
+            .By(Players.ToIds())
+            .IsSuccess;
     }
 
     public bool TakeCardToHand(UserId playerId, CardToTake card, Random random = null) 
     {
-        if (!ActionController.CanDo(TakeCardToHand, playerId))
+        if (!ActionController.CanMakeAction(TakeCardToHand, playerId))
             return false;
 
         var player = Players.OfId(playerId);
-        if (!player.CanTakeCardToHand(out int max))
+        if (!player.CanTakeCardToHand(out int max, CommonPool.Count))
             return false;
 
         if (card.Source == CardSource.CommonPool)
@@ -101,34 +76,31 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             if (card.Source == CardSource.Own)
             player.TakeCardToHand(random ?? new());
 
-        var canMoveOn = Players.All(p => p.HandDeck.Count == 6 || p.IdleDeck.Count == 0);
-        if (canMoveOn)
-            return ActionController.SetNextExpectedAction(CalculateLayDownOrderPerPlayer);
-
-        return ActionController.SetNextExpectedAction(Players.ToIds(), TakeCardToHand, TakeCardsToHand);
-
-        // return ActionController
-        //      .SetUserDoneAction(playerId, TakeCardToHand)
-        //      .SetNextExpectionAction(CalculateLayDownOrderPerPlayer);
+        if (!player.CanTakeCardToHand(out max, CommonPool.Count))
+            return ActionController
+                .SetActionDone(TakeCardsToHand, playerId)
+                .SetActionExpectedNext(CalculateLayDownOrderPerPlayer)
+                .IsSuccess;
+        
+        return ActionController.SetActionDone(TakeCardToHand, playerId).IsSuccess;
     }
 
     public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random = null)
     {
-        if (!ActionController.CanDo(TakeCardsToHand, playerId))
+        if (!ActionController.CanMakeAction(TakeCardsToHand, playerId))
             return false;
+
+        if (cards.IsNullOrEmpty())
+            return SetNextAction();
 
         var player = Players.OfId(playerId);
 
-        if (!player.CanTakeCardToHand(out int max))
-        {
-            ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardToHand, TakeCardsToHand);
-            ActionController.SetNextExpectedAction(CalculateLayDownOrderPerPlayer);
+        if (!player.CanTakeCardToHand(out int max, CommonPool.Count) || max < cards.Length)
             return false;
-        }
 
         cards.ForEach(card =>
         {
-            if (!player.CanTakeCardToHand(out int max))
+            if (!player.CanTakeCardToHand(out int max, CommonPool.Count))
                 return;
 
             if (card.Source == CardSource.CommonPool)
@@ -138,23 +110,31 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 player.TakeCardToHand(random ?? new());
         });
 
-        var canMoveOn = Players.All(p => p.HandDeck.Count == 6 || p.IdleDeck.Count == 0);
-        if (canMoveOn)
-            return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, CalculateLayDownOrderPerPlayer);
+        return SetNextAction();
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, TakeCardToHand, TakeCardsToHand);
+        bool SetNextAction() => 
+            ActionController
+                .SetActionDone(TakeCardsToHand, playerId)
+                .SetActionExpectedNext(CalculateLayDownOrderPerPlayer)
+                .IsSuccess;
     }
      
     public bool CalculateLayDownOrderPerPlayer()
     {
-        if (!ActionController.CanDo(CalculateLayDownOrderPerPlayer))
+        if (!ActionController.CanMakeAction(CalculateLayDownOrderPerPlayer))
             return false;
 
         CardsLayOrderPerPlayer = Players
             .GetPlayersOrderedByHeroSpeed()
             .ToIds();
 
-        return ActionController.SetNextExpectedAction(CardsLayOrderPerPlayer, mustObeyOrder: true, LayCardsToBattle, LayCardToBattle);
+        return ActionController
+            .SetActionDone(CalculateLayDownOrderPerPlayer)
+            .SetActionExpectedNext(LayCardToBattle, ActionRepeat.Multiple)
+            .Or(LayCardsToBattle)
+            .Or(PassLayCardToBattle)
+            .By(CardsLayOrderPerPlayer, mustObeyOrder: true)
+            .IsSuccess;
     }
 
     public bool CanLayCardDown(UserId playerId)
@@ -168,7 +148,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
     public bool LayCardToBattle(UserId playerId, CardToLay card)
     {
-        if (!ActionController.CanDo(LayCardToBattle, playerId))
+        if (!ActionController.CanMakeAction(LayCardToBattle, playerId))
             return false;
 
         var player = Players.OfId(playerId);
@@ -177,15 +157,19 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             if (!player.LayCardsToBattle(cards))
                 return false;
 
-        if (player.BattlingDeck.Count == 7 || player.HandDeck.Count == 0)
-            return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, nameof(PlayDices), Players.ToIds());
+        if (!player.CanLayCardDown())
+            return ActionController
+                .SetActionDone(LayCardsToBattle, playerId)
+                .SetActionExpectedNext(nameof(PlayDices))
+                .By(Players.ToIds())
+                .IsSuccess;
 
-        return ActionController.SetNextExpectedAction(CardsLayOrderPerPlayer, mustObeyOrder: true, LayCardsToBattle, LayCardToBattle);
+        return ActionController.SetActionDone(LayCardToBattle, playerId).IsSuccess;
     }
 
     public bool LayCardsToBattle(UserId playerId, CardToLay[] cards)
     {
-        if (!ActionController.CanDo(LayCardsToBattle, playerId))
+        if (!ActionController.CanMakeAction(LayCardsToBattle, playerId))
             return false;
 
         var player = Players.OfId(playerId);
@@ -194,7 +178,11 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         if (!player.LayCardsToBattle(cards))
             return false;
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, nameof(PlayDices), Players.ToIds());
+        return ActionController
+            .SetActionDone(LayCardsToBattle, playerId)
+            .SetActionExpectedNext(nameof(PlayDices))
+            .By(Players.ToIds())
+            .IsSuccess;
     }
 
     private CardToLay[] TryLayCardToCenter(Player player, CardToLay[] cards)
@@ -235,11 +223,14 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
     public bool PassLayCardToBattle(UserId playerId)
     {
-        if (!ActionController.CanDo(LayCardToBattle) &&
-            !ActionController.CanDo(LayCardsToBattle))
+        if (!ActionController.CanMakeAction(PassLayCardToBattle))
             return false;
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, nameof(PlayDices), Players.ToIds());
+        return ActionController
+            .SetActionDone(PassLayCardToBattle, playerId)
+            .SetActionExpectedNext(nameof(PlayDices))
+            .By(Players.ToIds())
+            .IsSuccess;
     }
 
     public bool PlayDices(UserId playerId, Random random) =>
@@ -247,108 +238,178 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
     public bool PlayDices(UserId playerId, Func<Random> getRandom)
     {
-        if (!ActionController.CanDo(nameof(PlayDices), playerId))
+        if (!ActionController.CanMakeAction(nameof(PlayDices), playerId))
             return false;
 
         var player = Players.OfId(playerId);
         player.PlayDices(getRandom);
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), ReplayDices, PassReplayDices);
+        return ActionController
+            .SetActionDone(nameof(PlayDices), playerId)
+            .SetActionExpectedNext(ReplayDices)
+            .Or(PassReplayDices)
+            .By(Players.ToIds())
+            .IsSuccess;
     }
 
     public bool PassReplayDices(UserId playerId)
     {
-        if (!ActionController.CanDo(PassReplayDices, playerId))
+        if (!ActionController.CanMakeAction(PassReplayDices, playerId))
             return false;
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), AssignDiceToCard, ConfirmAssignDicesToCards);
+        return ActionController
+            .SetActionDone(PassReplayDices, playerId)
+            .SetActionExpectedNext(AssignDiceToCard, ActionRepeat.Multiple)
+            .Or(RemoveDiceFromCard, ActionRepeat.Multiple)
+            .Or(ConfirmAssignDicesToCards)
+            .By(Players.ToIds())
+            .IsSuccess;
     }
 
     public bool ReplayDices(UserId playerId, int n, Func<Random> getRandom)
     {
-        if (!ActionController.CanDo(ReplayDices, playerId))
+        if (!ActionController.CanMakeAction(ReplayDices, playerId))
             return false;
 
         var player = Players.OfId(playerId);
         player.PlayDices(n, getRandom);
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), AssignDiceToCard, ConfirmAssignDicesToCards);
+        return ActionController
+            .SetActionDone(ReplayDices, playerId)
+            .SetActionExpectedNext(AssignDiceToCard, ActionRepeat.Multiple)
+            .Or(RemoveDiceFromCard, ActionRepeat.Multiple)
+            .Or(ConfirmAssignDicesToCards)
+            .By(Players.ToIds())
+            .IsSuccess;
     }
 
     public bool AssignDiceToCard(UserId playerId, int diceIndex, CardId cardId)
     {
-        if (!ActionController.CanDo(AssignDiceToCard, playerId))
+        if (!ActionController.CanMakeAction(AssignDiceToCard, playerId))
             return false;
 
         var player = Players.OfId(playerId);
         if (!player.AssignDiceToCard(diceIndex, cardId))
             return false;
 
-        return true;
+        return ActionController
+            .SetActionDone(AssignDiceToCard, playerId)
+            .IsSuccess;
     }
 
     public bool RemoveDiceFromCard(UserId playerId, CardId cardId)
     {
-        if (!ActionController.CanDo(RemoveDiceFromCard, playerId))
+        if (!ActionController.CanMakeAction(RemoveDiceFromCard, playerId))
             return false;
 
         var player = Players.OfId(playerId);
         player.RemoveDiceFromCard(cardId);
 
-        return true;
+        return ActionController
+           .SetActionDone(RemoveDiceFromCard, playerId)
+           .IsSuccess;
     }
 
     public bool ConfirmAssignDicesToCards(UserId playerId)
     {
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, Players.ToIds(), ChooseCardSkill, AssignCardTarget, RemoveCardTarget, ConfirmCardTargets);
+        return ActionController
+            .SetActionDone(ConfirmAssignDicesToCards, playerId)
+            .SetActionExpectedNext(ChooseCardSkill, ActionRepeat.Multiple)
+            .Or(AssignCardTarget, ActionRepeat.Multiple)
+            .Or(RemoveCardTarget, ActionRepeat.Multiple)
+            .Or(ConfirmCardTargets)
+            .By(Players.ToIds())
+            .IsSuccess;
     }
 
     public bool ChooseCardSkill(UserId playerId, CardId cardId, int skillIndex)
     {
-        if (!ActionController.CanDo(ChooseCardSkill, playerId))
+        if (!ActionController.CanMakeAction(ChooseCardSkill, playerId))
             return false;
 
         var player = Players.OfId(playerId);
         player.ChooseCardSkill(cardId, skillIndex);
 
-        return true;
+        return ActionController
+            .SetActionDone(ChooseCardSkill, playerId)
+            .IsSuccess;
     }
 
     public bool AssignCardTarget(UserId playerId, CardId cardId, CardId targetCardId)
     {
-        if (!ActionController.CanDo(AssignCardTarget, playerId))
+        if (!ActionController.CanMakeAction(AssignCardTarget, playerId))
             return false;
 
         var player = Players.OfId(playerId);
         player.AssignCardTarget(cardId, targetCardId);
 
-        return true;
+        return ActionController
+            .SetActionDone(AssignCardTarget, playerId)
+            .IsSuccess;
     }
 
     public bool RemoveCardTarget(UserId playerId, CardId cardId, CardId targetCardId)
     {
-        if (!ActionController.CanDo(RemoveCardTarget, playerId))
+        if (!ActionController.CanMakeAction(RemoveCardTarget, playerId))
             return false;
 
         var player = Players.OfId(playerId);
         player.RemoveCardTarget(cardId, targetCardId);
 
-        return true;
+        return ActionController
+            .SetActionDone(RemoveCardTarget, playerId)
+            .IsSuccess;
     }
 
     public bool ConfirmCardTargets(UserId playerId)
     {
-        if (!ActionController.CanDo(ConfirmCardTargets, playerId))
+        if (!ActionController.CanMakeAction(ConfirmCardTargets, playerId))
             return false;
 
-        return ActionController.SetPlayerDoneOrNextExpectedAction(playerId, StartRound);
+        return ActionController
+            .SetActionDone(ConfirmCardTargets, playerId)
+            .SetActionExpectedNext(StartRound)
+            .IsSuccess;
+    }
+
+    public bool StartRound(Random random)
+    {
+        if (!ActionController.CanMakeAction(StartRound))
+            return false;
+
+        if (CenterCard is not null)
+        {
+            CenterCardRoundsAlive++;
+            if (CenterCardRoundsAlive >= 6)
+                return ActionController
+                    .SetActionDone(StartRound)
+                    .SetActionExpectedNext(FinishGame)
+                    .IsSuccess;
+        }
+
+        _cardIndex = 0;
+        _cards = Players.GetBattlingCardsBySpeed(random);
+        _cards.ForEach(card =>
+        {
+            if (card is not ICombatCard combatCard)
+                return;
+
+            combatCard.Effects.ForEach(effect =>
+                effect.OnRoundStart(combatCard, null, null, RoundSettings));
+        });
+
+        return ActionController
+            .SetActionDone(StartRound)
+            .SetActionExpectedNext(PerformMove, ActionRepeat.Multiple)
+            .Or(PerformRound)
+            .IsSuccess;
     }
 
     private ICard[] _cards;
     private int _cardIndex;
     public bool PerformMove(Random random)
     {
-        if (!ActionController.CanDo(PerformMove))
+        if (!ActionController.CanMakeAction(PerformMove))
             return false;
 
         var card = _cards[_cardIndex];
@@ -449,7 +510,10 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                     if (targetPlayer.IsCardDead(targetCard))
                     {
                         if (targetCard is HeroCard)
-                            return ActionController.SetNextExpectedAction(FinishGame);
+                            return ActionController
+                                .SetActionDone(PerformRound)
+                                .SetActionExpectedNext(FinishGame)
+                                .IsSuccess;
 
                         if (CenterCard == targetCard)
                             CenterCardRoundsAlive = 0;
@@ -475,7 +539,10 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                     if (targetPlayer.IsCardDead(targetCard))
                     {
                         if (targetCard is HeroCard)
-                            return ActionController.SetNextExpectedAction(FinishGame);
+                            return ActionController
+                                .SetActionDone(PerformRound)
+                                .SetActionExpectedNext(FinishGame)
+                                .IsSuccess;
 
                         if (CenterCard == targetCard)
                             CenterCardRoundsAlive = 0;
@@ -523,8 +590,13 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 }));
         });
 
+        ActionController.SetActionDone(PerformMove);
+
         if (IsGameOver())
-            return ActionController.SetNextExpectedAction(FinishGame);
+            return ActionController
+                .SetActionDone(PerformRound)
+                .SetActionExpectedNext(FinishGame)
+                .IsSuccess;
 
         // ----- unuse items! -----
         if (cardWithItems is not null)
@@ -532,14 +604,17 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 combatCard.Statistics.RemoveAll(itemCard.Id.Value));
 
         if (!IsRoundOngoing())
-            return ActionController.SetNextExpectedAction(FinishRound);
+            return ActionController
+                .SetActionDone(PerformRound)
+                .SetActionExpectedNext(FinishRound)
+                .IsSuccess;
 
-        return ActionController.SetNextExpectedAction(PerformMove);
+        return ActionController.SetActionExpectedNext(PerformMove).IsSuccess;
     }
 
     public bool PerformRound(Random random)
     {
-        if (!ActionController.CanDo(PerformRound))
+        if (!ActionController.CanMakeAction(PerformRound))
             return false;
 
         _cards ??= Players.GetBattlingCardsBySpeed(random);
@@ -553,7 +628,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
     public bool FinishRound(Random random)
     {
-        if (!ActionController.CanDo(FinishRound))
+        if (!ActionController.CanMakeAction(FinishRound))
             return false;
 
         _cards.ForEach(card =>
@@ -565,7 +640,12 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 effect.OnRoundFinish(combatCard));
         });
 
-        return ActionController.SetNextExpectedAction(TakeCardsToHand, Players.ToIds());
+        return ActionController
+            .SetActionDone(FinishRound)
+            .SetActionExpectedNext(TakeCardsToHand)
+            .Or(TakeCardToHand, ActionRepeat.Multiple)
+            .By(Players.ToIds())
+            .IsSuccess;
     }
 
     public bool IsGameOver() =>
@@ -574,10 +654,13 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
     public bool FinishGame(Random random)
     {
-        if (!ActionController.CanDo(FinishGame))
+        if (!ActionController.CanMakeAction(FinishGame))
             return false;
 
-        return ActionController.SetNextExpectedAction("None");
+        return ActionController
+            .SetActionDone(FinishGame)
+            .SetActionExpectedNext("None")
+            .IsSuccess;
     }
 
     public bool IsGameOverByHeroElimination() => 
@@ -588,8 +671,8 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
     public bool IsDead(ICard card) => Players.FirstOrDefault(p => p.DeadDeck.Contains(card)) is not null;
 
-    public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanDo(@delegate, userId);
-    public bool CanDo(string type, UserId userId = null) => ActionController.CanDo(type, userId);
+    public bool CanDo(Delegate @delegate, UserId userId = null) => ActionController.CanMakeAction(@delegate, userId);
+    public bool CanDo(string type, UserId userId = null) => ActionController.CanMakeAction(type, userId);
 
     public bool IsRoundOngoing() => 
         _cards is not null &&

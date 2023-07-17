@@ -11,7 +11,7 @@ public interface IBotHub
     ConcurrentQueue<GameEvent> Events { get; }
 
     Task AddGame(
-        UserId botId, GameId gameId, GameActionController gameActionController);
+        UserId botId, GameId gameId, IActionController actionController);
 }
 
-public record BotGame(UserId BotId, GameId GameId, GameActionController GameActionController);
+public record BotGame(UserId BotId, GameId GameId, IActionController GameActionController);

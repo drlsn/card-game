@@ -171,9 +171,9 @@ public static class Player_ToDTO_Converter
 
 public static class ActionController_ToDTO_Converter
 {
-    public static GameStateDTO ToDTO(this GameActionController controller) =>
-        new(controller.ExpectedAction.Types,
-            controller.ExpectedAction.ExpectedPlayers.Select(p => p.Value).ToArray(),
-            controller.ExpectedAction.AlreadyMadeActionsPlayers.Select(p => p.Value).ToArray(),
-            controller.ExpectedAction.MustObeyOrder);
+    public static GameStateDTO ToDTO(this IActionController controller) =>
+        new(controller.ActionInfo.GetActionNames(),
+            controller.ActionInfo.ExpectedPlayers.Select(p => p.Value).ToArray(),
+            controller.ActionInfo.Actions.First().AlreadyMadeActionByPlayers.Select(p => p.Value).ToArray(), // to fix?
+            controller.ActionInfo.MustObeyOrder);
 }

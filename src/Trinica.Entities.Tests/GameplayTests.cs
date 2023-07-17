@@ -75,8 +75,8 @@ public class GameplayTests
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player2Id));
         {
-            Assert.IsFalse(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
-            Assert.IsFalse(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
+            Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
+            Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
         }
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player1Id));
@@ -199,7 +199,7 @@ public class GameplayTests
         Assert.IsTrue(game.PerformMove(random));
         Assert.That(game.Players[1].HeroCard.Statistics.HP.CalculatedValue, Is.EqualTo(10));
 
-        Assert.IsFalse(game.CanDo(game.PerformRound));
+        Assert.IsTrue(game.CanDo(game.PerformRound));
 
         Assert.IsTrue(game.IsRoundOngoing());
         Assert.IsTrue(game.PerformMove(random));
@@ -220,8 +220,8 @@ public class GameplayTests
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player1Id));
         Assert.IsTrue(game.CanDo(game.TakeCardsToHand, player2Id));
         {
-            Assert.IsFalse(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
-            Assert.IsFalse(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
+            Assert.IsTrue(game.TakeCardsToHand(player1Id, Array.Empty<CardToTake>(), random));
+            Assert.IsTrue(game.TakeCardsToHand(player2Id, Array.Empty<CardToTake>(), random));
         }
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand));
         Assert.IsFalse(game.CanDo(game.TakeCardsToHand, player1Id));
