@@ -56,12 +56,31 @@
         _cancellationTokenSource.Cancel();
     }
 
-    private async Task OnActionButtonClick(Board.ActionType actionType) {}
-
-    private async Task OnCardClick(string cardId, Card.CardDeckType deckType)
+    private async Task OnActionButtonClick(string actionName)
     {
-        var result = await CommandExecutor.Execute(
-            new TakeCardToHandCommand(_game.Id, _game.Player.PlayerId, deckType.ToCardSourceStr()));
+        if (actionName == nameof(Entities.Gameplay.Game.PassLayCardToBattle))
+        {
+            var result = await CommandExecutor.Execute(
+               new PassLayCardToBattleCommand(_game.Id, _game.Player.PlayerId));
+        }
+    }
+
+    private async Task OnCardClick(string cardId, string playerId, Card.CardDeckType deckType)
+    {
+        if (_game.State.ExpectedActionTypes.Contains(nameof(Entities.Gameplay.Game.TakeCardToHand)))
+        {
+            var result = await CommandExecutor.Execute(
+                new TakeCardToHandCommand(_game.Id, _game.Player.PlayerId, deckType.ToCardSourceStr()));
+        }
+        else
+        if (_game.State.ExpectedActionTypes.Contains(nameof(Entities.Gameplay.Game.LayCardsToBattle)))
+        {
+            if (deckType != Card.CardDeckType.HandDeck && playerId != _game.Player.PlayerId)
+                return;
+
+            var result = await CommandExecutor.Execute(
+                new LayCardToBattleCommand(_game.Id, _game.Player.PlayerId, cardId));
+        }
 
         await RefreshView();
     }

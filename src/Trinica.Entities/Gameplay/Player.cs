@@ -72,7 +72,7 @@ public class Player : Entity<UserId>
         return BattlingDeck.GetCard(cardId);
     }
 
-    public ICard[] GetBattlingCards() => BattlingDeck.GetAllCards().Prepend(HeroCard).ToArray();
+    public ICard[] GetBattlingCards() => BattlingDeck.GetCards().Prepend(HeroCard).ToArray();
 
     public ICard TakeCardFromHand(CardId cardId)
     {
@@ -117,7 +117,7 @@ public class Player : Entity<UserId>
 
     public bool CanLayCardDownToTarget(CardAndOwner targetCard)
     {
-        var handCards = HandDeck.GetAllCards();
+        var handCards = HandDeck.GetCards();
         if (targetCard is not null)
         {
             if (targetCard.PlayerId != Id)
@@ -140,7 +140,7 @@ public class Player : Entity<UserId>
         if (HandDeck.Count == 0)
             return false;
 
-        var handCards = HandDeck.GetAllCards();
+        var handCards = HandDeck.GetCards();
         // Has Free Battling Spot and Combat Card in Hand
         if (BattlingDeck.Count < MaxBattlingCardsCount &&
             HandDeck.Count > 0 &&
@@ -148,7 +148,7 @@ public class Player : Entity<UserId>
             return true;
 
         // Has Some or No Battling Spots, Battling Cards with Slots Free and Skills or Items Cards in Hand
-        var battlingCards = BattlingDeck.GetAllCards();
+        var battlingCards = BattlingDeck.GetCards();
         var battlingCardsWithSlots = battlingCards.OfType<ICardWithSlots>().ToArray();
         var haveAnyBattlingCardWithFreeSlot = battlingCardsWithSlots.Any(card => card.Slots.CanAddCard());
         if (haveAnyBattlingCardWithFreeSlot &&
@@ -172,35 +172,44 @@ public class Player : Entity<UserId>
 
         var cardsIds = cards.ToCardIds();
         
-        var handCards = HandDeck.TakeCards(cardsIds).GetAllCards().ToIdDict();
-        var battlingCards = BattlingDeck.GetAllCards().Prepend(HeroCard).ToIdDict();
+        var handCards = HandDeck.GetCards(cardsIds).ToIdDict();
+        var battlingCards = BattlingDeck.GetCards().Prepend(HeroCard).ToIdDict();
 
         var cardsToAdd = new List<ICard>();
+        var cardsToTake = new List<ICard>();
         foreach (var cardToLay in cards)
         {
             if (!handCards.TryGetValue(cardToLay.SourceCardId.Value, out var handCard))
                 continue;
 
+            var canTargetCardBePutToSlot = handCard is SkillCard || handCard is ItemCard;
             var hasTargetCard = cardToLay.TargetCardId is not null && !cardToLay.TargetCardId.Value.IsNullOrEmpty();
-            if (hasTargetCard)
+            if (hasTargetCard && canTargetCardBePutToSlot)
             {
                 var doesTargetCardExist = battlingCards.TryGetValue(cardToLay.TargetCardId!.Value, out var battlingCard);
                 var cardWithSlots = battlingCard as ICardWithSlots;
-                var canTargetCardBePutToSlot = handCard is SkillCard || handCard is ItemCard;
                 if (hasTargetCard &&
                     doesTargetCardExist &&
                     canTargetCardBePutToSlot &&
                     cardWithSlots is not null)
                 {
                     cardWithSlots.Slots.AddCard(handCard);
+                    cardsToTake.Add(handCard);
                     continue;
                 }
             }
-            
-            if (handCard is not SkillCard && handCard is not ItemCard)
+            else
+            if (!canTargetCardBePutToSlot)
+            {
                 cardsToAdd.Add(handCard);
+                cardsToTake.Add(handCard);
+                continue;
+            }
+
+            //return false;
         }
 
+        HandDeck.TakeCards(cardsToTake.Select(c => c.Id).ToArray());
         BattlingDeck += cardsToAdd;
 
         return true;
@@ -227,7 +236,7 @@ public class Player : Entity<UserId>
             return false;
 
         var battlingCards = GetBattlingCards();
-        var card = battlingCards.FirstOrDefault(c => c.Id == cardId);
+        var card = battlingCards.FirstOrDefault(c => c.Id.Value == cardId.Value);
         if (card is null)
             return false;
 
@@ -377,14 +386,14 @@ public static class PlayerExtensions
         players
             .Select(c => c.BattlingDeck)
             .Aggregate((x, y) => x + y)
-            .GetAllCards()
+            .GetCards()
             .Concat(players.Select(p => p.HeroCard))
             .ToArray();
 
     public static Player GetPlayerWithCard(this IEnumerable<Player> players, CardId cardId) =>
         players
             .First(p => p.BattlingDeck
-                .GetAllCards()
+                .GetCards()
                 .Append(p.HeroCard)
                 .Contains(c => c.Id == cardId));
 }

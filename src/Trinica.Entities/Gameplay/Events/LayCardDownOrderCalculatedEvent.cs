@@ -19,7 +19,7 @@ public static class LayCardDownOrderCalculatedEventExtensions
     public static PlayerData[] ToPlayerData(this Player[] players, Func<ICard, string> toTypeStringFunc) =>
         players.Select(p => new PlayerData(
             p.Id,
-            p.HandDeck.GetAllCards().Select(c => new CardData(c.Id, toTypeStringFunc(c))).ToArray(),
-            p.BattlingDeck.GetAllCards().Select(c => new CardData(c.Id, toTypeStringFunc(c))).ToArray()))
+            p.HandDeck.GetCards().Select(c => new CardData(c.Id, toTypeStringFunc(c))).ToArray(),
+            p.BattlingDeck.GetCards().Select(c => new CardData(c.Id, toTypeStringFunc(c))).ToArray()))
         .ToArray();
 }

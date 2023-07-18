@@ -42,8 +42,8 @@ public class TakeCardsToHandCommandHandler : ICommandHandler<TakeCardsToHandComm
                 await _publisher.Publish(new LayCardDownOrderCalculatedEvent(
                     game.Id, game.Players.Select(p => new PlayerData(
                         p.Id,
-                        p.HandDeck.GetAllCards().Select(c => new CardData(c.Id, c.ToTypeString())).ToArray(),
-                        p.BattlingDeck.GetAllCards().Select(c => new CardData(c.Id, c.ToTypeString())).ToArray())).ToArray()));
+                        p.HandDeck.GetCards().Select(c => new CardData(c.Id, c.ToTypeString())).ToArray(),
+                        p.BattlingDeck.GetCards().Select(c => new CardData(c.Id, c.ToTypeString())).ToArray())).ToArray()));
         }
 
         await _gameRepository.Save(game, result);

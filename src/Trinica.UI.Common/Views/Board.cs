@@ -1,4 +1,5 @@
-﻿using Corelibs.Blazor.UIComponents.Common;
+﻿using Corelibs.Basic.UseCases.DTOs;
+using Corelibs.Blazor.UIComponents.Common;
 using Microsoft.AspNetCore.Components;
 using Trinica.UseCases.Gameplay;
 
@@ -8,7 +9,7 @@ namespace Trinica.UI.Common.Views;
 
 public partial class Board : BaseElement
 {
-    public delegate Task OnActionButtonClickDelegate(ActionType actionType);
+    public delegate Task OnActionButtonClickDelegate(string actionName);
 
     [Parameter] public GetGameStateQueryResponse? Game { get; set; }
     [Parameter] public OnActionButtonClickDelegate? OnActionButtonClick { get; set; }
@@ -19,6 +20,8 @@ public partial class Board : BaseElement
 
     private string _actionHint = "";
     private bool _wholeCardClickOnly;
+
+    private readonly List<IdentityDTO> _actionButtons = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -33,10 +36,10 @@ public partial class Board : BaseElement
         await SetState(firstRender);
     }
 
-    private async Task OnCardClickInternal(string cardId, Card.CardDeckType deckType)
+    private async Task OnCardClickInternal(string cardId, string playerId, Card.CardDeckType deckType)
     {
         if (OnCardClick is not null)
-            await OnCardClick?.Invoke(cardId, deckType);
+            await OnCardClick?.Invoke(cardId, playerId, deckType);
     }
 
     private async Task SetState(bool firstRender)
@@ -57,7 +60,6 @@ public partial class Board : BaseElement
 
             if (firstRender)
                 await GreyOutNonDeckCards();
-
         }
         else
         if (actions.Contains(nameof(GameEntity.CalculateLayDownOrderPerPlayer)))
@@ -67,6 +69,13 @@ public partial class Board : BaseElement
         else
         if (actions.Contains(nameof(GameEntity.LayCardsToBattle)))
         {
+            var i = Array.FindIndex(Game.State.ExpectedPlayers, id => id == Game.Player.PlayerId);
+            if (Game.State.AlreadyMadeActionsPlayers.Length == i)
+            {
+                _actionButtons.Clear();
+                _actionButtons.Add(new(nameof(GameEntity.PassLayCardToBattle), "Pass"));
+            }
+
             await ClearOutAllCards();
             if (!haveToWait && Game.Player.BattlingDeck.Cards.Length < 6)
                 _actionHint = "Lay The Cards Down or Skip";
@@ -100,11 +109,6 @@ public partial class Board : BaseElement
         }
 
         return state.AlreadyMadeActionsPlayers.Contains(Game.Player.PlayerId);
-    }
-
-    public record ActionType(string Value)
-    {
-        public static readonly ActionType TakeCardToHand = new("Take Card To Hand");
     }
 }
 

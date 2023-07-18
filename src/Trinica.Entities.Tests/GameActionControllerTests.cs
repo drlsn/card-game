@@ -145,6 +145,26 @@ public class GameActionControllerTests
     }
 
     [Test]
+    public void CanMakeAction_IsTrue_After_SetActionDone_MultipleTimes_IsOfMultipleRepeat()
+    {
+        var controller = new GameActionController() as IActionController;
+
+        var user1 = new Users.UserId("id-1");
+        var user2 = new Users.UserId("id-2");
+        Assert.IsTrue(controller
+            .SetActionExpectedNext(DoSomething, ActionRepeat.Multiple)
+            .By(new[] { user2, user1 }, mustObeyOrder: true)
+            .IsSuccess);
+
+        Assert.IsFalse(controller.CanMakeAction(DoSomething, user1));
+        Assert.IsTrue(controller.CanMakeAction(DoSomething, user2));
+
+        Assert.IsTrue(controller.SetActionDone(DoSomething, user2).IsSuccess);
+        Assert.IsTrue(controller.CanMakeAction(DoSomething, user2));
+        Assert.IsFalse(controller.CanMakeAction(DoSomething, user1));
+    }
+
+    [Test]
     public void SetByUserIds_IsNotSuccess_IfNotSetActionExpectedBefore()
     {
         var controller = new GameActionController() as IActionController;

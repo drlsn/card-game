@@ -41,8 +41,8 @@ public class SpellCard : Card, ICard, ICombatCard, ICardWithElements
 
     public Element[] RequiredElements { get; init; }
 
-    CardId ICard.Id => Id;
-    CardId ICombatCard.Id => Id;
+    CardId ICard.Id => new CardId(Id.Value);
+    CardId ICombatCard.Id => new CardId(Id.Value);
 
     public bool DoesDamage => Damage > 0;
     public int Damage { get; init; }

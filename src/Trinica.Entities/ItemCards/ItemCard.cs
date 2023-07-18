@@ -3,7 +3,13 @@ using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.ItemCards;
 
-public record ItemCardId(string Value) : CardId(Value);
+public class ItemCardId : CardId
+{
+    public ItemCardId(string value) : base(value)
+    {
+    }
+}
+
 
 internal class ItemCard : Entity<ItemCardId>
 {

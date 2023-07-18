@@ -1,7 +1,6 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
 using Mediator;
-using System.Numerics;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Users;
@@ -122,7 +121,7 @@ public static class Statistics_ToDTO_Converter
 public static class FieldDeck_ToDTO_Converter
 {
     public static CardDeckDTO ToDTO(this FieldDeck deck) =>
-        new(Cards: deck.GetAllCards().Select(c => c.ToDTO()).ToArray());
+        new(Cards: deck.GetCards().Select(c => c.ToDTO()).ToArray());
 }
 
 public static class Card_ToDTO_Converter
@@ -174,6 +173,11 @@ public static class ActionController_ToDTO_Converter
     public static GameStateDTO ToDTO(this IActionController controller) =>
         new(controller.ActionInfo.GetActionNames(),
             controller.ActionInfo.ExpectedPlayers.Select(p => p.Value).ToArray(),
-            controller.ActionInfo.Actions.First().AlreadyMadeActionByPlayers.Select(p => p.Value).ToArray(), // to fix?
+            controller.ActionInfo.Actions
+                .Where(a => a.Repeat == ActionRepeat.Single)
+                .SelectMany(a => a.AlreadyMadeActionByPlayers)
+                .Distinct()
+                .Select(p => p.Value)
+                .ToArray(),
             controller.ActionInfo.MustObeyOrder);
 }

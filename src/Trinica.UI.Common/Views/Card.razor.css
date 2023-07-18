@@ -11,6 +11,10 @@
     transition: all .1s ease-in-out;
 
     position: relative;
+
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
 }
 
 .card:hover {

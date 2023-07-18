@@ -93,7 +93,7 @@
 </div>
 
 @code {
-    public delegate Task OnCardClickDelegate(string cardId, Card.CardDeckType deckType);
+    public delegate Task OnCardClickDelegate(string cardId, string playerId, Card.CardDeckType deckType);
 
     [Parameter] public string? class_topmost { get; set; }
 
@@ -145,7 +145,7 @@
     private async Task OnCardClickInternal()
     {
         if (IsWholeCardClickOnly && OnCardClick is not null)
-            await OnCardClick?.Invoke(Id, DeckType);
+            await OnCardClick?.Invoke(Id, PlayerId, DeckType);
     }
 
     public record CardDeckType(string Value)

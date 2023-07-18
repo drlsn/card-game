@@ -9,7 +9,12 @@ using System.Text.Json.Serialization;
 
 namespace Trinica.Entities.Decks;
 
-public record DeckId(string Value) : EntityId(Value);
+public class DeckId : EntityId
+{
+    public DeckId(string value) : base(value)
+    {
+    }
+}
 
 public class Deck : Entity<DeckId>
 {

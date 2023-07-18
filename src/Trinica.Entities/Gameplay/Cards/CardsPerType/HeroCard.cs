@@ -34,8 +34,8 @@ public class HeroCard : Card, ICard, ICardWithSlots, ICardWithStats, ICombatCard
 
     public List<ItemCard> ItemCards => Slots.ItemCards;
 
-    CardId ICard.Id => Id;
-    CardId ICombatCard.Id => Id;
+    CardId ICard.Id => new CardId(Id.Value);
+    CardId ICombatCard.Id => new CardId(Id.Value);
 
     public bool DoesPowerDamage(int skillIndex)
     {

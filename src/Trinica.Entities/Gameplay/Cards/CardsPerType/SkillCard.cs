@@ -27,7 +27,7 @@ public class SkillCard : Card, ICard
     }
 
     public SkillCardId Id { get; private set; }
-    CardId ICard.Id => Id;
+    CardId ICard.Id => new CardId(Id.Value);
 
     public bool DoesDamage => Damage is not null && Damage > 0;
     public int? Damage { get; init; }

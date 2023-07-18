@@ -56,7 +56,12 @@
     </aside>
 
     <div class="action-bar">
-        @*<button class="action-button" @onclick=@(() => OnActionButtonClick?.Invoke(ActionType.TakeCardToHand))>Take Cards</button>*@
+        <div class="action-bar">
+            @foreach (var button in _actionButtons)
+            {
+                <button class="action-button" @onclick=@(() => OnActionButtonClick?.Invoke(button.Id))>@button.Name</button>
+            }
+        </div>
         <h5 class="action-hint">@_actionHint</h5>
     </div>
 </div>

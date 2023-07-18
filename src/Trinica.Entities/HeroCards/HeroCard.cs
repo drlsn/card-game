@@ -3,7 +3,12 @@ using Trinica.Entities.Shared;
 
 namespace Trinica.Entities.HeroCards;
 
-public record HeroCardId(string Value) : CardId(Value);
+public class HeroCardId : CardId
+{
+    public HeroCardId(string value) : base(value)
+    {
+    }
+}
 
 internal class HeroCard : Entity<HeroCardId>
 {

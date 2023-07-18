@@ -69,13 +69,13 @@ public class FieldDeck
     }
 
     public bool Contains(ICard card) => Contains(card.Id);
-    public bool Contains(CardId cardId) => GetAllCards().FirstOrDefault(c => c.Id == cardId) is not null;
+    public bool Contains(CardId cardId) => GetCards().FirstOrDefault(c => c.Id == cardId) is not null;
 
     public ICard GetCard(CardId cardId) =>
-        GetAllCards().First(c => c.Id == cardId);
+        GetCards().First(c => c.Id == cardId);
 
     public ICard TakeCard(CardId cardId) =>
-        TakeCards(new[] { cardId }).GetAllCards().First();
+        TakeCards(new[] { cardId }).GetCards().First();
 
     public FieldDeck TakeCards(CardId[] cardsToTake)
     {
@@ -96,11 +96,11 @@ public class FieldDeck
     }
 
     public ICard TakeCard(Random random) =>
-        TakeCards(random, 1).GetAllCards().First();
+        TakeCards(random, 1).GetCards().First();
 
     public FieldDeck TakeCards(Random random, int n)
     {
-        var cards = GetAllCards();
+        var cards = GetCards();
         var cardsShuffled = cards.Shuffle(random).ToRemoveOnlyList();
         var taken = cardsShuffled.Take(n);
         Clear();
@@ -141,9 +141,12 @@ public class FieldDeck
             left.SpellCards.Except(right.SpellCards).ToList());
     }
 
-    public IEnumerable<ICard> GetAllCards() =>
+    public ICard[] GetCards() =>
         EnumerableExtensions.Concat<ICard>(
-            UnitCards, SkillCards, ItemCards, SpellCards);
+            UnitCards, SkillCards, ItemCards, SpellCards).ToArray();
+
+    public ICard[] GetCards(CardId[] cardIds) =>
+        GetCards().Where(c  => cardIds.Any(id => c.Id.Value == id.Value)).ToArray();
 }
 
 public static class FieldDeckExtensions

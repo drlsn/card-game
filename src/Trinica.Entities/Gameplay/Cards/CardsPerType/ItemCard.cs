@@ -24,7 +24,7 @@ public class ItemCard : Card, ICard
     }
 
     public ItemCardId Id { get; private set; }
-    CardId ICard.Id => Id;
+    CardId ICard.Id => new CardId(Id.Value);
     public StatisticPointGroup Statistics { get; private set; }
     public bool IsActive { get; private set; } = true;
 

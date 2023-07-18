@@ -42,7 +42,7 @@ public class GameActionController : IActionController
         var otherActions = ActionInfo.Actions.Except(action).ToArray();
 
         action = new(action.Name, action.IsUserAction, DoneBefore: true, 
-            action.AlreadyMadeActionByPlayers.Append(userId).ToArray(),
+            action.AlreadyMadeActionByPlayers.Append(userId).Distinct().ToArray(),
             action.Repeat);
 
         ActionInfo = new()
@@ -241,10 +241,14 @@ public class ActionInfo
         if (!name.IsNullOrEmpty() && action is null)
             return false;
 
-        if (MustObeyOrder)
+        if (MustObeyOrder && !ExpectedPlayers.IsNullOrEmpty())
         {
             int expectedOrderIndex = Array.FindIndex(ExpectedPlayers, id => id == userId);
-            if (action.AlreadyMadeActionByPlayers.Length == expectedOrderIndex)
+            var usersBefore = ExpectedPlayers.Take(expectedOrderIndex).ToArray();
+            var allUsersThatDoneSingleActions = singleTimeActions
+                .SelectMany(a => a.AlreadyMadeActionByPlayers).Distinct().ToArray();
+
+            if (usersBefore.HasSameElements(allUsersThatDoneSingleActions))
                 return true;
         }
         else

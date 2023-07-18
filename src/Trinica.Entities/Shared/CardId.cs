@@ -2,4 +2,9 @@
 
 namespace Trinica.Entities.Shared;
 
-public record CardId(string Value) : EntityId(Value) {}
+public class CardId : EntityId
+{
+    public CardId(string value) : base(value)
+    {
+    }
+}

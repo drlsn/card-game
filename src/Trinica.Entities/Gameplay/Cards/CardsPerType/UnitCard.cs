@@ -33,8 +33,8 @@ public class UnitCard : Card, ICard, ICardWithSlots, ICardWithStats, ICombatCard
         Statistics = statistics;
     }
 
-    CardId ICard.Id => Id;
-    CardId ICombatCard.Id => Id;
+    CardId ICard.Id => new CardId(Id.Value);
+    CardId ICombatCard.Id => new CardId(Id.Value);
 
     public bool DoesPowerDamage(int skillIndex)
     {

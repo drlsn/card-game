@@ -1,8 +1,6 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
-using System.Linq;
-using System.Numerics;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Shared;
@@ -10,7 +8,12 @@ using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Gameplay;
 
-public record GameId(string Value) : EntityId(Value);
+public class GameId : EntityId
+{
+    public GameId(string value) : base(value)
+    {
+    }
+}
 
 public class Game : Entity<GameId>, IAggregateRoot<GameId>
 {
@@ -191,7 +194,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         if (cardToCenterToLay is null)
             return cards;
 
-        var handCards = player.HandDeck.GetAllCards();
+        var handCards = player.HandDeck.GetCards();
         var cardToCenter = handCards.FirstOrDefault(c => c.Id == cardToCenterToLay.SourceCardId);
         if (cardToCenter is null)
             return cards;
@@ -223,7 +226,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
     public bool PassLayCardToBattle(UserId playerId)
     {
-        if (!ActionController.CanMakeAction(PassLayCardToBattle))
+        if (!ActionController.CanMakeAction(PassLayCardToBattle, playerId))
             return false;
 
         return ActionController

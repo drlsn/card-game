@@ -3,7 +3,12 @@ using Trinica.Entities.Gameplay;
 
 namespace Trinica.Entities.Users;
 
-public record UserId(string Value) : EntityId(Value);
+public class UserId : EntityId
+{
+    public UserId(string value) : base(value)
+    {
+    }
+}
 
 [Serializable]
 public class User : Entity<UserId>, IAggregateRoot<UserId>
