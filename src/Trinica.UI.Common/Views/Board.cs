@@ -29,11 +29,6 @@ public partial class Board : BaseElement
 
     private readonly List<IdentityDTO> _actionButtons = new();
 
-    protected override async Task OnInitializedAsync()
-    {
-        
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)

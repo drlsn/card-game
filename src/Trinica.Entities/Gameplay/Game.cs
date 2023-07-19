@@ -1,6 +1,7 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
+using System;
 using System.Linq;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Gameplay.Events;
@@ -66,7 +67,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             .IsSuccess;
     }
 
-    public bool TakeCardToHand(UserId playerId, CardToTake card, Random random = null) 
+    public bool TakeCardToHand(UserId playerId, CardToTake card, Random random = null)
     {
         if (!ActionController.CanMakeAction(TakeCardToHand, playerId))
             return false;
@@ -86,7 +87,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 .SetActionDone(TakeCardsToHand, playerId)
                 .SetActionExpectedNext(CalculateLayDownOrderPerPlayer)
                 .IsSuccess;
-        
+
         return ActionController.SetActionDone(TakeCardToHand, playerId).IsSuccess;
     }
 
@@ -117,13 +118,13 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
 
         return SetNextAction();
 
-        bool SetNextAction() => 
+        bool SetNextAction() =>
             ActionController
                 .SetActionDone(TakeCardsToHand, playerId)
                 .SetActionExpectedNext(CalculateLayDownOrderPerPlayer)
                 .IsSuccess;
     }
-     
+
     public bool CalculateLayDownOrderPerPlayer()
     {
         if (!ActionController.CanMakeAction(CalculateLayDownOrderPerPlayer))
@@ -250,10 +251,13 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             .IsSuccess;
     }
 
-    public bool PlayDices(UserId playerId, Random random) =>
-        PlayDices(playerId, () => random);
+    public bool PlayDices(UserId playerId, Random random = null) 
+    {
+        random ??= new();
+        return PlayDices(playerId, () => random);
+    }
 
-    public bool PlayDices(UserId playerId, Func<Random> getRandom)
+public bool PlayDices(UserId playerId, Func<Random> getRandom)
     {
         if (!ActionController.CanMakeAction(nameof(PlayDices), playerId))
             return false;

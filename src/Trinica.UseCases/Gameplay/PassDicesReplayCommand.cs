@@ -4,18 +4,17 @@ using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Events;
-using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
 namespace Trinica.UseCases.Gameplay;
 
-public class LayCardToBattleCommandHandler : ICommandHandler<LayCardToBattleCommand, Result>
+public class PassDicesReplayCommandHandler : ICommandHandler<PassDicesReplayCommand, Result>
 {
     private readonly IRepository<User, UserId> _userRepository;
     private readonly IRepository<Game, GameId> _gameRepository;
     private readonly IPublisher _publisher;
 
-    public LayCardToBattleCommandHandler(
+    public PassDicesReplayCommandHandler(
         IRepository<User, UserId> userRepository,
         IRepository<Game, GameId> gameRepository,
         IPublisher publisher)
@@ -25,30 +24,26 @@ public class LayCardToBattleCommandHandler : ICommandHandler<LayCardToBattleComm
         _publisher = publisher;
     }
 
-    public async ValueTask<Result> Handle(LayCardToBattleCommand command, CancellationToken ct)
+    public async ValueTask<Result> Handle(PassDicesReplayCommand command, CancellationToken ct)
     {
         var result = Result.Success();
 
         var user = await _userRepository.Get(new UserId(command.PlayerId), result);
         var game = await _gameRepository.Get(new GameId(command.GameId), result);
 
-        var cardToLay = new CardToLay(new CardId(command.CardId), new CardId(command.TargetCardId), command.ToCenter);
-        if (!game.LayCardToBattle(user.Id, cardToLay))
+        if (!game.PassReplayDices(user.Id))
             return result.Fail();
 
-        var canStillLayCardDown = game.CanLayCardDown(user.Id);
-        await _publisher.Publish(new CardsLaidDownEvent(game.Id, user.Id, new[] { cardToLay }, canStillLayCardDown, 
-            game.Players.ToPlayerData(CardType_ToString_Converter.ToTypeString)));
-
+        await _publisher.Publish(new DicesReplayPassedEvent(game.Id, user.Id));
         await _gameRepository.Save(game, result);
 
         return result;
     }
 }
 
-public record LayCardToBattleCommand(string GameId, string PlayerId, string CardId, string? TargetCardId = null, bool ToCenter = false) : ICommand<Result>;
+public record PassDicesReplayCommand(string GameId, string PlayerId) : ICommand<Result>;
 
-public class LayCardToBattleCommandValidator : AbstractValidator<LayCardToBattleCommand>
+public class PassDicesReplayCommandValidator : AbstractValidator<PassDicesReplayCommand>
 {
-    public LayCardToBattleCommandValidator()  { }
+    public PassDicesReplayCommandValidator()  {}
 }
