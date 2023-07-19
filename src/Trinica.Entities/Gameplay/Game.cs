@@ -1,6 +1,7 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
+using System.Linq;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Shared;
@@ -23,7 +24,8 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
     public FieldDeck CommonPool { get; private set; }
     public CardAndOwner CenterCard { get; private set; }
     public int CenterCardRoundsAlive { get; private set; }
-    public UserId[] CardsLayOrderPerPlayer { get; private set; }
+    public UserId[]? CardsLayOrderPerPlayer { get; private set; }
+    public CardId[]? FreshLaidCards { get; private set; }
 
     [Ignore]
     public RoundSettings RoundSettings { get; private set; } = new();
@@ -127,6 +129,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         if (!ActionController.CanMakeAction(CalculateLayDownOrderPerPlayer))
             return false;
 
+        FreshLaidCards = Array.Empty<CardId>();
         CardsLayOrderPerPlayer = Players
             .GetPlayersOrderedByHeroSpeed()
             .ToIds();
@@ -154,11 +157,16 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         if (!ActionController.CanMakeAction(LayCardToBattle, playerId))
             return false;
 
+        if (FreshLaidCards is not null && FreshLaidCards.Contains(card.TargetCardId))
+            return false;
+
         var player = Players.OfId(playerId);
         var cards = TryLayCardToCenter(player, new[] { card });
         if (!cards.IsNullOrEmpty())
             if (!player.LayCardsToBattle(cards))
                 return false;
+
+        FreshLaidCards = FreshLaidCards?.Append(card.SourceCardId).ToArray() ?? Array.Empty<CardId>();
 
         if (!player.CanLayCardDown())
             return ActionController
@@ -175,11 +183,17 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         if (!ActionController.CanMakeAction(LayCardsToBattle, playerId))
             return false;
 
-        var player = Players.OfId(playerId);
-        cards = TryLayCardToCenter(player, cards);
-
-        if (!player.LayCardsToBattle(cards))
+        var targetCards = cards.Select(c => c.TargetCardId).ToArray();
+        if (FreshLaidCards is not null && FreshLaidCards.Any(c => targetCards.Contains(c)))
             return false;
+
+        var player = Players.OfId(playerId);
+        var cardsWithoutCenter = TryLayCardToCenter(player, cards);
+
+        if (!player.LayCardsToBattle(cardsWithoutCenter))
+            return false;
+
+        FreshLaidCards = FreshLaidCards?.Concat(cards.Select(c => c.SourceCardId)).ToArray() ?? Array.Empty<CardId>();
 
         return ActionController
             .SetActionDone(LayCardsToBattle, playerId)

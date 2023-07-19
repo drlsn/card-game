@@ -1,6 +1,7 @@
 ﻿@using Corelibs.Basic.Functional;
 @using Corelibs.Blazor.UIComponents.JS;
 @using Microsoft.JSInterop;
+@using Trinica.UseCases.Gameplay;
 
 @inherits BaseElement
 
@@ -9,106 +10,103 @@
     width: 550px;
 *@
 
+@if (DTO is null) { return; }
 @if (IsReversed)
 {
-    <div class="card @_grayedOutCssClass @_transparentCssClass @class_topmost @Id" style=@_fontSizeStyle @onclick=@OnCardClickInternal>
+    <div class="card @_grayedOutCssClass @_transparentCssClass @class_topmost @DTO.Id" style=@_fontSizeStyle @onclick=@OnCardClickInternal>
         <span class="reverse-name" style=@_fontSizeStyle>@ReverseName</span>
     </div>
     return;
 }
-
-<div class="card card-avers @_grayedOutCssClass @_transparentCssClass @class_topmost @Id" style=@_fontSizeStyle
+else
+{
+    <div class="card card-avers @_grayedOutCssClass @_transparentCssClass @class_topmost @DTO.Id" style=@_fontSizeStyle
     @onclick=@OnCardClickInternal>
-    <h2 class="name" style=@_fontSizeStyle>@Name</h2>
-    <h2 class="type" style=@_fontSizeStyle>@Type</h2>
-    <section class="info-panel">
-        <h6 class="info-panel-text race-text" style=@_fontSizeStyle>@RaceName</h6>
-        <h6 class="info-panel-text class-text" style=@_fontSizeStyle>@ClassName</h6>
-        <h6 class="info-panel-text fraction-text" style=@_fontSizeStyle>@FractionName</h6>
-    </section>
-    <section class="stats-panel">
-        @if (HP is not null)
-        {
-            <div class="stat-panel hp-stat-row">
-                <div class="stat-values-row">
-                    <span class="stat-text" style=@_fontSizeStyle>@HP.Current</span>
-                    <span class="stat-text" style=@_fontSizeStyle>/</span>
-                    <span class="stat-text" style=@_fontSizeStyle>@HP.Original</span>
+        <h2 class="name" style=@_fontSizeStyle>@DTO.Name</h2>
+        <h2 class="type" style=@_fontSizeStyle>@DTO.Type</h2>
+        <section class="info-panel">
+            <h6 class="info-panel-text race-text" style=@_fontSizeStyle>@DTO.Race</h6>
+            <h6 class="info-panel-text class-text" style=@_fontSizeStyle>@DTO.Class</h6>
+            <h6 class="info-panel-text fraction-text" style=@_fontSizeStyle>@DTO.Fraction</h6>
+        </section>
+        <section class="stats-panel">
+            @if (DTO.Statistics is not null)
+            {
+                <div class="stat-panel hp-stat-row">
+                    <div class="stat-values-row">
+                        <span class="stat-text" style=@_fontSizeStyle>@DTO.Statistics.HP.Current</span>
+                        <span class="stat-text" style=@_fontSizeStyle>/</span>
+                        <span class="stat-text" style=@_fontSizeStyle>@DTO.Statistics.HP.Original</span>
+                    </div>
+                    <span class="stat-name" style=@_fontSizeStyle>HP</span>
                 </div>
-                <span class="stat-name" style=@_fontSizeStyle>HP</span>
-            </div>
-        }
-        @if (Attack is not null)
-        {
-            <div class="stat-panel">
-                <div class="stat-values-row">
-                    <span class="stat-text" style=@_fontSizeStyle>@Attack.Current</span>
+            }
+            @if (DTO.Statistics is not null)
+            {
+                <div class="stat-panel">
+                    <div class="stat-values-row">
+                        <span class="stat-text" style=@_fontSizeStyle>@DTO.Statistics.Attack.Current</span>
+                    </div>
+                    <span class="stat-name" style=@_fontSizeStyle>AT</span>
                 </div>
-                <span class="stat-name" style=@_fontSizeStyle>AT</span>
-            </div>
-        }
-        @if (Speed is not null)
-        {
-            <div class="stat-panel">
-                <div class="stat-values-row">
-                    <span class="stat-text" style=@_fontSizeStyle>@Speed.Current</span>
+            }
+            @if (DTO.Statistics is not null)
+            {
+                <div class="stat-panel">
+                    <div class="stat-values-row">
+                        <span class="stat-text" style=@_fontSizeStyle>@DTO.Statistics.Speed.Current</span>
+                    </div>
+                    <span class="stat-name" style=@_fontSizeStyle>SP</span>
                 </div>
-                <span class="stat-name" style=@_fontSizeStyle>SP</span>
-            </div>
-        }
-        @if (Power is not null)
-        {
-            <div class="stat-panel">
-                <div class="stat-values-row">
-                    <span class="stat-text" style=@_fontSizeStyle>@Power.Current</span>
+            }
+            @if (DTO.Statistics is not null)
+            {
+                <div class="stat-panel">
+                    <div class="stat-values-row">
+                        <span class="stat-text" style=@_fontSizeStyle>@DTO.Statistics.Power.Current</span>
+                    </div>
+                    <span class="stat-name" style=@_fontSizeStyle>PW</span>
                 </div>
-                <span class="stat-name" style=@_fontSizeStyle>PW</span>
-            </div>
-        }
-    </section>@*
+            }
+        </section>@*
     <section class="row">
-        <ul class="card-list effects">
-            <li class="el">
-                <img src="icon.svg" alt="effect icon" class="card-icon" />
-            </li>
-            <li class="el">
-                <img src="icon.svg" alt="effect icon" class="card-icon" />
-            </li>
-            <li class="el">
-                <img src="icon.svg" alt="effect icon" class="card-icon" />
-            </li>
-        </ul>
-        <ul class="card-list">
-            <li class="el number">200</li>
-            <li class="el number">20</li>
-            <li class="el number">0</li>
-            <li class="el number">2</li>
-        </ul>
+    <ul class="card-list effects">
+    <li class="el">
+    <img src="icon.svg" alt="effect icon" class="card-icon" />
+    </li>
+    <li class="el">
+    <img src="icon.svg" alt="effect icon" class="card-icon" />
+    </li>
+    <li class="el">
+    <img src="icon.svg" alt="effect icon" class="card-icon" />
+    </li>
+    </ul>
+    <ul class="card-list">
+    <li class="el number">200</li>
+    <li class="el number">20</li>
+    <li class="el number">0</li>
+    <li class="el number">2</li>
+    </ul>
     </section>
     <section class="row">
-        <p class="card-description">
-            Lorem, ipsum dolor sit amet consectetur adipisicing elit.
-        </p>
+    <p class="card-description">
+    Lorem, ipsum dolor sit amet consectetur adipisicing elit.
+    </p>
     </section>*@
-</div>
+    </div>
+}
+
+
 
 @code {
-    public delegate Task OnCardClickDelegate(string cardId, string playerId, Card.CardDeckType deckType);
+    public delegate Task OnCardClickDelegate(CardDTO dto, string playerId, Card.CardDeckType deckType);
 
     [Parameter] public string? class_topmost { get; set; }
 
-    [Parameter] public string? Id { get; set; }
+    [Parameter] public CardDTO? DTO { get; set; } = new("", false, "");
+
     [Parameter] public string? PlayerId { get; set; }
-    [Parameter] public string? Name { get; set; } = "Name";
-    [Parameter] public string? Type { get; set; }
     [Parameter] public string? ReverseName { get; set; }
-    [Parameter] public string? RaceName { get; set; } = "Race";
-    [Parameter] public string? ClassName { get; set; } = "Class";
-    [Parameter] public string? FractionName { get; set; } = "Fraction";
-    [Parameter] public Stat? HP { get; set; }
-    [Parameter] public Stat? Attack { get; set; }
-    [Parameter] public Stat? Speed { get; set; }
-    [Parameter] public Stat? Power { get; set; }
 
     [Parameter] public CardDeckType? DeckType { get; set; }
     [Parameter] public bool IsTransparent { get; set; } = false;
@@ -131,10 +129,13 @@
         if (!firstRender)
             return;
 
-        if (Id.IsNullOrEmpty())
+        if (!DTO.Name.IsNullOrEmpty())
+            Console.WriteLine(DTO.Name);
+
+        if (DTO.Id.IsNullOrEmpty())
             return;
 
-        var rect = await JSRuntime.GetRect(Id);
+        var rect = await JSRuntime.GetRect(DTO.Id);
         _baseFontSize = rect.Height * 0.03;
         _baseFontSize = rect.Height * 0.07;
         _fontSizeStyle = $"font-size: {_baseFontSize}px;";
@@ -145,7 +146,7 @@
     private async Task OnCardClickInternal()
     {
         if (IsWholeCardClickOnly && OnCardClick is not null)
-            await OnCardClick?.Invoke(Id, PlayerId, DeckType);
+            await OnCardClick?.Invoke(DTO, PlayerId, DeckType);
     }
 
     public record CardDeckType(string Value)

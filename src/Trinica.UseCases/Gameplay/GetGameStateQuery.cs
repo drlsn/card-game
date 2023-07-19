@@ -1,8 +1,11 @@
 ﻿using Corelibs.Basic.Blocks;
+using Corelibs.Basic.Collections;
+using Corelibs.Basic.Functional;
 using Corelibs.Basic.Repository;
 using Mediator;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
+using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
 namespace Trinica.UseCases.Gameplay;
@@ -27,13 +30,16 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
         var state = game.ActionController.ToDTO();
 
         var player = game.Players.OfId(new UserId(query.PlayerId));
-        var playerDto = player.ToDTO()!;
+        var playerDto = player.ToDTO(game.FreshLaidCards)!;
+
+        //var handCardsStr = playerDto.HandDeck.Cards.Select(c => c.Name).AggregateOrDefault((x, y) => $"{x}, {y}");
+        //Console.WriteLine($"Hand Cards: {handCardsStr}");
 
         var enemyPlayers = game.Players.NotOfId(new UserId(query.PlayerId));
-        var enemyPlayersDtos = enemyPlayers.ToDTOs(handCardsReversed: true, battlingCardsReversed: isLayCardState);
+        var enemyPlayersDtos = enemyPlayers.ToDTOs(game.FreshLaidCards, handCardsReversed: true);
 
         var centerCardDto = game.CenterCard?.Card.ToDTO();
-
+        
         return result.With(
             new GetGameStateQueryResponse(
                 game.Id.Value, 
@@ -123,19 +129,22 @@ public static class Statistics_ToDTO_Converter
 public static class FieldDeck_ToDTO_Converter
 {
     public static CardDeckDTO ToDTO(
-        this FieldDeck deck, bool isReversed = false) =>
-        new(Cards: deck.GetCards().Select(c => c.ToDTO(isReversed)).ToArray());
+        this FieldDeck deck, bool forceReversed = false, CardId[]? freshLaidCards = null) =>
+        new(Cards: deck.GetCards().Select(c => c.ToDTO(forceReversed, freshLaidCards)).ToArray());
 }
 
 public static class Card_ToDTO_Converter
 {
     public static CardDTO ToDTO(
-        this ICard card, bool isReversed = false)
+        this ICard card, bool forceReversed = false, CardId[]? freshLaidCards = null)
     {
         if (card is null)
             return null;
 
-        if (isReversed)
+        if (freshLaidCards is not null && freshLaidCards.Contains(card.Id))
+            forceReversed = true;
+
+        if (forceReversed)
             return new(
                 card.Id.Value,
                 IsReversed: true);
@@ -167,23 +176,29 @@ public static class Card_ToDTO_Converter
 
 public static class Player_ToDTO_Converter
 {
-    public static PlayerDTO? ToDTO(this Player player,
-        bool handCardsReversed = false, bool battlingCardsReversed = false)
+    public static PlayerDTO? ToDTO(
+        this Player player,
+        CardId[] freshLaidCards,
+        bool handCardsReversed = false, 
+        bool battlingCardsReversed = false)
     {
         if (!player)
             return null;
 
         return new PlayerDTO(
             player.Id.Value,
-            Hero: player.HeroCard.ToDTO(),
-            BattlingDeck: player.BattlingDeck.ToDTO(battlingCardsReversed),
+        Hero: player.HeroCard.ToDTO(),
+            BattlingDeck: player.BattlingDeck.ToDTO(battlingCardsReversed, freshLaidCards),
             HandDeck: player.HandDeck.ToDTO(handCardsReversed),
             HasIdleCards: player.IdleDeck.Count > 0);
     }
 
     public static PlayerDTO?[]? ToDTOs(
-        this IEnumerable<Player> players, bool handCardsReversed = false, bool battlingCardsReversed = false) =>
-        players.Select(p => p.ToDTO(handCardsReversed, battlingCardsReversed)).ToArray();
+        this IEnumerable<Player> players,
+        CardId[] freshLaidCards,
+        bool handCardsReversed = false, 
+        bool battlingCardsReversed = false) =>
+        players.Select(p => p.ToDTO(freshLaidCards, handCardsReversed, battlingCardsReversed)).ToArray();
 }
 
 public static class ActionController_ToDTO_Converter

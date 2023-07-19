@@ -206,7 +206,7 @@ public class Player : Entity<UserId>
                 continue;
             }
 
-            //return false;
+            return false;
         }
 
         HandDeck.TakeCards(cardsToTake.Select(c => c.Id).ToArray());

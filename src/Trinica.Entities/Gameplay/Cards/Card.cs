@@ -5,7 +5,11 @@ namespace Trinica.Entities.Gameplay.Cards;
 public abstract class Card
 {
     protected Card() {}
-    protected Card(string name, Race race, Class @class, Fraction fraction)
+    protected Card(
+        string name, 
+        Race race, 
+        Class @class, 
+        Fraction fraction)
     {
         Name = name;
         Race = race;

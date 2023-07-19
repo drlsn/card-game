@@ -6,8 +6,6 @@ public record CardSource(string Value)
     public static readonly CardSource Own = new CardSource("own");
 }
 
-public record CardToTake(CardSource Source);
-
 public static class CardSourceExtensions
 {
     public static CardToTake ToCardToTake(this string cardSource) =>

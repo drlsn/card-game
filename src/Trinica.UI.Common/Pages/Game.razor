@@ -15,7 +15,8 @@
     @ref=_board 
     Game=@_game 
     OnActionButtonClick=@OnActionButtonClick
-    OnCardClick=@OnCardClick />
+    OnCardClick=@OnCardClick 
+    OnLayCardDown=@OnLayCardDown/>
 
 @code {
     [Inject] public IQueryExecutor QueryExecutor { get; set; }
@@ -47,7 +48,6 @@
                 continue;
 
             await RefreshView();
-            Console.WriteLine("View Refreshed");
         }
     }
 
@@ -65,7 +65,7 @@
         }
     }
 
-    private async Task OnCardClick(string cardId, string playerId, Card.CardDeckType deckType)
+    private async Task OnCardClick(CardDTO cardDTO, string playerId, Card.CardDeckType deckType)
     {
         if (_game.State.ExpectedActionTypes.Contains(nameof(Entities.Gameplay.Game.TakeCardToHand)))
         {
@@ -79,8 +79,16 @@
                 return;
 
             var result = await CommandExecutor.Execute(
-                new LayCardToBattleCommand(_game.Id, _game.Player.PlayerId, cardId));
+                new LayCardToBattleCommand(_game.Id, _game.Player.PlayerId, cardDTO.Id));
         }
+
+        await RefreshView();
+    }
+
+    private async Task OnLayCardDown(string cardId, string? targetCardId = "", bool? toCenter = false)
+    {
+        var result = await CommandExecutor.Execute(
+                new LayCardToBattleCommand(_game.Id, _game.Player.PlayerId, targetCardId));
 
         await RefreshView();
     }

@@ -76,45 +76,19 @@
     }
 
     RenderFragment GetCardByDTO(
-        CardDTO card,
+        CardDTO cardDto,
         string playerId, 
         Card.CardDeckType deckType,
         bool reversed = false)
     {
         return builder =>
         {
-            if (card.Statistics is not null)
-            {
-                <Card @ref=_cards[card.Id]
-                    Id=@(!card.Id.IsNullOrEmpty() ? card.Id : Guid.NewGuid().ToString())
-                    Name=@card.Name
-                    RaceName=@card.Race
-                    ClassName=@card.Class
-                    FractionName=@card.Fraction
-                    HP=@(new Card.Stat(@card.Statistics.HP.Current, @card.Statistics.HP.Original))
-                    Attack=@(new Card.Stat(@card.Statistics.Attack.Current))
-                    Speed=@(new Card.Stat(@card.Statistics.Speed.Current))
-                    Power=@(new Card.Stat(@card.Statistics.Power.Current))
-                    PlayerId=@playerId
-                    DeckType=@deckType
-                    IsReversed=@(reversed || card.IsReversed)
-                    Type=@card.Type
-                    OnCardClick=@OnCardClickInternal />
-            }
-            else
-            {
-                <Card @ref=_cards[card.Id]
-                    Id=@(!card.Id.IsNullOrEmpty() ? card.Id : Guid.NewGuid().ToString())
-                    Name=@card.Name
-                    RaceName=@card.Race
-                    ClassName=@card.Class
-                    FractionName=@card.Fraction
-                    PlayerId=@playerId
-                    DeckType=@deckType
-                    IsReversed=@reversed
-                    Type=@card.Type
-                    OnCardClick=@OnCardClickInternal />
-            }
+            <Card @ref=_cards[cardDto.Id]
+              DTO=@cardDto
+              PlayerId=@playerId
+              DeckType=@deckType
+              IsReversed=reversed
+              OnCardClick=@OnCardClickInternal />
         };
     }
 
@@ -129,8 +103,7 @@
         return builder =>
         {
             <Card @ref=_cards[cardId]
-              Id=@(!cardId.IsNullOrEmpty() ? cardId : Guid.NewGuid().ToString())
-              Name=@name
+              DTO=@(new CardDTO(!cardId.IsNullOrEmpty() ? cardId : Guid.NewGuid().ToString(), reversed, name))
               PlayerId=@playerId
               DeckType=@deckType
               IsReversed=@reversed

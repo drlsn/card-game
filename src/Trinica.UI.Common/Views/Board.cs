@@ -10,10 +10,12 @@ namespace Trinica.UI.Common.Views;
 public partial class Board : BaseElement
 {
     public delegate Task OnActionButtonClickDelegate(string actionName);
+    public delegate Task OnLayCardDownDelegate(string cardId, string? targetCardId = "", bool? toCenter = false);
 
     [Parameter] public GetGameStateQueryResponse? Game { get; set; }
     [Parameter] public OnActionButtonClickDelegate? OnActionButtonClick { get; set; }
     [Parameter] public Card.OnCardClickDelegate? OnCardClick { get; set; }
+    [Parameter] public OnLayCardDownDelegate OnLayCardDown { get; set; }
 
     public IEnumerable<Card> Cards => _cards.Values;
     private Dictionary<string, Card> _cards = new();
@@ -36,10 +38,39 @@ public partial class Board : BaseElement
         await SetState(firstRender);
     }
 
-    private async Task OnCardClickInternal(string cardId, string playerId, Card.CardDeckType deckType)
+    private CardDTO _lastSelectedCard;
+    private async Task OnCardClickInternal(CardDTO cardDTO, string playerId, Card.CardDeckType deckType)
     {
-        if (OnCardClick is not null)
-            await OnCardClick?.Invoke(cardId, playerId, deckType);
+        if (OnCardClick is null)
+            return;
+
+        var actions = Game.State.ExpectedActionTypes;
+        if (actions.Contains(nameof(GameEntity.LayCardToBattle)))
+        {
+            if (playerId != Game.Player.PlayerId)
+                return;
+
+            if (deckType == Card.CardDeckType.BattlingDeck &&
+                (cardDTO.Type == "unit" || cardDTO.Type == "hero") &&
+                (_lastSelectedCard.Type == "skill" || _lastSelectedCard.Type == "item"))
+            {
+                await OnLayCardDown?.Invoke(_lastSelectedCard.Id, cardDTO.Id);
+                _lastSelectedCard = cardDTO;
+                return;
+            }
+
+            if (deckType == Card.CardDeckType.HandDeck &&
+                (cardDTO.Type == "skill" || cardDTO.Type == "item"))
+            {
+                _actionHint = $"Select Target Card for the {cardDTO.Type} or continue";
+                _lastSelectedCard = cardDTO;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+        }
+
+        _lastSelectedCard = cardDTO;
+        await OnCardClick?.Invoke(cardDTO, playerId, deckType);
     }
 
     private async Task SetState(bool firstRender)
@@ -78,7 +109,8 @@ public partial class Board : BaseElement
             }
 
             await ClearOutAllCards();
-            if (!haveToWait && Game.Player.BattlingDeck.Cards.Length < 6)
+            if (!haveToWait && Game.Player.BattlingDeck.Cards.Length < 6 &&
+                (_lastSelectedCard?.Type != "skill" && _lastSelectedCard?.Type != "item"))
                 _actionHint = "Lay The Cards Down or Skip";
         }
         else
