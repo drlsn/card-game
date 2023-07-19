@@ -1,6 +1,8 @@
 ﻿using Corelibs.Basic.UseCases.DTOs;
 using Corelibs.Blazor.UIComponents.Common;
 using Microsoft.AspNetCore.Components;
+using Trinica.Entities.Gameplay.Events;
+using Trinica.UI.Common.State;
 using Trinica.UseCases.Gameplay;
 
 using GameEntity = Trinica.Entities.Gameplay.Game;
@@ -16,6 +18,8 @@ public partial class Board : BaseElement
     [Parameter] public OnActionButtonClickDelegate? OnActionButtonClick { get; set; }
     [Parameter] public Card.OnCardClickDelegate? OnCardClick { get; set; }
     [Parameter] public OnLayCardDownDelegate OnLayCardDown { get; set; }
+
+    [Inject] public GameState State { get; set; }
 
     public IEnumerable<Card> Cards => _cards.Values;
     private Dictionary<string, Card> _cards = new();
@@ -38,11 +42,12 @@ public partial class Board : BaseElement
         await SetState(firstRender);
     }
 
-    private CardDTO _lastSelectedCard;
     private async Task OnCardClickInternal(CardDTO cardDTO, string playerId, Card.CardDeckType deckType)
     {
         if (OnCardClick is null)
             return;
+
+        State.LastSelectedCard = cardDTO;
 
         var actions = Game.State.ExpectedActionTypes;
         if (actions.Contains(nameof(GameEntity.LayCardToBattle)))
@@ -52,24 +57,24 @@ public partial class Board : BaseElement
 
             if (deckType == Card.CardDeckType.BattlingDeck &&
                 (cardDTO.Type == "unit" || cardDTO.Type == "hero") &&
-                (_lastSelectedCard.Type == "skill" || _lastSelectedCard.Type == "item"))
+                (State.LastSelectedCard.Type == "skill" || State.LastSelectedCard.Type == "item"))
             {
-                await OnLayCardDown?.Invoke(_lastSelectedCard.Id, cardDTO.Id);
-                _lastSelectedCard = cardDTO;
+                await OnLayCardDown?.Invoke(State.LastSelectedCard.Id, cardDTO.Id);
                 return;
             }
+
+            State.IsLayingCardToTarget = false;
 
             if (deckType == Card.CardDeckType.HandDeck &&
                 (cardDTO.Type == "skill" || cardDTO.Type == "item"))
             {
-                _actionHint = $"Select Target Card for the {cardDTO.Type} or continue";
-                _lastSelectedCard = cardDTO;
+                
+                State.IsLayingCardToTarget = true;
                 await InvokeAsync(StateHasChanged);
                 return;
             }
         }
 
-        _lastSelectedCard = cardDTO;
         await OnCardClick?.Invoke(cardDTO, playerId, deckType);
     }
 
@@ -109,9 +114,18 @@ public partial class Board : BaseElement
             }
 
             await ClearOutAllCards();
-            if (!haveToWait && Game.Player.BattlingDeck.Cards.Length < 6 &&
-                (_lastSelectedCard?.Type != "skill" && _lastSelectedCard?.Type != "item"))
-                _actionHint = "Lay The Cards Down or Skip";
+            if (!haveToWait)
+            {
+                if (State.IsLayingCardToTarget)
+                {
+                    _actionHint = $"Select Target Card for the {State.LastSelectedCard.Type} or continue";
+                }
+                else
+                if (Game.Player.BattlingDeck.Cards.Length < 6)
+                {
+                    _actionHint = "Lay The Cards Down or Skip";
+                }
+            }
         }
         else
         if (actions.Contains(nameof(GameEntity.PlayDices)))

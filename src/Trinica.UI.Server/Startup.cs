@@ -9,6 +9,7 @@ using System.Security.Claims;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Users;
 using Trinica.Infrastructure.UseCases.Gameplay;
+using Trinica.UI.Common.State;
 using Trinica.UI.Server.Data;
 using Trinica.UseCases.Gameplay;
 
@@ -43,6 +44,8 @@ public static class Startup
         services.AddHostedService(sp => 
             new BotHubWorker(
                 sp.GetRequiredService<IServiceScopeFactory>()));
+
+        services.AddScoped<GameState>();
     }
 
     public static void AddRepositories(this IServiceCollection services, IWebHostEnvironment environment, Assembly assembly)
