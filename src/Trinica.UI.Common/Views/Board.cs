@@ -44,6 +44,8 @@ public partial class Board : BaseElement
 
     private async Task SetState(bool firstRender)
     {
+        _actionButtons.Clear();
+
         var haveToWait = DoesHaveToWaitForAnotherPlayer();
         if (haveToWait)
             _actionHint = "Wait for another player action";
@@ -72,13 +74,18 @@ public partial class Board : BaseElement
             var i = Array.FindIndex(Game.State.ExpectedPlayers, id => id == Game.Player.PlayerId);
             if (Game.State.AlreadyMadeActionsPlayers.Length == i)
             {
-                _actionButtons.Clear();
                 _actionButtons.Add(new(nameof(GameEntity.PassLayCardToBattle), "Pass"));
             }
 
             await ClearOutAllCards();
             if (!haveToWait && Game.Player.BattlingDeck.Cards.Length < 6)
                 _actionHint = "Lay The Cards Down or Skip";
+        }
+        else
+        if (actions.Contains(nameof(GameEntity.PlayDices)))
+        {
+            if (!Game.State.AlreadyMadeActionsPlayers.Contains(Game.Player.PlayerId))
+                _actionHint = "Play Dices";
         }
 
         await InvokeAsync(StateHasChanged);

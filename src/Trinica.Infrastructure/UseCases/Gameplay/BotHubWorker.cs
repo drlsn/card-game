@@ -86,15 +86,10 @@ public class BotHubWorker : BackgroundService
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask PostHandle(
-        LayCardDownOrderCalculatedEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
+    private Task RunLayCardTasks(PlayerData botPlayer, BotGame game, IMediator mediator, CancellationToken ct)
     {
-        if (ev.Players.First().Id != game.BotId)
-            return ValueTask.CompletedTask;
-
-        var botPlayer = ev.Players.First(p => p.Id == game.BotId);
         var handCards = new Queue<CardData>(botPlayer.HandDeck);
-        Task.Run(() => RunPeriodicTask(async random =>
+        return Task.Run(() => RunPeriodicTask(async random =>
         {
             if (handCards.IsEmpty())
             {
@@ -110,20 +105,42 @@ public class BotHubWorker : BackgroundService
 
             return Result.Success();
         }, ct));
+    }
 
+    public ValueTask PostHandle(
+        LayCardDownOrderCalculatedEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
+    {
+        if (ev.Players.First().Id != game.BotId)
+            return ValueTask.CompletedTask;
+
+        var botPlayer = ev.Players.First(p => p.Id == game.BotId);
+        RunLayCardTasks(botPlayer, game, mediator, ct);
         return ValueTask.CompletedTask;
     }
 
-    public async ValueTask PostHandle(
+    public ValueTask PostHandle(
         CardsLayPassedByPlayerEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
     {
+        if (ev.Players.First().Id == game.BotId)
+            return ValueTask.CompletedTask;
 
+        var botPlayer = ev.Players.First(p => p.Id == game.BotId);
+        RunLayCardTasks(botPlayer, game, mediator, ct);
+        return ValueTask.CompletedTask;
     }
 
-    public async ValueTask PostHandle(
+    public ValueTask PostHandle(
         CardsLaidDownEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
     {
+        if (ev.Players.First().Id == game.BotId)
+            return ValueTask.CompletedTask;
 
+        if (ev.CanLayMore)
+            return ValueTask.CompletedTask;
+
+        var botPlayer = ev.Players.First(p => p.Id == game.BotId);
+        RunLayCardTasks(botPlayer, game, mediator, ct);
+        return ValueTask.CompletedTask;
     }
 
     #endregion

@@ -22,6 +22,7 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
         var result = Result<GetGameStateQueryResponse>.Success();
 
         var game = await _gameRepository.Get(new GameId(query.GameId), result);
+        var isLayCardState = game.ActionController.ActionInfo.GetAction(nameof(Game.LayCardsToBattle)) is not null;
 
         var state = game.ActionController.ToDTO();
 
@@ -29,7 +30,7 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
         var playerDto = player.ToDTO()!;
 
         var enemyPlayers = game.Players.NotOfId(new UserId(query.PlayerId));
-        var enemyPlayersDtos = enemyPlayers.ToDTOs();
+        var enemyPlayersDtos = enemyPlayers.ToDTOs(handCardsReversed: true, battlingCardsReversed: isLayCardState);
 
         var centerCardDto = game.CenterCard?.Card.ToDTO();
 
@@ -39,7 +40,7 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
                 game.Version, 
                 state, 
                 playerDto, 
-                enemyPlayersDtos!, 
+                enemyPlayersDtos!,
                 HasCommonCards: game.CommonPool.Count > 0,
                 centerCardDto,
                 game.CenterCard?.PlayerId?.Value));
@@ -77,12 +78,13 @@ public record CardDeckDTO(
 
 public record CardDTO(
     string Id,
-    string Name,
-    string Race,
-    string Class,
-    string Fraction,
-    string Description,
-    string Type,
+    bool IsReversed,
+    string? Name = "",
+    string? Race = "",
+    string? Class = "",
+    string? Fraction = "",
+    string? Description = "",
+    string? Type = "",
     CardStatisticsDTO? Statistics = null);
 
 public record CardStatisticsDTO(
@@ -120,21 +122,29 @@ public static class Statistics_ToDTO_Converter
 
 public static class FieldDeck_ToDTO_Converter
 {
-    public static CardDeckDTO ToDTO(this FieldDeck deck) =>
-        new(Cards: deck.GetCards().Select(c => c.ToDTO()).ToArray());
+    public static CardDeckDTO ToDTO(
+        this FieldDeck deck, bool isReversed = false) =>
+        new(Cards: deck.GetCards().Select(c => c.ToDTO(isReversed)).ToArray());
 }
 
 public static class Card_ToDTO_Converter
 {
-    public static CardDTO ToDTO(this ICard card)
+    public static CardDTO ToDTO(
+        this ICard card, bool isReversed = false)
     {
         if (card is null)
             return null;
 
+        if (isReversed)
+            return new(
+                card.Id.Value,
+                IsReversed: true);
+        
         var type = card.ToTypeString();
         if (card is ICardWithStats cardWithStats)
-            return new CardDTO(
+            return new(
                 card.Id.Value,
+                IsReversed: false,
                 card.Name,
                 card.Race.Name,
                 card.Class.Name,
@@ -143,8 +153,9 @@ public static class Card_ToDTO_Converter
                 type, 
                 cardWithStats.Statistics.ToDTO());
 
-        return new CardDTO(
+        return new(
             card.Id.Value,
+            IsReversed: false,
             card.Name,
             card.Race.Name,
             card.Class.Name,
@@ -156,16 +167,23 @@ public static class Card_ToDTO_Converter
 
 public static class Player_ToDTO_Converter
 {
-    public static PlayerDTO? ToDTO(this Player player) => !player ? null :
-        new PlayerDTO(
+    public static PlayerDTO? ToDTO(this Player player,
+        bool handCardsReversed = false, bool battlingCardsReversed = false)
+    {
+        if (!player)
+            return null;
+
+        return new PlayerDTO(
             player.Id.Value,
             Hero: player.HeroCard.ToDTO(),
-            BattlingDeck: player.BattlingDeck.ToDTO(),
-            HandDeck: player.HandDeck.ToDTO(),
+            BattlingDeck: player.BattlingDeck.ToDTO(battlingCardsReversed),
+            HandDeck: player.HandDeck.ToDTO(handCardsReversed),
             HasIdleCards: player.IdleDeck.Count > 0);
+    }
 
-    public static PlayerDTO?[]? ToDTOs(this IEnumerable<Player> players) =>
-        players.Select(p => p.ToDTO()).ToArray();
+    public static PlayerDTO?[]? ToDTOs(
+        this IEnumerable<Player> players, bool handCardsReversed = false, bool battlingCardsReversed = false) =>
+        players.Select(p => p.ToDTO(handCardsReversed, battlingCardsReversed)).ToArray();
 }
 
 public static class ActionController_ToDTO_Converter

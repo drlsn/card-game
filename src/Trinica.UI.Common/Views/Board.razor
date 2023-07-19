@@ -97,7 +97,7 @@
                     Power=@(new Card.Stat(@card.Statistics.Power.Current))
                     PlayerId=@playerId
                     DeckType=@deckType
-                    IsReversed=@reversed
+                    IsReversed=@(reversed || card.IsReversed)
                     Type=@card.Type
                     OnCardClick=@OnCardClickInternal />
             }
