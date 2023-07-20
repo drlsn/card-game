@@ -136,10 +136,20 @@ public partial class Board : BaseElement
             {
                 Game.Player.DiceOutcomes.ForEach((a, i) =>
                     _actionButtons.Add(new($"dice-{i}", a.Value)));
-
-                if (IsEnemyDone())
-                    _actionButtons.Add(new(nameof(GameEntity.PassReplayDices), "Move On"));
             }
+
+            if (IsRerolling() && !IsPlayerDone())
+            {
+                _actionButtons.Add(new(nameof(GameEntity.PassReplayDices), "Move On"));
+            }
+        }
+        else
+        if (IsAssigning())
+        {
+            Game.Player.DiceOutcomes.ForEach((a, i) =>
+                _actionButtons.Add(new($"dice-{i}", a.Value)));
+
+            _actionHint = "Assign dices to cards";
         }
 
         await InvokeAsync(StateHasChanged);
@@ -152,6 +162,7 @@ public partial class Board : BaseElement
         bool IsLayDown() => actions.Contains(nameof(GameEntity.LayCardToBattle));
         bool IsRolling() => actions.Contains(nameof(GameEntity.PlayDices));
         bool IsRerolling() => actions.Contains(nameof(GameEntity.PassReplayDices));
+        bool IsAssigning() => actions.Contains(nameof(GameEntity.AssignDiceToCard));
     }
 
     public Task GreyOutNonDeckCards()

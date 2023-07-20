@@ -8,12 +8,14 @@ using Trinica.UseCases.Gameplay;
 
 namespace Trinica.Infrastructure.UseCases.Gameplay;
 
-public class BotHub : IBotHub, 
+public class BotHub : IBotHub,
+    INotificationHandler<GameStartedEvent>,
     INotificationHandler<CardsTakenToHandEvent>,
     INotificationHandler<LayCardDownOrderCalculatedEvent>,
     INotificationHandler<CardsLaidDownEvent>,
     INotificationHandler<CardsLayPassedByPlayerEvent>,
-    INotificationHandler<GameStartedEvent>
+    INotificationHandler<DicesPlayedEvent>,
+    INotificationHandler<DicesReplayPassedEvent>
 {
     private readonly IMemoryRepository<User, UserId> _userRepository;
 
@@ -39,6 +41,8 @@ public class BotHub : IBotHub,
     public ValueTask Handle(GameStartedEvent ev, CancellationToken ct) => TryEnqueue(ev);
     public ValueTask Handle(CardsLaidDownEvent ev, CancellationToken ct) => TryEnqueue(ev);
     public ValueTask Handle(CardsLayPassedByPlayerEvent ev, CancellationToken ct) => TryEnqueue(ev);
+    public ValueTask Handle(DicesPlayedEvent ev, CancellationToken ct) => TryEnqueue(ev);
+    public ValueTask Handle(DicesReplayPassedEvent ev, CancellationToken ct) => TryEnqueue(ev);
 
     private bool CanEnqueue(GameEvent ev)
     {

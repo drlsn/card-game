@@ -1,13 +1,10 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Collections;
-using Corelibs.Basic.Functional;
 using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Events;
-using Trinica.Entities.Shared;
 using Trinica.UseCases.Gameplay;
 
 namespace Trinica.Infrastructure.UseCases.Gameplay;
@@ -63,6 +60,14 @@ public class BotHubWorker : BackgroundService
 
                 case CardsLaidDownEvent cardsLaidDownEvent:
                     await PostHandle(cardsLaidDownEvent, game, mediator, stoppingToken);
+                    break;
+
+                case DicesPlayedEvent dicesPlayedEvent:
+                    await PostHandle(dicesPlayedEvent, game, mediator, stoppingToken);
+                    break;
+
+                case DicesReplayPassedEvent dicesReplayPassedEvent:
+                    await PostHandle(dicesReplayPassedEvent, game, mediator, stoppingToken);
                     break;
 
                 default:
@@ -143,6 +148,24 @@ public class BotHubWorker : BackgroundService
         return ValueTask.CompletedTask;
     }
 
+    public async ValueTask PostHandle(
+        DicesPlayedEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
+    {
+        if (ev.PlayerId == game.BotId)
+            return;
+
+        RunPeriodicTask(async random => await mediator.Send(new PlayDicesCommand(game.GameId.Value, game.BotId.Value)), ct);
+    }
+
+    public async ValueTask PostHandle(
+        DicesReplayPassedEvent ev, BotGame game, IMediator mediator, CancellationToken ct)
+    {
+        if (ev.PlayerId == game.BotId)
+            return;
+
+        RunPeriodicTask(async random => await mediator.Send(new PassDicesReplayCommand(game.GameId.Value, game.BotId.Value)), ct);
+    }
+    
     #endregion
 
     private static async Task<Result> RunPeriodicTask(Func<Random, Task<Result>> action, CancellationToken ct)

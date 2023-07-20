@@ -30,10 +30,12 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
         var state = game.ActionController.ToDTO();
 
         var player = game.Players.OfId(new UserId(query.PlayerId));
-        var playerDto = player.ToDTO(game.FreshLaidCards)!;
+
+        var freshLaidCards = isLayCardState ? game.FreshLaidCards : Array.Empty<CardId>();
+        var playerDto = player.ToDTO(freshLaidCards)!;
 
         var enemyPlayers = game.Players.NotOfId(new UserId(query.PlayerId));
-        var enemyPlayersDtos = enemyPlayers.ToDTOs(game.FreshLaidCards, handCardsReversed: true);
+        var enemyPlayersDtos = enemyPlayers.ToDTOs(freshLaidCards, handCardsReversed: true);
 
         var centerCardDto = game.CenterCard?.Card.ToDTO();
         
