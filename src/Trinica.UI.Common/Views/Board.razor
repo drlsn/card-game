@@ -56,7 +56,7 @@
     </aside>
 
     <div class="action-bar">
-        <div class="action-bar">
+        <div class="action-bar-buttons">
             @foreach (var button in _actionButtons)
             {
                 <button class="action-button" @onclick=@(() => OnActionButtonClick?.Invoke(button.Id))>@button.Name</button>

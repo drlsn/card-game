@@ -1,4 +1,5 @@
-﻿using Corelibs.Basic.UseCases.DTOs;
+﻿using Corelibs.Basic.Collections;
+using Corelibs.Basic.UseCases.DTOs;
 using Corelibs.Blazor.UIComponents.Common;
 using Microsoft.AspNetCore.Components;
 using Trinica.Entities.Gameplay.Events;
@@ -82,7 +83,7 @@ public partial class Board : BaseElement
             _actionHint = "Wait for another player action";
 
         var actions = Game.State.ExpectedActionTypes;
-        if (actions.Contains(nameof(GameEntity.TakeCardToHand)))
+        if (IsTakingCards())
         {
             if (!haveToWait && Game.Player.HandDeck.Cards.Length < 6)
                 _actionHint = "Select Deck to take a card from!";
@@ -95,12 +96,12 @@ public partial class Board : BaseElement
                 await GreyOutNonDeckCards();
         }
         else
-        if (actions.Contains(nameof(GameEntity.CalculateLayDownOrderPerPlayer)))
+        if (IsCalcLayDown())
         {
             _actionHint = "Calculating which player should start laying cards first...";
         }
         else
-        if (actions.Contains(nameof(GameEntity.LayCardsToBattle)))
+        if (IsLayDown())
         {
             var i = Array.FindIndex(Game.State.ExpectedPlayers, id => id == Game.Player.PlayerId);
             if (Game.State.AlreadyMadeActionsPlayers.Length == i)
@@ -123,13 +124,34 @@ public partial class Board : BaseElement
             }
         }
         else
-        if (actions.Contains(nameof(GameEntity.PlayDices)))
+        if (IsRolling() || IsRerolling())
         {
-            if (!Game.State.AlreadyMadeActionsPlayers.Contains(Game.Player.PlayerId))
-                _actionHint = "Play Dices";
+            _actionHint = "";
+            if (IsRolling() && !IsPlayerDone())
+            {
+                _actionButtons.Add(new(nameof(GameEntity.PlayDices), "Roll Dices"));
+            }
+
+            if (IsRerolling() || IsPlayerDone())
+            {
+                Game.Player.DiceOutcomes.ForEach((a, i) =>
+                    _actionButtons.Add(new($"dice-{i}", a.Value)));
+
+                if (IsEnemyDone())
+                    _actionButtons.Add(new(nameof(GameEntity.PassReplayDices), "Move On"));
+            }
         }
 
         await InvokeAsync(StateHasChanged);
+
+        bool IsPlayerDone() => Game.State.AlreadyMadeActionsPlayers.Contains(Game.Player.PlayerId);
+        bool IsEnemyDone() => Game.State.AlreadyMadeActionsPlayers.Contains(Game.Enemies[0].PlayerId);
+
+        bool IsTakingCards() => actions.Contains(nameof(GameEntity.TakeCardToHand));
+        bool IsCalcLayDown() => actions.Contains(nameof(GameEntity.CalculateLayDownOrderPerPlayer));
+        bool IsLayDown() => actions.Contains(nameof(GameEntity.LayCardToBattle));
+        bool IsRolling() => actions.Contains(nameof(GameEntity.PlayDices));
+        bool IsRerolling() => actions.Contains(nameof(GameEntity.PassReplayDices));
     }
 
     public Task GreyOutNonDeckCards()

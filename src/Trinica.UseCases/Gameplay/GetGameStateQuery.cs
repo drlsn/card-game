@@ -32,9 +32,6 @@ public class GetGameStateQueryHandler : IQueryHandler<GetGameStateQuery, Result<
         var player = game.Players.OfId(new UserId(query.PlayerId));
         var playerDto = player.ToDTO(game.FreshLaidCards)!;
 
-        //var handCardsStr = playerDto.HandDeck.Cards.Select(c => c.Name).AggregateOrDefault((x, y) => $"{x}, {y}");
-        //Console.WriteLine($"Hand Cards: {handCardsStr}");
-
         var enemyPlayers = game.Players.NotOfId(new UserId(query.PlayerId));
         var enemyPlayersDtos = enemyPlayers.ToDTOs(game.FreshLaidCards, handCardsReversed: true);
 
@@ -77,7 +74,9 @@ public record PlayerDTO(
     CardDTO Hero, 
     CardDeckDTO BattlingDeck, 
     CardDeckDTO HandDeck,
-    bool HasIdleCards);
+    bool HasIdleCards,
+    DiceOutcomeDTO[]? DiceOutcomes = null,
+    CardAssignmentDTO[]? CardAssignments = null);
 
 public record CardDeckDTO(
     CardDTO[] Cards);
@@ -102,6 +101,14 @@ public record CardStatisticsDTO(
 public record CardStatisticDTO(
     int Original,
     int Current);
+
+public record DiceOutcomeDTO(string Value);
+
+public record CardAssignmentDTO(
+    string DiceOutcome,
+    int? SkillIndex = -1,
+    string? SourceCardId = null,
+    string[]? TargetCardIds = null);
 
 public static class CardType_ToString_Converter
 {
@@ -187,10 +194,12 @@ public static class Player_ToDTO_Converter
 
         return new PlayerDTO(
             player.Id.Value,
-        Hero: player.HeroCard.ToDTO(),
+            Hero: player.HeroCard.ToDTO(),
             BattlingDeck: player.BattlingDeck.ToDTO(battlingCardsReversed, freshLaidCards),
             HandDeck: player.HandDeck.ToDTO(handCardsReversed),
-            HasIdleCards: player.IdleDeck.Count > 0);
+            HasIdleCards: player.IdleDeck.Count > 0,
+            DiceOutcomes: player?.DiceOutcomesToAssign?.SelectOrDefault(o => new DiceOutcomeDTO(o.Value)).ToArray(),
+            CardAssignments: player.CardAssignments.Values.ToDTO());
     }
 
     public static PlayerDTO?[]? ToDTOs(
@@ -213,4 +222,16 @@ public static class ActionController_ToDTO_Converter
                 .Select(p => p.Value)
                 .ToArray(),
             controller.ActionInfo.MustObeyOrder);
+}
+
+public static class CardAssignment_ToDTO_Converter
+{
+    public static CardAssignmentDTO ToDTO(this CardAssignment cardAssignment) =>
+        new(cardAssignment.DiceOutcome?.Value,
+            cardAssignment.SkillIndex,
+            cardAssignment.SourceCardId?.Value,
+            cardAssignment.TargetCardIds.SelectOrDefault(c => c.Value).ToArray());
+
+    public static CardAssignmentDTO[] ToDTO(this IEnumerable<CardAssignment> cardAssignments) =>
+        cardAssignments.Select(c => c.ToDTO()).ToArray();
 }

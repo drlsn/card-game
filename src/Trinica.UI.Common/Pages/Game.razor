@@ -63,6 +63,16 @@
             var result = await CommandExecutor.Execute(
                new PassLayCardToBattleCommand(_game.Id, _game.Player.PlayerId));
         }
+        if (actionName == nameof(Entities.Gameplay.Game.PlayDices))
+        {
+            var result = await CommandExecutor.Execute(
+               new PlayDicesCommand(_game.Id, _game.Player.PlayerId));
+        }
+        if (actionName == nameof(Entities.Gameplay.Game.PassReplayDices))
+        {
+            var result = await CommandExecutor.Execute(
+               new PassDicesReplayCommand(_game.Id, _game.Player.PlayerId));
+        }
     }
 
     private async Task OnCardClick(CardDTO cardDTO, string playerId, Card.CardDeckType deckType)

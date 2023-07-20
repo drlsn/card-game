@@ -23,7 +23,7 @@ public class PassDicesReplayCommandHandler : ICommandHandler<PassDicesReplayComm
         _userRepository = userRepository;
         _publisher = publisher;
     }
-
+    
     public async ValueTask<Result> Handle(PassDicesReplayCommand command, CancellationToken ct)
     {
         var result = Result.Success();

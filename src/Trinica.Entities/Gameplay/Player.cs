@@ -226,6 +226,7 @@ public class Player : Entity<UserId>
             .Select(i => Dice.Play(getRandom()))
             .ToList();
 
+        CardAssignments.Clear();
         GetBattlingCards().ForEach(
             card => CardAssignments.TryAdd(card.Id, new() { SourceCardId = card.Id }));
     }
@@ -233,6 +234,9 @@ public class Player : Entity<UserId>
     public bool AssignDiceToCard(int diceIndex, CardId cardId)
     {
         if (DiceOutcomesToAssign.IsNullOrEmpty() || diceIndex >= DiceOutcomesToAssign.Count)
+            return false;
+
+        if (CardAssignments.Any(c => c.Value.DiceOutcomeIndex == diceIndex))
             return false;
 
         var battlingCards = GetBattlingCards();
@@ -262,7 +266,7 @@ public class Player : Entity<UserId>
             return false;
 
         assignment.DiceOutcome = DiceOutcomesToAssign[diceIndex];
-        DiceOutcomesToAssign.RemoveAt(diceIndex);
+        assignment.DiceOutcomeIndex = diceIndex;
 
         return true;
     }
