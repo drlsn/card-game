@@ -16,7 +16,10 @@
     Game=@_game 
     OnActionButtonClick=@OnActionButtonClick
     OnCardClick=@OnCardClick 
-    OnLayCardDown=@OnLayCardDown/>
+    OnLayCardDown=@OnLayCardDown
+    OnAssignDice=@OnAssignDice
+    OnRemoveDice=@OnRemoveDice
+    OnConfirmDiceAssigns=@OnConfirmDiceAssigns />
 
 @code {
     [Inject] public IQueryExecutor QueryExecutor { get; set; }
@@ -27,7 +30,7 @@
     private GetUserQueryResponse _user;
     private GetGameStateQueryResponse _game;
 
-    private Board _board;
+    private Board? _board;
 
     protected override async Task OnInitializedAsync()
     {
@@ -56,22 +59,27 @@
         _cancellationTokenSource.Cancel();
     }
 
-    private async Task OnActionButtonClick(string actionName)
+    private async Task OnActionButtonClick(int index, Board.ActionButtonDTO dto)
     {
-        if (actionName == nameof(Entities.Gameplay.Game.PassLayCardToBattle))
+        if (dto.Id == nameof(Entities.Gameplay.Game.PassLayCardToBattle))
         {
             var result = await CommandExecutor.Execute(
                new PassLayCardToBattleCommand(_game.Id, _game.Player.PlayerId));
         }
-        if (actionName == nameof(Entities.Gameplay.Game.PlayDices))
+        if (dto.Id == nameof(Entities.Gameplay.Game.PlayDices))
         {
             var result = await CommandExecutor.Execute(
                new PlayDicesCommand(_game.Id, _game.Player.PlayerId));
         }
-        if (actionName == nameof(Entities.Gameplay.Game.PassReplayDices))
+        if (dto.Id == nameof(Entities.Gameplay.Game.PassReplayDices))
         {
             var result = await CommandExecutor.Execute(
                new PassDicesReplayCommand(_game.Id, _game.Player.PlayerId));
+        }
+        if (dto.Id == nameof(Entities.Gameplay.Game.AssignDiceToCard))
+        {
+            //var result = await CommandExecutor.Execute(
+            //   new PassDicesReplayCommand(_game.Id, _game.Player.PlayerId));
         }
     }
 
@@ -99,6 +107,30 @@
     {
         var result = await CommandExecutor.Execute(
                 new LayCardToBattleCommand(_game.Id, _game.Player.PlayerId, targetCardId));
+
+        await RefreshView();
+    }
+
+    private async Task OnAssignDice(int diceIndex, string targetCardId)
+    {
+        var result = await CommandExecutor.Execute(
+                new AssignDiceToCardCommand(_game.Id, _game.Player.PlayerId, diceIndex, targetCardId));
+
+        await RefreshView();
+    }
+
+    private async Task OnRemoveDice(string targetCardId)
+    {
+        var result = await CommandExecutor.Execute(
+                new RemoveDiceFromCardCommand(_game.Id, _game.Player.PlayerId, targetCardId));
+
+        await RefreshView();
+    }
+
+    private async Task OnConfirmDiceAssigns()
+    {
+        var result = await CommandExecutor.Execute(
+                new ConfirmAssignDicesToCardsCommand(_game.Id, _game.Player.PlayerId));
 
         await RefreshView();
     }

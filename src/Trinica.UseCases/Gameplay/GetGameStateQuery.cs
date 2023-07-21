@@ -108,6 +108,7 @@ public record DiceOutcomeDTO(string Value);
 
 public record CardAssignmentDTO(
     string DiceOutcome,
+    int DiceOutcomeIndex = -1,
     int? SkillIndex = -1,
     string? SourceCardId = null,
     string[]? TargetCardIds = null);
@@ -230,6 +231,7 @@ public static class CardAssignment_ToDTO_Converter
 {
     public static CardAssignmentDTO ToDTO(this CardAssignment cardAssignment) =>
         new(cardAssignment.DiceOutcome?.Value,
+            cardAssignment.DiceOutcomeIndex,
             cardAssignment.SkillIndex,
             cardAssignment.SourceCardId?.Value,
             cardAssignment.TargetCardIds.SelectOrDefault(c => c.Value).ToArray());

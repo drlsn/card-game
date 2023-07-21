@@ -57,9 +57,11 @@
 
     <div class="action-bar">
         <div class="action-bar-buttons">
-            @foreach (var button in _actionButtons)
+            @for (int i = 0; i < _actionButtons.Count; i++)
             {
-                <button class="action-button" @onclick=@(() => OnActionButtonClick?.Invoke(button.Id))>@button.Name</button>
+                var dto = _actionButtons[i];
+                string bgCss = dto.Color is null ? "" : $"background: {dto.Color};";
+                <button class="action-button" style=@bgCss @onclick =@(() => OnActionButtonClickInternal(i, dto))>@dto.Name</button>
             }
         </div>
         <h5 class="action-hint">@_actionHint</h5>
