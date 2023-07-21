@@ -10,4 +10,4 @@ public class GameState
     public ActionButtonState? LastSelectedActionButton { get; set; }
 }
 
-public record ActionButtonState(int index, ActionButtonDTO dto);
+public record ActionButtonState(int index, ActionButtonDTO dto, bool? interactable = false);

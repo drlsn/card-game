@@ -259,7 +259,8 @@ public class Player : Entity<UserId>
         }
         else
         {
-
+            if (card is SpellCard)
+                return false;
         }
 
         if (!CardAssignments.TryGetValue(cardId, out var assignment))

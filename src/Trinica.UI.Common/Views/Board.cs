@@ -153,7 +153,6 @@ public partial class Board : BaseElement
         else
         if (IsRolling() || IsRerolling())
         {
-            _actionHint = "";
             if (IsRolling() && !IsPlayerDone())
             {
                 _actionButtons.Add(new(nameof(GameEntity.PlayDices), "Roll Dices"));
@@ -162,13 +161,19 @@ public partial class Board : BaseElement
             if (IsRerolling() || IsPlayerDone())
             {
                 Game.Player.DiceOutcomes.ForEach((a, i) =>
-                    _actionButtons.Add(new($"dice-{i}", a.Value)));
+                    _actionButtons.Add(new($"dice-{i}", a.Value)
+                    {
+                        Interactable = false
+                    }));
             }
 
             if (IsRerolling() && !IsPlayerDone())
             {
                 _actionButtons.Add(new(nameof(GameEntity.PassReplayDices), "Move On"));
             }
+
+            if (!IsPlayerDone())
+                _actionHint = "Reroll or pass";
         }
         else
         if (IsAssigning())
@@ -176,13 +181,19 @@ public partial class Board : BaseElement
             Game.Player.DiceOutcomes.ForEach((a, i) =>
                 _actionButtons.Add(new($"dice-{i}", a.Value)));
 
+            if (State.LastSelectedActionButton is not null)
+                _actionButtons[State.LastSelectedActionButton.index].Color = Color.LightSeaGreen.ToHexString();
+
             Game.Player.CardAssignments.ForEach(a =>
             {
                 if (a.DiceOutcome is null ||
                     a.DiceOutcomeIndex == -1)
                     return;
 
-                _actionButtons[a.DiceOutcomeIndex].Color = Color.LightSeaGreen.ToHexString();
+                var allBattlingCards = Game.Player.BattlingDeck.Cards.Prepend(Game.Player.Hero).ToList();
+                int cardIndex = allBattlingCards.FindIndex(c => c.Id == a.SourceCardId);
+                _actionButtons[a.DiceOutcomeIndex].Color = Color.LightGreen.ToHexString();
+                _actionButtons[a.DiceOutcomeIndex].Name += $"-{cardIndex + 1}";
             });
 
             _actionHint = "Assign dices to cards";
@@ -237,8 +248,9 @@ public partial class Board : BaseElement
         }
 
         public string Id { get; }
-        public string Name { get; }
-        public string Color { get; set; }
+        public string Name { get; set; }
+        public string? Color { get; set; }
+        public bool Interactable { get; set; } = true;
     }
 }
 
