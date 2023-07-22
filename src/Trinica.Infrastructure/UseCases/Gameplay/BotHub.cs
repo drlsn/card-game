@@ -15,7 +15,8 @@ public class BotHub : IBotHub,
     INotificationHandler<CardsLaidDownEvent>,
     INotificationHandler<CardsLayPassedByPlayerEvent>,
     INotificationHandler<DicesPlayedEvent>,
-    INotificationHandler<DicesReplayPassedEvent>
+    INotificationHandler<DicesReplayPassedEvent>,
+    INotificationHandler<AssignsDicesToCardConfirmedEvent>
 {
     private readonly IMemoryRepository<User, UserId> _userRepository;
 
@@ -43,6 +44,7 @@ public class BotHub : IBotHub,
     public ValueTask Handle(CardsLayPassedByPlayerEvent ev, CancellationToken ct) => TryEnqueue(ev);
     public ValueTask Handle(DicesPlayedEvent ev, CancellationToken ct) => TryEnqueue(ev);
     public ValueTask Handle(DicesReplayPassedEvent ev, CancellationToken ct) => TryEnqueue(ev);
+    public ValueTask Handle(AssignsDicesToCardConfirmedEvent ev, CancellationToken ct) => TryEnqueue(ev);
 
     private bool CanEnqueue(GameEvent ev)
     {

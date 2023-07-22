@@ -1,9 +1,11 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Collections;
+using Corelibs.Basic.Repository;
 using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Trinica.Entities.Gameplay;
+using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.UseCases.Gameplay;
 
@@ -68,6 +70,10 @@ public class BotHubWorker : BackgroundService
 
                 case DicesReplayPassedEvent dicesReplayPassedEvent:
                     await PostHandle(dicesReplayPassedEvent, game, mediator, stoppingToken);
+                    break;
+
+                case AssignsDicesToCardConfirmedEvent assignsDicesToCardConfirmedEvent:
+                    await PostHandle(assignsDicesToCardConfirmedEvent, game, mediator, scope.ServiceProvider, stoppingToken);
                     break;
 
                 default:
@@ -165,10 +171,56 @@ public class BotHubWorker : BackgroundService
 
         RunPeriodicTask(async random => await mediator.Send(new PassDicesReplayCommand(game.GameId.Value, game.BotId.Value)), ct);
     }
-    
+
+    public async ValueTask PostHandle(
+        AssignsDicesToCardConfirmedEvent ev, BotGame botGame, IMediator mediator, IServiceProvider services, CancellationToken ct)
+    {
+        if (ev.PlayerId == botGame.BotId)
+            return;
+
+        var result = Result.Success();
+        var gameRepository = services.GetRequiredService<IRepository<Game, GameId>>();
+        var game = await gameRepository.Get(botGame.GameId, result);
+        var botPlayer = game.Players.OfId(botGame.BotId);
+
+        var battlingCards = botPlayer.BattlingDeck
+            .GetCards().Prepend(botPlayer.HeroCard)
+            .Select((card, i) => new { card, i })
+            .Where(c => c.card is UnitCard || c.card is HeroCard)
+            .ToArray();
+
+        var diceAttacks = botPlayer.DiceOutcomesToAssign
+            .Select((outcome, i) => new { outcome, i })
+            .Where(d => d.outcome == DiceOutcome.Attack);
+
+        var attacksPerCard = battlingCards.Zip(diceAttacks, (card, attack) => new { card, attack }).ToQueue();
+        RunPeriodicTask(Do, ct, 0, 0);
+
+        async Task<Result> Do(Random random)
+        {
+            var result = Result.Success();
+            if (attacksPerCard.Count > 0)
+            {
+                var attackPerCard = attacksPerCard.Dequeue();
+                result = await mediator.Send(
+                    new AssignDiceToCardCommand(botGame.GameId.Value, botGame.BotId.Value, attackPerCard.attack.i, attackPerCard.card.card.Id.Value));
+                
+                return result;
+            }
+            else
+                await mediator.Send(new ConfirmAssignDicesToCardsCommand(botGame.GameId.Value, botGame.BotId.Value));
+
+            return Result.Failure();
+        }
+    }
+
     #endregion
 
-    private static async Task<Result> RunPeriodicTask(Func<Random, Task<Result>> action, CancellationToken ct)
+    private static async Task<Result> RunPeriodicTask(
+        Func<Random, Task<Result>> action, 
+        CancellationToken ct,
+        int minTime = 500,
+        int maxTime = 1500)
     {
         try
         {
@@ -177,13 +229,11 @@ public class BotHubWorker : BackgroundService
 
             while (result.IsSuccess && !ct.IsCancellationRequested)
             {
-                var delay = random.Next(500, 1500);
-                var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(delay));
-
-                await timer.WaitForNextTickAsync(ct);
+                var delay = random.Next(minTime, maxTime);
+                if (maxTime - minTime > 0)
+                    await new PeriodicTimer(TimeSpan.FromMilliseconds(delay)).WaitForNextTickAsync(ct);
 
                 result = await action(random);
-
             }
 
             return result;

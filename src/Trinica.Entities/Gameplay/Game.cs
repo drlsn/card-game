@@ -324,7 +324,8 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
             return false;
 
         var player = Players.OfId(playerId);
-        player.RemoveDiceFromCard(cardId);
+        if (!player.RemoveDiceFromCard(cardId))
+            return false;
 
         return ActionController
            .SetActionDone(RemoveDiceFromCard, playerId)

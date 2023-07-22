@@ -15,7 +15,7 @@ public partial class Board : BaseElement
     public delegate Task OnActionButtonClickDelegate(int index, ActionButtonDTO dto);
     public delegate Task OnLayCardDownDelegate(string cardId, string? targetCardId = "", bool? toCenter = false);
     public delegate Task OnAssignDiceDelegate(int diceIndex, string targetCardId);
-    public delegate Task OnRemoveDiceDelegate(string targetCardId);
+    public delegate Task OnRemoveDiceDelegate(string cardId);
 
     [Parameter] public GetGameStateQueryResponse? Game { get; set; }
     [Parameter] public OnActionButtonClickDelegate? OnActionButtonClick { get; set; }
@@ -47,9 +47,13 @@ public partial class Board : BaseElement
 
     private async Task OnActionButtonClickInternal(int index, ActionButtonDTO dto)
     {
-        if (IsAssigning())
+        if (IsAssigningDice())
         {
             State.LastSelectedActionButton = new(index, dto);
+
+            if (dto.Id == nameof(GameEntity.ConfirmAssignDicesToCards))
+                await OnConfirmDiceAssigns.Invoke();
+                
             return;
         }
 
@@ -87,8 +91,17 @@ public partial class Board : BaseElement
             }
         }
         else
-        if (IsAssigning())
+        if (IsAssigningDice())
         {
+            var cardAssignment = Game.Player.CardAssignments.FirstOrDefault(c => c.SourceCardId == cardDTO.Id);
+            if (cardAssignment is not null && cardAssignment.DiceOutcome is not null)
+            {
+                if (State.LastSelectedActionButton is not null)
+                    return;
+
+                await OnRemoveDice?.Invoke(cardDTO.Id);
+            }
+
             if (State.LastSelectedActionButton is null)
                 return;
 
@@ -176,12 +189,14 @@ public partial class Board : BaseElement
                 _actionHint = "Reroll or pass";
         }
         else
-        if (IsAssigning())
+        if (IsAssigningDice())
         {
             Game.Player.DiceOutcomes.ForEach((a, i) =>
                 _actionButtons.Add(new($"dice-{i}", a.Value)));
 
-            if (State.LastSelectedActionButton is not null)
+            if (State.LastSelectedActionButton is not null &&
+                State.LastSelectedActionButton.index >= 0 &&
+                State.LastSelectedActionButton.index < _actionButtons.Count - 1)
                 _actionButtons[State.LastSelectedActionButton.index].Color = Color.LightSeaGreen.ToHexString();
 
             Game.Player.CardAssignments.ForEach(a =>
@@ -196,7 +211,16 @@ public partial class Board : BaseElement
                 _actionButtons[a.DiceOutcomeIndex].Name += $"-{cardIndex + 1}";
             });
 
-            _actionHint = "Assign dices to cards";
+            _actionButtons.Add(new(nameof(GameEntity.ConfirmAssignDicesToCards), "Confirm"));
+
+            if (!IsPlayerDone())
+                _actionHint = "Assign dices to cards";
+        }
+        else
+        if (IsAssigningTarget())
+        {
+            if (!IsPlayerDone())
+                _actionHint = "Assign card targets";
         }
 
         await InvokeAsync(StateHasChanged);
@@ -237,7 +261,8 @@ public partial class Board : BaseElement
     private bool IsLayDown() => _actions.Contains(nameof(GameEntity.LayCardToBattle));
     private bool IsRolling() => _actions.Contains(nameof(GameEntity.PlayDices));
     private bool IsRerolling() => _actions.Contains(nameof(GameEntity.PassReplayDices));
-    private bool IsAssigning() => _actions.Contains(nameof(GameEntity.AssignDiceToCard));
+    private bool IsAssigningDice() => _actions.Contains(nameof(GameEntity.AssignDiceToCard));
+    private bool IsAssigningTarget() => _actions.Contains(nameof(GameEntity.AssignCardTarget));
 
     public class ActionButtonDTO
     {

@@ -272,11 +272,15 @@ public class Player : Entity<UserId>
         return true;
     }
 
-    public void RemoveDiceFromCard(CardId cardId)
+    public bool RemoveDiceFromCard(CardId cardId)
     {
-        var card = CardAssignments.TryGetOrAddValue(cardId);
-        DiceOutcomesToAssign.Add(card.DiceOutcome);
+        if (!CardAssignments.TryGetValue(cardId, out var card))
+            return false;
+
         card.DiceOutcome = null;
+        card.DiceOutcomeIndex = -1;
+
+        return true;
     }
 
     public void ChooseCardSkill(CardId cardId, int skillIndex)
