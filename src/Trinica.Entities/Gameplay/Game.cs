@@ -1,8 +1,6 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
-using System;
-using System.Linq;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Shared;

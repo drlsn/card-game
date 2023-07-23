@@ -76,6 +76,10 @@ public class BotHubWorker : BackgroundService
                     await PostHandle(assignsDicesToCardConfirmedEvent, game, mediator, scope.ServiceProvider, stoppingToken);
                     break;
 
+                case AssignTargetsToCardConfirmedEvent assignTargetsToCardConfirmedEvent:
+                    await PostHandle(assignTargetsToCardConfirmedEvent, game, mediator, scope.ServiceProvider, stoppingToken);
+                    break;
+
                 default:
                     continue;
             }//todo: remove obsolete games!
@@ -212,6 +216,15 @@ public class BotHubWorker : BackgroundService
 
             return Result.Failure();
         }
+    }
+
+    public async ValueTask PostHandle(
+        AssignTargetsToCardConfirmedEvent ev, BotGame game, IMediator mediator, IServiceProvider services, CancellationToken ct)
+    {
+        if (ev.PlayerId == game.BotId)
+            return;
+
+        //RunPeriodicTask(async random => await mediator.Send(new PassDicesReplayCommand(game.GameId.Value, game.BotId.Value)), ct);
     }
 
     #endregion

@@ -16,6 +16,7 @@ public partial class Board : BaseElement
     public delegate Task OnLayCardDownDelegate(string cardId, string? targetCardId = "", bool? toCenter = false);
     public delegate Task OnAssignDiceDelegate(int diceIndex, string targetCardId);
     public delegate Task OnRemoveDiceDelegate(string cardId);
+    public delegate Task OnAssignCardTargetDelegate(string cardId, string targetCardId);
 
     [Parameter] public GetGameStateQueryResponse? Game { get; set; }
     [Parameter] public OnActionButtonClickDelegate? OnActionButtonClick { get; set; }
@@ -24,6 +25,7 @@ public partial class Board : BaseElement
     [Parameter] public OnAssignDiceDelegate OnAssignDice { get; set; }
     [Parameter] public OnRemoveDiceDelegate OnRemoveDice { get; set; }
     [Parameter] public Func<Task> OnConfirmDiceAssigns { get; set; }
+    [Parameter] public OnAssignCardTargetDelegate OnAssignCardTarget { get; set; }
 
     [Inject] public GameState State { get; set; }
 
@@ -36,6 +38,8 @@ public partial class Board : BaseElement
     private bool _wholeCardClickOnly;
 
     private readonly List<ActionButtonDTO> _actionButtons = new();
+
+    private readonly List<Arrow.ArrowDTO> _arrows = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -65,6 +69,7 @@ public partial class Board : BaseElement
         if (OnCardClick is null)
             return;
 
+        var lastSelectedCard = State.LastSelectedCard;
         State.LastSelectedCard = cardDTO;
 
         if (IsLayDown())
@@ -74,7 +79,7 @@ public partial class Board : BaseElement
 
             if (deckType == Card.CardDeckType.BattlingDeck &&
                 (cardDTO.Type == "unit" || cardDTO.Type == "hero") &&
-                (State.LastSelectedCard.Type == "skill" || State.LastSelectedCard.Type == "item"))
+                (cardDTO.Type == "skill" || cardDTO.Type == "item"))
             {
                 await OnLayCardDown?.Invoke(State.LastSelectedCard.Id, cardDTO.Id);
                 return;
@@ -107,9 +112,19 @@ public partial class Board : BaseElement
 
             var btn = State.LastSelectedActionButton;
             State.LastSelectedActionButton = null;
+            State.LastSelectedCard = null;
 
             await OnAssignDice?.Invoke(btn.index, cardDTO.Id);
             return;
+        }
+        if (IsAssigningTarget())
+        {
+            if (lastSelectedCard is not null)
+            {
+                State.LastSelectedCard = null;
+                await OnAssignCardTarget?.Invoke(lastSelectedCard.Id, cardDTO.Id);
+                return;
+            }
         }
 
         await OnCardClick?.Invoke(cardDTO, playerId, deckType);
@@ -118,6 +133,7 @@ public partial class Board : BaseElement
     private async Task SetState(bool firstRender)
     {
         _actionButtons.Clear();
+        _arrows.Clear();
 
         var haveToWait = DoesHaveToWaitForAnotherPlayer();
         if (haveToWait)
@@ -221,6 +237,14 @@ public partial class Board : BaseElement
         {
             if (!IsPlayerDone())
                 _actionHint = "Assign card targets";
+
+            Game.Player.CardAssignments.ForEach(a =>
+            {
+                if (a.TargetCardIds.IsNullOrEmpty())
+                    return;
+
+                _arrows.Add(new(a.SourceCardId, a.TargetCardIds[0]));
+            });
         }
 
         await InvokeAsync(StateHasChanged);

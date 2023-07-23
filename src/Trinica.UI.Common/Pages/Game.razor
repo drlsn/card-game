@@ -19,7 +19,8 @@
     OnLayCardDown=@OnLayCardDown
     OnAssignDice=@OnAssignDice
     OnRemoveDice=@OnRemoveDice
-    OnConfirmDiceAssigns=@OnConfirmDiceAssigns />
+    OnConfirmDiceAssigns=@OnConfirmDiceAssigns
+    OnAssignCardTarget=@OnAssignCardTarget />
 
 @code {
     [Inject] public IQueryExecutor QueryExecutor { get; set; }
@@ -131,6 +132,14 @@
     {
         var result = await CommandExecutor.Execute(
             new ConfirmAssignDicesToCardsCommand(_game.Id, _game.Player.PlayerId));
+
+        await RefreshView();
+    }
+
+    private async Task OnAssignCardTarget(string cardId, string targetCardId)
+    {
+        var result = await CommandExecutor.Execute(
+            new AssignTargetToCardCommand(_game.Id, _game.Player.PlayerId, cardId, targetCardId));
 
         await RefreshView();
     }

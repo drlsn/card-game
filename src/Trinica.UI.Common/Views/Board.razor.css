@@ -37,6 +37,7 @@ div ::deep .card-view:hover {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
+  position: relative;
 }
 
 aside {

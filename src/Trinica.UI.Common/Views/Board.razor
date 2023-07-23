@@ -38,6 +38,11 @@
                 </div>
             </section>
         </section>
+
+        @foreach (var arrow in _arrows)
+        {
+            <Arrow DTO=arrow />
+        }
     </div>
 
     <aside>
