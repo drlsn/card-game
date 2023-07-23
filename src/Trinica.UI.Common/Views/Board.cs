@@ -3,6 +3,7 @@ using Corelibs.Basic.Colors;
 using Corelibs.Blazor.UIComponents.Common;
 using Microsoft.AspNetCore.Components;
 using System.Drawing;
+using Trinica.Entities.Gameplay.Events;
 using Trinica.UI.Common.State;
 using Trinica.UseCases.Gameplay;
 
@@ -26,6 +27,7 @@ public partial class Board : BaseElement
     [Parameter] public OnRemoveDiceDelegate OnRemoveDice { get; set; }
     [Parameter] public Func<Task> OnConfirmDiceAssigns { get; set; }
     [Parameter] public OnAssignCardTargetDelegate OnAssignCardTarget { get; set; }
+    [Parameter] public Func<Task> OnConfirmTargetAssigns { get; set; }
 
     [Inject] public GameState State { get; set; }
 
@@ -56,6 +58,15 @@ public partial class Board : BaseElement
             if (dto.Id == nameof(GameEntity.ConfirmAssignDicesToCards))
                 await OnConfirmDiceAssigns.Invoke();
                 
+            return;
+        }
+        if (IsAssigningTarget())
+        {
+            State.LastSelectedActionButton = new(index, dto);
+
+            if (dto.Id == nameof(GameEntity.ConfirmCardTargets))
+                await OnConfirmTargetAssigns.Invoke();
+
             return;
         }
 
@@ -242,9 +253,9 @@ public partial class Board : BaseElement
 
                 if (!_cards.TryGetValue(a.SourceCardId, out Card card))
                     return;
-
-
             });
+
+            _actionButtons.Add(new(nameof(GameEntity.ConfirmCardTargets), "Confirm"));
         }
 
         await InvokeAsync(StateHasChanged);
@@ -287,6 +298,26 @@ public partial class Board : BaseElement
     private bool IsRerolling() => _actions.Contains(nameof(GameEntity.PassReplayDices));
     private bool IsAssigningDice() => _actions.Contains(nameof(GameEntity.AssignDiceToCard));
     private bool IsAssigningTarget() => _actions.Contains(nameof(GameEntity.AssignCardTarget));
+
+    private string[] GetCardTargets(CardDTO cardDto, string playerId)
+    {
+        if (playerId.IsNullOrEmpty() || playerId != Game.Player.PlayerId)
+            return Array.Empty<string>();
+
+        var cardTargetName = "";
+        var cardAssign = Game.Player.CardAssignments.FirstOrDefault(c => c.SourceCardId == cardDto.Id);
+        if (cardAssign is not null && !cardAssign.TargetCardIds.IsNullOrEmpty())
+        {
+            var targetCard = Game.Enemies[0]
+                .BattlingDeck.Cards.Prepend(Game.Enemies[0].Hero)
+                .Select((card, i) => new { card, i })
+                .FirstOrDefault(c => c.card.Id == cardAssign.TargetCardIds[0]);
+
+            cardTargetName = (targetCard.i + 1).ToString();
+        }
+
+        return new string[] { cardTargetName };
+    }
 
     public class ActionButtonDTO
     {

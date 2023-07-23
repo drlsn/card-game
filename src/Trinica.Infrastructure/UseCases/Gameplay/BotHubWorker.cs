@@ -219,12 +219,49 @@ public class BotHubWorker : BackgroundService
     }
 
     public async ValueTask PostHandle(
-        AssignTargetsToCardConfirmedEvent ev, BotGame game, IMediator mediator, IServiceProvider services, CancellationToken ct)
+        AssignTargetsToCardConfirmedEvent ev, BotGame botGame, IMediator mediator, IServiceProvider services, CancellationToken ct)
     {
-        if (ev.PlayerId == game.BotId)
+        if (ev.PlayerId == botGame.BotId)
             return;
 
-        //RunPeriodicTask(async random => await mediator.Send(new PassDicesReplayCommand(game.GameId.Value, game.BotId.Value)), ct);
+        var result = Result.Success();
+        var gameRepository = services.GetRequiredService<IRepository<Game, GameId>>();
+        var game = await gameRepository.Get(botGame.GameId, result);
+
+        var botPlayer = game.Players.OfId(botGame.BotId);
+        var realPlayer = game.Players.NotOfId(botGame.BotId)[0];
+
+        var botBattlingCardsAbleToAttack = botPlayer.BattlingDeck
+            .GetCards().Prepend(botPlayer.HeroCard)
+            .Select((card, i) => new { card, i })
+            .Where(c => c.card is UnitCard || c.card is HeroCard && botPlayer.CardAssignments.Any(c => c.Value.DiceOutcome == DiceOutcome.Attack))
+            .ToArray();
+
+        var realPlayerBattlingCards = realPlayer.BattlingDeck
+            .GetCards().Prepend(botPlayer.HeroCard)
+            .Select((card, i) => new { card, i })
+            .Where(c => c.card is UnitCard || c.card is HeroCard)
+            .ToArray();
+
+        var battlingCardsAndTargets = botBattlingCardsAbleToAttack.Zip(realPlayerBattlingCards, (source, target) => new { source, target }).ToQueue();
+        RunPeriodicTask(Do, ct, 0, 0);
+
+        async Task<Result> Do(Random random)
+        {
+            var result = Result.Success();
+            if (battlingCardsAndTargets.Count > 0)
+            {
+                var cardPair = battlingCardsAndTargets.Dequeue();
+                result = await mediator.Send(
+                    new AssignTargetToCardCommand(botGame.GameId.Value, botGame.BotId.Value, cardPair.source.card.Id.Value, cardPair.target.card.Id.Value));
+
+                return result;
+            }
+            else
+                await mediator.Send(new ConfirmAssignTargetsToCardCommand(botGame.GameId.Value, botGame.BotId.Value));
+
+            return Result.Failure();
+        }
     }
 
     #endregion

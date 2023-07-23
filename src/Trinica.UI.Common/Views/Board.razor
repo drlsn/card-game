@@ -89,21 +89,10 @@
     {
         return builder =>
         {
-            var cardTargetName = "";
-            var cardAssign = Game.Player.CardAssignments.FirstOrDefault(c => c.SourceCardId == cardDto.Id);
-            if (cardAssign is not null && !cardAssign.TargetCardIds.IsNullOrEmpty())
-            {
-                var targetCard = Game.Enemies[0]
-                    .BattlingDeck.Cards.Prepend(Game.Enemies[0].Hero)
-                    .Select((card, i) => new { card, i })
-                    .FirstOrDefault(c => c.card.Id == cardAssign.TargetCardIds[0]);
-
-                cardTargetName = (targetCard.i + 1).ToString();
-            }
             <Card @ref=_cards[cardDto.Id]
               DTO=@cardDto
               PlayerId=@playerId
-              Targets=@(new string[] { cardTargetName })
+              Targets=@GetCardTargets(cardDto, playerId)
               DeckType=@deckType
               IsReversed=reversed
               OnCardClick=@OnCardClickInternal />
