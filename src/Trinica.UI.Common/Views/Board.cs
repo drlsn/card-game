@@ -39,8 +39,6 @@ public partial class Board : BaseElement
 
     private readonly List<ActionButtonDTO> _actionButtons = new();
 
-    private readonly List<Arrow.ArrowDTO> _arrows = new();
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
@@ -133,7 +131,6 @@ public partial class Board : BaseElement
     private async Task SetState(bool firstRender)
     {
         _actionButtons.Clear();
-        _arrows.Clear();
 
         var haveToWait = DoesHaveToWaitForAnotherPlayer();
         if (haveToWait)
@@ -243,7 +240,10 @@ public partial class Board : BaseElement
                 if (a.TargetCardIds.IsNullOrEmpty())
                     return;
 
-                _arrows.Add(new(a.SourceCardId, a.TargetCardIds[0]));
+                if (!_cards.TryGetValue(a.SourceCardId, out Card card))
+                    return;
+
+
             });
         }
 

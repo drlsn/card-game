@@ -24,6 +24,22 @@ else
     @onclick=@OnCardClickInternal>
         <h2 class="name" style=@_fontSizeStyle>@DTO.Name</h2>
         <h2 class="type" style=@_fontSizeStyle>@DTO.Type</h2>
+        @if (!Targets.IsNullOrEmptyOrNotOne())
+        {
+            <div class="target-panel">
+                @if (!Targets.All(t => t.IsNullOrEmpty()))
+                {
+                    <label class="target-label">TRG:</label>
+                }
+                @foreach (var target in Targets)
+                {
+                    if (target.IsNullOrEmpty())
+                        continue;
+
+                    <span class="target-value">@target</span>
+                }
+            </div>
+        }
         <section class="info-panel">
             <h6 class="info-panel-text race-text" style=@_fontSizeStyle>@DTO.Race</h6>
             <h6 class="info-panel-text class-text" style=@_fontSizeStyle>@DTO.Class</h6>
@@ -105,6 +121,7 @@ else
 
     [Parameter] public CardDTO? DTO { get; set; } = new("", false, "");
 
+    [Parameter] public string[]? Targets { get; set; }
     [Parameter] public string? PlayerId { get; set; }
     [Parameter] public string? ReverseName { get; set; }
 

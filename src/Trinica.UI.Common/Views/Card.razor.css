@@ -158,3 +158,18 @@
     text-align:center;
     transform: translate(-50%, -50%);
 }
+
+.target-panel {
+    display: flex;
+    position: absolute;
+    top: 50%;
+    left: 3%;
+}
+
+.target-label {
+
+}
+
+.target-value {
+
+}
