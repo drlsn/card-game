@@ -15,4 +15,6 @@ public abstract class GameEvent : INotification
 
     public GameId GameId { get; }
     public UserId? PlayerId { get; }
+
+    public virtual string ToMessage() => "";
 }

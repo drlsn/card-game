@@ -34,6 +34,16 @@ public class ConfirmAssignTargetsToCardCommandHandler : ICommandHandler<ConfirmA
         if (!game.ConfirmCardTargets(user.Id))
             return result.Fail();
 
+        if (game.StartRound())
+        {
+            if (!game.PerformRound())
+                return result.Fail();
+
+            if (!game.IsRoundOngoing())
+                if (!game.FinishRound())
+                    return result.Fail();
+        }
+
         await _publisher.Publish(new AssignTargetsToCardConfirmedEvent(game.Id, user.Id));
         await _gameRepository.Save(game, result);
 

@@ -8,12 +8,7 @@ using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Gameplay;
 
-public class GameId : EntityId
-{
-    public GameId(string value) : base(value)
-    {
-    }
-}
+public class GameId : EntityId { public GameId(string value) : base(value) {} }
 
 public class Game : Entity<GameId>, IAggregateRoot<GameId>
 {
@@ -65,7 +60,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             .IsSuccess;
     }
 
-    public bool TakeCardToHand(UserId playerId, CardToTake card, Random random = null)
+    public bool TakeCardToHand(UserId playerId, CardToTake card, Random? random = null)
     {
         if (!ActionController.CanMakeAction(TakeCardToHand, playerId))
             return false;
@@ -89,7 +84,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         return ActionController.SetActionDone(TakeCardToHand, playerId).IsSuccess;
     }
 
-    public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random random = null)
+    public bool TakeCardsToHand(UserId playerId, CardToTake[] cards, Random? random = null)
     {
         if (!ActionController.CanMakeAction(TakeCardsToHand, playerId))
             return false;
@@ -392,7 +387,7 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
             .IsSuccess;
     }
 
-    public bool StartRound(Random random)
+    public bool StartRound(Random? random = null)
     {
         if (!ActionController.CanMakeAction(StartRound))
             return false;
@@ -407,6 +402,7 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
                     .IsSuccess;
         }
 
+        random ??= new Random();
         _cardIndex = 0;
         _cards = Players.GetBattlingCardsBySpeed(random);
         _cards.ForEach(card =>
@@ -527,6 +523,12 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
 
                     var targetPlayer = Players.GetPlayerWithCard(targetCard.Id);
                     targetPlayer.InflictDamage(move.Damage, targetCard.Id);
+                    if (move.Damage > 0)
+                        Add(new DamageInflictedEvent(Id,
+                            attacker: new(player.Id, "", card.Id, card.Name),
+                            target: new(targetPlayer.Id, "", targetCard.Id, targetCard.Name),
+                            move.Damage));
+
                     if (targetPlayer.IsCardDead(targetCard))
                     {
                         if (targetCard is HeroCard)
@@ -632,11 +634,12 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
         return ActionController.SetActionExpectedNext(PerformMove).IsSuccess;
     }
 
-    public bool PerformRound(Random random)
+    public bool PerformRound(Random? random = null)
     {
         if (!ActionController.CanMakeAction(PerformRound))
             return false;
 
+        random ??= new();
         _cards ??= Players.GetBattlingCardsBySpeed(random);
 
         while (IsRoundOngoing())
@@ -646,11 +649,12 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
         return true;
     }
 
-    public bool FinishRound(Random random)
+    public bool FinishRound(Random? random = null)
     {
         if (!ActionController.CanMakeAction(FinishRound))
             return false;
 
+        random = new();
         _cards.ForEach(card =>
         {
             if (card is not ICombatCard combatCard)
