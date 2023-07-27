@@ -67,7 +67,7 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
         user.ChangeLastGame(game.Id);
         await _userRepository.Save(user, result);
 
-        await _publisher.Publish(new GameStartedEvent(game.Id));
+        await _publisher.PublishEvents(game);
 
         return result;
     }

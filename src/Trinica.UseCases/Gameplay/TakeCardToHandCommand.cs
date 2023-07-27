@@ -37,17 +37,10 @@ public class TakeCardToHandCommandHandler : ICommandHandler<TakeCardToHandComman
         if (!game.TakeCardToHand(user.Id, command.CardToTake.ToCardToTake()))
             return result.Fail();
 
-        await _publisher.Publish(new CardsTakenToHandEvent(user.Id, game.Id));
-
-        if (game.CanDo(game.CalculateLayDownOrderPerPlayer))
-        {
-            if (game.CalculateLayDownOrderPerPlayer())
-                await _publisher.Publish(new LayCardDownOrderCalculatedEvent(
-                    game.Id,
-                    game.Players.OrderBy(p => game.CardsLayOrderPerPlayer.ToList().IndexOf(p.Id)).ToArray().ToPlayerData(CardType_ToString_Converter.ToTypeString)));
-        }
+        game.CalculateLayDownOrderPerPlayer(CardType_ToString_Converter.ToTypeString);
 
         await _gameRepository.Save(game, result);
+        await _publisher.PublishEvents(game);
 
         return result;
     }

@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
+using Corelibs.Basic.UseCases;
 using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
@@ -35,8 +36,8 @@ public class AssignTargetToCardCommandHandler : ICommandHandler<AssignTargetToCa
         if (!game.AssignCardTarget(user.Id, new CardId(cmd.CardId), new CardId(cmd.TargetCardId)))
             return result.Fail();
 
-        await _publisher.Publish(new AssignTargetToCardEvent(game.Id, user.Id));
         await _gameRepository.Save(game, result);
+        await _publisher.PublishEvents(game);
 
         return result;
     }

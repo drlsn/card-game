@@ -1,9 +1,9 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
+using Corelibs.Basic.UseCases;
 using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
-using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Shared;
 using Trinica.Entities.Users;
 
@@ -35,8 +35,8 @@ public class AssignDiceToCardCommandHandler : ICommandHandler<AssignDiceToCardCo
         if (!game.AssignDiceToCard(user.Id, cmd.DiceIndex, new CardId(cmd.CardId)))
             return result.Fail();
 
-        await _publisher.Publish(new DiceAssignedToCardEvent(game.Id, user.Id));
         await _gameRepository.Save(game, result);
+        await _publisher.PublishEvents(game);
 
         return result;
     }

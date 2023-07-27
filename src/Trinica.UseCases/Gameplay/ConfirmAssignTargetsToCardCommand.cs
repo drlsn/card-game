@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
+using Corelibs.Basic.UseCases;
 using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
@@ -44,8 +45,8 @@ public class ConfirmAssignTargetsToCardCommandHandler : ICommandHandler<ConfirmA
                     return result.Fail();
         }
 
-        await _publisher.Publish(new AssignTargetsToCardConfirmedEvent(game.Id, user.Id));
         await _gameRepository.Save(game, result);
+        await _publisher.PublishEvents(game);
 
         return result;
     }

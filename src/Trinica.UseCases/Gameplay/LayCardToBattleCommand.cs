@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
+using Corelibs.Basic.UseCases;
 using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
@@ -33,14 +34,11 @@ public class LayCardToBattleCommandHandler : ICommandHandler<LayCardToBattleComm
         var game = await _gameRepository.Get(new GameId(command.GameId), result);
 
         var cardToLay = new CardToLay(new CardId(command.CardId), new CardId(command.TargetCardId), command.ToCenter);
-        if (!game.LayCardToBattle(user.Id, cardToLay))
+        if (!game.LayCardToBattle(user.Id, cardToLay, CardType_ToString_Converter.ToTypeString))
             return result.Fail();
 
-        var canStillLayCardDown = game.CanLayCardDown(user.Id);
-        await _publisher.Publish(new CardsLaidDownEvent(game.Id, user.Id, new[] { cardToLay }, canStillLayCardDown, 
-            game.Players.ToPlayerData(CardType_ToString_Converter.ToTypeString)));
-
         await _gameRepository.Save(game, result);
+        await _publisher.PublishEvents(game);
 
         return result;
     }

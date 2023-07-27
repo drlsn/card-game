@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
+using Corelibs.Basic.UseCases;
 using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
@@ -34,8 +35,8 @@ public class PlayDicesCommandHandler : ICommandHandler<PlayDicesCommand, Result>
         if (!game.PlayDices(user.Id))
             return result.Fail();
 
-        await _publisher.Publish(new DicesPlayedEvent(game.Id, user.Id));
         await _gameRepository.Save(game, result);
+        await _publisher.PublishEvents(game);
 
         return result;
     }

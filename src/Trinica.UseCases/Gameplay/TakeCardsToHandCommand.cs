@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
+using Corelibs.Basic.UseCases;
 using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
@@ -33,20 +34,10 @@ public class TakeCardsToHandCommandHandler : ICommandHandler<TakeCardsToHandComm
         if (!game.TakeCardsToHand(user.Id, command.CardsToTake.ToCardsToTake()))
             return result.Fail();
 
-        await _publisher.Publish(new CardsTakenToHandEvent(user.Id, game.Id));
-
-        game.CalculateLayDownOrderPerPlayer();
-        if (game.CanDo(game.CalculateLayDownOrderPerPlayer))
-        {
-            if (game.CalculateLayDownOrderPerPlayer())
-                await _publisher.Publish(new LayCardDownOrderCalculatedEvent(
-                    game.Id, game.Players.Select(p => new PlayerData(
-                        p.Id,
-                        p.HandDeck.GetCards().Select(c => new CardData(c.Id, c.ToTypeString())).ToArray(),
-                        p.BattlingDeck.GetCards().Select(c => new CardData(c.Id, c.ToTypeString())).ToArray())).ToArray()));
-        }
+        game.CalculateLayDownOrderPerPlayer(CardType_ToString_Converter.ToTypeString);
 
         await _gameRepository.Save(game, result);
+        await _publisher.PublishEvents(game);
 
         return result;
     }

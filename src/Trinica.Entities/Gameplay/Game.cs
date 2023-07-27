@@ -1,6 +1,7 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
+using System.Linq;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Shared;
@@ -39,6 +40,8 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         if (!ActionController.CanMakeAction(StartGame, playerId))
             return false;
 
+        Add(new GameStartedEvent(Id));
+
         return ActionController
             .SetActionDone(StartGame, playerId)
             .SetActionExpectedNext(TakeCardsToCommonPool)
@@ -75,6 +78,8 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             if (card.Source == CardSource.Own)
             player.TakeCardToHand(random ?? new());
 
+        Add(new CardsTakenToHandEvent(playerId, Id));
+
         if (!player.CanTakeCardToHand(out max, CommonPool.Count))
             return ActionController
                 .SetActionDone(TakeCardsToHand, playerId)
@@ -109,6 +114,8 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 player.TakeCardToHand(random ?? new());
         });
 
+        Add(new CardsTakenToHandEvent(playerId, Id));
+
         return SetNextAction();
 
         bool SetNextAction() =>
@@ -118,7 +125,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 .IsSuccess;
     }
 
-    public bool CalculateLayDownOrderPerPlayer()
+    public bool CalculateLayDownOrderPerPlayer(Func<ICard, string>? toTypeStringFunc = null)
     {
         if (!ActionController.CanMakeAction(CalculateLayDownOrderPerPlayer))
             return false;
@@ -127,6 +134,10 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         CardsLayOrderPerPlayer = Players
             .GetPlayersOrderedByHeroSpeed()
             .ToIds();
+
+        toTypeStringFunc ??= _ => "";
+        Add(new LayCardDownOrderCalculatedEvent(
+            Id, Players.OrderBy(p => CardsLayOrderPerPlayer.ToList().IndexOf(p.Id)).ToArray().ToPlayerData(toTypeStringFunc)));
 
         return ActionController
             .SetActionDone(CalculateLayDownOrderPerPlayer)
@@ -146,7 +157,8 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         return player.CanLayCardDown();
     }
 
-    public bool LayCardToBattle(UserId playerId, CardToLay card)
+    public bool LayCardToBattle(UserId playerId, CardToLay card,
+        Func<ICard, string>? toTypeStringFunc = null)
     {
         if (!ActionController.CanMakeAction(LayCardToBattle, playerId))
             return false;
@@ -161,6 +173,10 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
                 return false;
 
         FreshLaidCards = FreshLaidCards?.Append(card.SourceCardId).ToArray() ?? Array.Empty<CardId>();
+
+        var canStillLayCardDown = CanLayCardDown(playerId);
+        Add(new CardsLaidDownEvent(Id, playerId, new[] { card }, canStillLayCardDown,
+            Players.ToPlayerData(toTypeStringFunc)));
 
         if (!player.CanLayCardDown())
             return ActionController
@@ -232,10 +248,13 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         return cards;
     }
 
-    public bool PassLayCardToBattle(UserId playerId)
+    public bool PassLayCardToBattle(UserId playerId,
+        Func<ICard, string>? toTypeStringFunc = null)
     {
         if (!ActionController.CanMakeAction(PassLayCardToBattle, playerId))
             return false;
+
+        Add(new CardsLayPassedByPlayerEvent(Id, playerId, Players.ToPlayerData(toTypeStringFunc)));
 
         return ActionController
             .SetActionDone(PassLayCardToBattle, playerId)
@@ -250,13 +269,15 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
         return PlayDices(playerId, () => random);
     }
 
-public bool PlayDices(UserId playerId, Func<Random> getRandom)
+    public bool PlayDices(UserId playerId, Func<Random> getRandom)
     {
         if (!ActionController.CanMakeAction(nameof(PlayDices), playerId))
             return false;
 
         var player = Players.OfId(playerId);
         player.PlayDices(getRandom);
+
+        Add(new DicesPlayedEvent(Id, playerId));
 
         return ActionController
             .SetActionDone(nameof(PlayDices), playerId)
@@ -270,6 +291,8 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
     {
         if (!ActionController.CanMakeAction(PassReplayDices, playerId))
             return false;
+
+        Add(new DicesReplayPassedEvent(Id, playerId));
 
         return ActionController
             .SetActionDone(PassReplayDices, playerId)
@@ -306,6 +329,8 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
         if (!player.AssignDiceToCard(diceIndex, cardId))
             return false;
 
+        Add(new DiceAssignedToCardEvent(Id, playerId));
+
         return ActionController
             .SetActionDone(AssignDiceToCard, playerId)
             .IsSuccess;
@@ -320,6 +345,8 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
         if (!player.RemoveDiceFromCard(cardId))
             return false;
 
+        Add(new DiceRemovedFromCardEvent(Id, playerId));
+
         return ActionController
            .SetActionDone(RemoveDiceFromCard, playerId)
            .IsSuccess;
@@ -327,6 +354,11 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
 
     public bool ConfirmAssignDicesToCards(UserId playerId)
     {
+        if (!ActionController.CanMakeAction(ConfirmAssignDicesToCards, playerId))
+            return false;
+
+        Add(new AssignsDicesToCardConfirmedEvent(Id, playerId));
+
         return ActionController
             .SetActionDone(ConfirmAssignDicesToCards, playerId)
             .SetActionExpectedNext(ChooseCardSkill, ActionRepeat.Multiple)
@@ -356,7 +388,10 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
             return false;
 
         var player = Players.OfId(playerId);
-        player.AssignCardTarget(cardId, targetCardId);
+        if (!player.AssignCardTarget(cardId, targetCardId))
+            return false;
+
+        Add(new AssignTargetToCardEvent(Id, playerId));
 
         return ActionController
             .SetActionDone(AssignCardTarget, playerId)
@@ -380,6 +415,8 @@ public bool PlayDices(UserId playerId, Func<Random> getRandom)
     {
         if (!ActionController.CanMakeAction(ConfirmCardTargets, playerId))
             return false;
+
+        Add(new AssignTargetsToCardConfirmedEvent(Id, playerId));
 
         return ActionController
             .SetActionDone(ConfirmCardTargets, playerId)

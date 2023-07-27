@@ -1,5 +1,6 @@
 ﻿using Corelibs.Basic.Blocks;
 using Corelibs.Basic.Repository;
+using Corelibs.Basic.UseCases;
 using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
@@ -32,12 +33,11 @@ public class PassLayCardToBattleCommandHandler : ICommandHandler<PassLayCardToBa
         var user = await _userRepository.Get(new UserId(command.PlayerId), result);
         var game = await _gameRepository.Get(new GameId(command.GameId), result);
 
-        if (!game.PassLayCardToBattle(user.Id))
+        if (!game.PassLayCardToBattle(user.Id, CardType_ToString_Converter.ToTypeString))
             return result.Fail();
 
-        var canStillLayCardDown = game.CanLayCardDown(user.Id);
-        await _publisher.Publish(new CardsLayPassedByPlayerEvent(game.Id, user.Id, game.Players.ToPlayerData(CardType_ToString_Converter.ToTypeString)));
         await _gameRepository.Save(game, result);
+        await _publisher.PublishEvents(game);
 
         return result;
     }

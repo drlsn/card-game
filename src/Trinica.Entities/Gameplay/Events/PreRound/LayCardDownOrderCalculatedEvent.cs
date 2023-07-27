@@ -16,10 +16,10 @@ public class LayCardDownOrderCalculatedEvent : GameEvent
 
 public static class LayCardDownOrderCalculatedEventExtensions
 {
-    public static PlayerData[] ToPlayerData(this Player[] players, Func<ICard, string> toTypeStringFunc) =>
+    public static PlayerData[] ToPlayerData(this Player[] players, Func<ICard, string>? toTypeStringFunc) =>
         players.Select(p => new PlayerData(
             p.Id,
-            p.HandDeck.GetCards().Select(c => new CardData(c.Id, toTypeStringFunc(c))).ToArray(),
-            p.BattlingDeck.GetCards().Select(c => new CardData(c.Id, toTypeStringFunc(c))).ToArray()))
+            p.HandDeck.GetCards().Select(c => new CardData(c.Id, toTypeStringFunc is not null ? toTypeStringFunc(c) : "")).ToArray(),
+            p.BattlingDeck.GetCards().Select(c => new CardData(c.Id, toTypeStringFunc is not null ? toTypeStringFunc(c) : "")).ToArray()))
         .ToArray();
 }
