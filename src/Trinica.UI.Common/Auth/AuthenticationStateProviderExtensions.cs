@@ -36,4 +36,10 @@ public static class AuthenticationStateProviderExtensions
         var state = await auth.GetAuthenticationStateAsync();
         return state.User.GetUserID();
     }
+
+    public static async Task<bool> IsAdmin(this AuthenticationStateProvider auth)
+    {
+        var state = await auth.GetAuthenticationStateAsync();
+        return state.User.IsAdmin();
+    }
 }

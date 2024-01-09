@@ -1,7 +1,6 @@
 ﻿using Corelibs.Basic.Collections;
 using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
-using System.Linq;
 using Trinica.Entities.Gameplay.Cards;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Shared;
@@ -13,7 +12,7 @@ public class GameId : EntityId { public GameId(string value) : base(value) {} }
 
 public class Game : Entity<GameId>, IAggregateRoot<GameId>
 {
-    public const string DefaultCollectionName = "games";
+    public static string DefaultCollectionName { get; } = "games";
 
     public Player[] Players { get; private set; }
     public FieldDeck CommonPool { get; private set; }

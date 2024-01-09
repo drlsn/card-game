@@ -1,9 +1,10 @@
-﻿using Mediator;
+﻿using Corelibs.Basic.DDD;
+using Mediator;
 using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Gameplay.Events;
 
-public abstract class GameEvent : INotification
+public abstract class GameEvent : INotification, IDomainEvent
 {
     public GameEvent(
         GameId gameId,
@@ -17,4 +18,7 @@ public abstract class GameEvent : INotification
     public UserId? PlayerId { get; }
 
     public virtual string ToMessage() => "";
+
+    public string Id => throw new NotImplementedException();
+    public long Timestamp => throw new NotImplementedException();
 }

@@ -13,7 +13,8 @@ public class UserId : EntityId
 [Serializable]
 public class User : Entity<UserId>, IAggregateRoot<UserId>
 {
-    public const string DefaultCollectionName = "users";
+    public static string DefaultCollectionName { get; } = "users";
+
     public User(UserId id) : base(id) {}
     public User(UserId id, uint version) : base(id, version) { }
 
