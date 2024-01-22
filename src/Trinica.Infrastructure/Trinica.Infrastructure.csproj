@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Corelibs.MongoDB\Corelibs.MongoDB\Corelibs.MongoDB.csproj" />
+    <ProjectReference Include="..\Corelibs.MongoDB\Corelibs.MongoDB\Corelibs.MongoDB.csproj" />
     <ProjectReference Include="..\Trinica.UseCases\Trinica.UseCases.csproj" />
   </ItemGroup>
 
