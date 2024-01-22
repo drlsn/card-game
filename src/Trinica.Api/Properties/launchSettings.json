@@ -37,7 +37,8 @@
         "ASPNETCORE_HTTP_PORTS": "8080"
       },
       "publishAllPorts": true,
-      "useSSL": true
+      "useSSL": true,
+      "DockerfileRunArguments": "-p 5166:8080"
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

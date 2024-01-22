@@ -5,15 +5,12 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Mediator;
 using System.Reflection;
-using System.Security.Claims;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Users;
 using Trinica.Infrastructure.UseCases.Gameplay;
-using Trinica.UI.Common.State;
-using Trinica.UI.Server.Data;
 using Trinica.UseCases.Gameplay;
 
-namespace Trinica.UI.Server;
+namespace Trinica.Api;
 
 public static class Startup
 {
@@ -22,8 +19,6 @@ public static class Startup
         var entitiesAssembly = typeof(Entities.Users.User).Assembly;
         var useCasesAssembly = typeof(UseCases.Users.CreateUserCommand).Assembly;
 
-        services.AddScoped<IAccessorAsync<ClaimsPrincipal>, ClaimsPrincipalAccessor>();
-        
         services.AddFluentValidationAutoValidation();
         services.AddValidatorsFromAssembly(useCasesAssembly);
 
@@ -44,8 +39,6 @@ public static class Startup
         services.AddHostedService(sp => 
             new BotHubWorker(
                 sp.GetRequiredService<IServiceScopeFactory>()));
-
-        services.AddScoped<GameState>();
     }
 
     public static void AddRepositories(this IServiceCollection services, IWebHostEnvironment environment, Assembly assembly)
