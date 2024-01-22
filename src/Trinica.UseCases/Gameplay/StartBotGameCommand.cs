@@ -107,5 +107,5 @@ public record StartBotGameCommand(string PlayerId) : ICommand<Result>;
 
 public class StartBotGameValidator : UserRequestValidator<StartBotGameCommand>
 {
-    public StartBotGameValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
+    //public StartBotGameValidator(IAccessorAsync<ClaimsPrincipal> userAccessor) : base(userAccessor) { }
 }

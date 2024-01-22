@@ -3,4 +3,7 @@
 GET {{Trinica.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
+GET {{Trinica.Api_HostAddress}}/healthz/
+Accept: application/json
+
 ###
