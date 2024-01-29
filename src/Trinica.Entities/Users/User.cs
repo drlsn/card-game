@@ -3,13 +3,6 @@ using Trinica.Entities.Gameplay;
 
 namespace Trinica.Entities.Users;
 
-public class UserId : EntityId
-{
-    public UserId(string value) : base(value)
-    {
-    }
-}
-
 [Serializable]
 public class User : Entity<UserId>, IAggregateRoot<UserId>
 {
@@ -18,7 +11,10 @@ public class User : Entity<UserId>, IAggregateRoot<UserId>
     public User(UserId id) : base(id) {}
     public User(UserId id, uint version) : base(id, version) { }
 
+    public int TutorialStep { get; private set; } = -1;
     public GameId LastGameId { get; private set; }
 
     public void ChangeLastGame(GameId gameId) => LastGameId = gameId;
 }
+
+public class UserId(string value) : EntityId(value);

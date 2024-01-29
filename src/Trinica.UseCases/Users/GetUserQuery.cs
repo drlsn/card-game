@@ -20,7 +20,12 @@ public class GetUserQueryHandler : IQueryHandler<GetUserQuery, Result<GetUserQue
 
         var user = await _userRepository.Get(new UserId(query.UserId), result);
 
-        return result.With(new GetUserQueryResponse(user.Id.Value, user.Version, user.LastGameId.Value));
+        return result.With(
+            new GetUserQueryResponse(   
+                user.Id.Value, 
+                user.Version, 
+                user.LastGameId.Value,
+                user.TutorialStep));
     }
 }
 
@@ -30,4 +35,5 @@ public record GetUserQuery(
 public record GetUserQueryResponse(
     string Id,
     uint Version,
-    string LastGameId);
+    string LastGameId,
+    int TutorialStep);

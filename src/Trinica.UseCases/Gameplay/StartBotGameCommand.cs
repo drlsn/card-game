@@ -50,7 +50,7 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
 
         var player = CreatePlayer(decks.Item1.Item1, decks.Item1.Item2, user.Id);
         var bot = CreatePlayer(decks.Item2.Item1, decks.Item2.Item2);
-        game = new Game(EntityId.New<GameId>(), new[] { player, bot });
+        game = new Game(EntityId.New<GameId>(), [ player, bot ]);
         if (!game.StartGame(player.Id))
             return result.Fail();
 

@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace Corelibs.Basic.Repository;
+﻿namespace Corelibs.Basic.Repository;
 
 public interface IAccessor<out T>
 {

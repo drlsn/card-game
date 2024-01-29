@@ -166,7 +166,7 @@ public class Game : Entity<GameId>, IAggregateRoot<GameId>
             return false;
 
         var player = Players.OfId(playerId);
-        var cards = TryLayCardToCenter(player, new[] { card });
+        var cards = TryLayCardToCenter(player, [ card ]);
         if (!cards.IsNullOrEmpty())
             if (!player.LayCardsToBattle(cards))
                 return false;

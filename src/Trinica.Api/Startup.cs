@@ -5,6 +5,8 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Mediator;
 using System.Reflection;
+using System.Security.Claims;
+using Trinica.Api.Authorization;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Users;
 using Trinica.Infrastructure.UseCases.Gameplay;
@@ -16,6 +18,8 @@ public static class Startup
 {
     public static void InitializeApp(this IServiceCollection services, IWebHostEnvironment environment)
     {
+        services.AddScoped<IAccessorAsync<ClaimsPrincipal>, CurrentUserAccessor>();
+
         var entitiesAssembly = typeof(Entities.Users.User).Assembly;
         var useCasesAssembly = typeof(UseCases.Users.CreateUserCommand).Assembly;
 
@@ -69,6 +73,7 @@ public static class Startup
             return memoryRepositoryDecorator;
         });
 
+        // Just for bots
         services.AddScoped<IMemoryRepository<User, UserId>>(sp => _userMemoryRepository);
     }
 }
