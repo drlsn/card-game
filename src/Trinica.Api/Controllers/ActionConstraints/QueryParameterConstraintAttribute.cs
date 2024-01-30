@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.Extensions.Primitives;
 
-namespace Corelibs.AspNetApi.Controllers.ActionConstraints
+namespace Trinica.Api.Controllers.ActionConstraints
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class QueryParameterConstraintAttribute : ActionMethodSelectorAttribute

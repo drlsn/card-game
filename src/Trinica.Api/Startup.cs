@@ -4,6 +4,7 @@ using Corelibs.MongoDB;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Mediator;
+using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
 using System.Security.Claims;
 using Trinica.Api.Authorization;
@@ -19,7 +20,7 @@ public static class Startup
     public static void InitializeApp(this IServiceCollection services, IWebHostEnvironment environment)
     {
         services.AddScoped<IAccessorAsync<ClaimsPrincipal>, CurrentUserAccessor>();
-
+        
         var entitiesAssembly = typeof(Entities.Users.User).Assembly;
         var useCasesAssembly = typeof(UseCases.Users.CreateUserCommand).Assembly;
 
