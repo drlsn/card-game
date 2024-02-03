@@ -38,7 +38,7 @@
       },
       "publishAllPorts": true,
       "useSSL": true,
-      "DockerfileRunArguments": "-p 5166:8080"
+      "DockerfileRunArguments": "-p 5166:8080 -e \"TrinicaDatabaseConn=mongodb://trinica-db-1:27017?directConnection=true\" -e \"ASPNETCORE_ENVIRONMENT=Development\" --net=trinica-db"
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

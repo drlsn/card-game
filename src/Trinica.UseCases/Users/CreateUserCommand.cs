@@ -30,8 +30,7 @@ public class CreateUserCommandHandler : ICommandHandler<CreateUserCommand, Resul
         if (user != null)
             return result;
 
-        user = new User(
-            userId);
+        user = new User(userId);
 
         await _userRepository.Save(user, result);
 
