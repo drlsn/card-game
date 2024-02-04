@@ -25,7 +25,7 @@ namespace Trinica.Api.Extensions
             if (result == null)
                 return "Something went wrong".To404Result();
 
-            if (result.ValidateSuccessAndValues())
+            if (!result.ValidateSuccessAndValues())
                 return result.To404();
 
             return new OkObjectResult(result);
