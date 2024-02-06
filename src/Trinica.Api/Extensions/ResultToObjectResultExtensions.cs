@@ -1,35 +1,36 @@
 ﻿using Corelibs.Basic.Blocks;
 using Microsoft.AspNetCore.Mvc;
+using Trinica.ApiContracts;
 
 namespace Trinica.Api.Extensions
 {
     public static class ResultToObjectResultExtensions
     {
-        public static ObjectResult To404(this Result result) =>
+        public static ObjectResult To404(this ApiResult result) =>
             new ObjectResult(result)
             {
                 StatusCode = StatusCodes.Status404NotFound
             };
 
         public static ObjectResult To404Result(this string errorMessage) =>
-            Result.Failure(errorMessage).To404();
+            ApiResult.Failure(errorMessage).To404();
 
-        public static ObjectResult To204(this Result result) =>
+        public static ObjectResult To204(this ApiResult result) =>
             new ObjectResult(result)
             {
                 StatusCode = StatusCodes.Status204NoContent
             };
 
         public static ObjectResult To204Result(this string errorMessage) =>
-            Result.Failure(errorMessage).To204();
+            ApiResult.Failure(errorMessage).To204();
 
-        public static ObjectResult To200(this Result result) =>
+        public static ObjectResult To200(this ApiResult result) =>
             new ObjectResult(result)
             {
                 StatusCode = StatusCodes.Status200OK
             };
 
         public static ObjectResult To200Result(this string errorMessage) =>
-            Result.Failure(errorMessage).To200();
+            ApiResult.Failure(errorMessage).To200();
     }
 }
