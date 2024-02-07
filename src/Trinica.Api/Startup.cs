@@ -4,7 +4,6 @@ using Corelibs.MongoDB;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Mediator;
-using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
 using System.Security.Claims;
 using Trinica.Api.Authorization;
