@@ -26,4 +26,18 @@ public class GameController(IMediator mediator) : BaseController
         var appCommand = new StartBotGameCommand(UserID);
         return await _mediator.SendAndGetPostResponse(appCommand);
     }
+
+    [HttpGet("events")]
+    public async Task GetEvents()
+    {
+        var response = Response;
+        response.Headers.Add("Content-Type", "text/event-stream");
+
+        for (var i = 0; i < 10; i++)
+        {
+            await response.WriteAsync($"data: Bobolo {i + 1}\n\n");
+            await response.Body.FlushAsync();
+            await Task.Delay(1000);
+        }
+    }
 }
