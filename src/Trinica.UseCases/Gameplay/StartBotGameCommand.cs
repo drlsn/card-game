@@ -4,11 +4,9 @@ using Corelibs.Basic.DDD;
 using Corelibs.Basic.Repository;
 using Corelibs.Basic.UseCases;
 using Mediator;
-using System.Security.Claims;
 using Trinica.Entities.Decks;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Cards;
-using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Users;
 
 namespace Trinica.UseCases.Gameplay;
@@ -41,7 +39,8 @@ public class StartBotGameCommandHandler : ICommandHandler<StartBotGameCommand, R
         Game game;
         if (user.LastGameId is not null)
         {
-            game = await _gameRepository.Get(user.LastGameId, result);
+            var getGameResult = await _gameRepository.GetBy(user.LastGameId);
+            game = getGameResult.Get();
             if (result.IsSuccess && game is not null)
                 return result.Fail("Can't start another game while already in one.");
         }

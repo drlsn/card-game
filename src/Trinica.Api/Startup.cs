@@ -29,6 +29,7 @@ public static class Startup
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(MongoDbCommandTransactionBehaviour<,>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(MongoDbQueryBehaviour<,>));
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(PessimisticGameLockBehaviour<,>));
 
         services.AddScoped<IQueryExecutor, MediatorQueryExecutor>();
         services.AddScoped<ICommandExecutor, MediatorCommandExecutor>();

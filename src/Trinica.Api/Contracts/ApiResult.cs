@@ -1,6 +1,7 @@
 ﻿using Corelibs.Basic.Collections;
+using System.Text.Json.Serialization;
 
-namespace Trinica.ApiContracts;
+namespace Trinica.Api.Contracts;
 
 public class ApiResult
 {
@@ -12,6 +13,7 @@ public class ApiResult
     public bool IsSuccess => !_messages.ContainsErrors();
 
     public Message[] Messages => _messages.ToArray();
+    [JsonIgnore]
     public string Message => _messages.Select(m => m.Content).AggregateOrEmpty((x, y) => $"{x}. {y}", string.Empty);
 
     public ApiResult(List<Message> messages)

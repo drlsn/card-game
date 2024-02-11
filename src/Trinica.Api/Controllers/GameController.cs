@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Trinica.Api.Extensions;
+using Trinica.ApiContracts.Games;
 using Trinica.UseCases.Gameplay;
 
 namespace Trinica.Api.Controllers;
@@ -27,8 +28,18 @@ public class GameController(IMediator mediator) : BaseController
         return await _mediator.SendAndGetPostResponse(appCommand);
     }
 
-    [HttpGet("events")]
-    public async Task GetEvents()
+    [HttpPost("{gameId}/takeCardToHand")]
+    public async Task<IActionResult> TakeCardToHand(TakeCardToHandApiCommand command)
+    {
+        if (!User.Identity.IsAuthenticated)
+            return BadRequest();
+
+        var appCommand = new TakeCardToHandCommand(command.GameId, command.Body.PlayerId, command.Body.CardToTakeId);
+        return await _mediator.SendAndGetPostResponse(appCommand);
+    }
+
+    [HttpGet("{gameId}/events")]
+    public async Task GetEvents(string gameId)
     {
         var response = Response;
         response.Headers.Add("Content-Type", "text/event-stream");

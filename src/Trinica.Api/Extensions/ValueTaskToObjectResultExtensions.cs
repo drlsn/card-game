@@ -1,6 +1,5 @@
-﻿using Corelibs.Basic.Blocks;
-using Microsoft.AspNetCore.Mvc;
-using Trinica.ApiContracts;
+﻿using Microsoft.AspNetCore.Mvc;
+using Trinica.Api.Contracts;
 
 namespace Trinica.Api.Extensions
 {

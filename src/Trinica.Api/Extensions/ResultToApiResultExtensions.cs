@@ -1,5 +1,5 @@
 ﻿using Corelibs.Basic.Blocks;
-using Trinica.ApiContracts;
+using Trinica.Api.Contracts;
 
 namespace Trinica.Api.Extensions;
 
