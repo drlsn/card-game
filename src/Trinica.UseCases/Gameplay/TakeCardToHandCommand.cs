@@ -34,7 +34,7 @@ public class TakeCardToHandCommandHandler : ICommandHandler<TakeCardToHandComman
 
         var user = await _userRepository.Get(new UserId(command.PlayerId), result);
         var game = await _gameRepository.Get(new GameId(command.GameId), result);
-        if (!game.TakeCardToHand(user.Id, command.CardToTakeId.ToCardToTake()))
+        if (!game.TakeCardToHand(user.Id, command.CardToTake.ToCardToTake()))
             return result.Fail();
 
         game.CalculateLayDownOrderPerPlayer(CardType_ToString_Converter.ToTypeString);
@@ -46,7 +46,7 @@ public class TakeCardToHandCommandHandler : ICommandHandler<TakeCardToHandComman
     }
 }
 
-public record TakeCardToHandCommand(string GameId, string PlayerId, string CardToTakeId) : ICommand<Result>, IGameCommand;
+public record TakeCardToHandCommand(string GameId, string PlayerId, string CardToTake) : ICommand<Result>, IGameCommand;
 public interface IGameCommand 
 {
     string GameId { get; }

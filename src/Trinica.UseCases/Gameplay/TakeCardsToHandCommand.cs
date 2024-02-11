@@ -4,7 +4,6 @@ using Corelibs.Basic.UseCases;
 using FluentValidation;
 using Mediator;
 using Trinica.Entities.Gameplay;
-using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Users;
 
 namespace Trinica.UseCases.Gameplay;
