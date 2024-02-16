@@ -55,15 +55,12 @@ public class GamesController(
         bool done = false;
         _gameEventsDispatcher.Subscribe(query.GameId, query.Body.PlayerId, onEvent: async ev =>
         {
-            if (ev is GameFinishedOutEvent finishedEv)
-            {
-                done = true;
-                return;
-            }
-
             var dataJson = JsonConvert.SerializeObject(ev);
+
             await Response.WriteAsync($"data: {dataJson}\n\n");
             await Response.Body.FlushAsync();
+
+            done = ev is GameFinishedOutEvent;
         });
 
         while (!done && !HttpContext.RequestAborted.IsCancellationRequested)
