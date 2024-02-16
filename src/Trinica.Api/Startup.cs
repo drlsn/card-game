@@ -1,4 +1,5 @@
-﻿using Corelibs.Basic.Repository;
+﻿using Corelibs.Basic.DDD;
+using Corelibs.Basic.Repository;
 using Corelibs.Basic.UseCases;
 using Corelibs.MongoDB;
 using FluentValidation;
@@ -8,6 +9,7 @@ using System.Reflection;
 using System.Security.Claims;
 using Trinica.Api.Authorization;
 using Trinica.Entities.Gameplay;
+using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Users;
 using Trinica.Infrastructure.UseCases.Gameplay;
 using Trinica.UseCases.Gameplay;
@@ -44,6 +46,15 @@ public static class Startup
         services.AddHostedService(sp => 
             new BotHubWorker(
                 sp.GetRequiredService<IServiceScopeFactory>()));
+
+        services.AddSingleton<IEventsDispatcher<GameId, UserId, GameEvent>>(
+            new RoomEventsDispatcher<GameId, UserId, GameEvent>(
+                getRoomIdValue: id => id.Value,
+                getUserIdValue: id => id.Value,
+                toRoomId: value => new(value),
+                toUserId: value => new(value),
+                getRoomId: ev => ev.GameId,
+                getUserId: ev => ev.PlayerId));
     }
 
     public static void AddRepositories(this IServiceCollection services, IWebHostEnvironment environment, Assembly assembly)

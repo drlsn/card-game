@@ -1,5 +1,4 @@
-﻿using Mediator;
-using Trinica.Entities.Users;
+﻿using Trinica.Entities.Users;
 
 namespace Trinica.Entities.Gameplay.Events;
 
