@@ -1,4 +1,4 @@
-﻿using Corelibs.Basic.DDD;
+﻿using Corelibs.Basic.Events;
 using Corelibs.Basic.Repository;
 using Corelibs.Basic.UseCases;
 using Corelibs.MongoDB;

@@ -138,6 +138,22 @@ namespace Corelibs.Basic.Functional
                 action(value);
         }
 
+        public static TOut ThenReturn<TIn, TOut>(this TIn value, Func<TIn, TOut> action)
+        {
+            if (value != null)
+                return action(value);
+
+            return default;
+        }
+
+        public static async Task<TOut> ThenReturn<TIn, TOut>(this TIn value, Func<TIn, Task<TOut>> action)
+        {
+            if (value != null)
+                return await action(value);
+
+            return default;
+        }
+
         public static T Then<T>(this Action action1, Func<T> action2)
         {
             if (action1 != null)

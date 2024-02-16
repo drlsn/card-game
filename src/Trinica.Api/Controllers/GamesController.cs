@@ -1,14 +1,13 @@
-﻿using Mediator;
+﻿using Corelibs.Basic.Events;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Text.Json;
 using Trinica.Api.Extensions;
 using Trinica.ApiContracts.Games;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Users;
-using Trinica.Infrastructure.UseCases.Gameplay;
 using Trinica.UseCases.Gameplay;
 using Trinica.UseCases.Gameplay.Events;
 
@@ -62,12 +61,12 @@ public class GamesController(
                 return;
             }
 
-            var dataJson = JsonConvert.SerializeObject((ev);
+            var dataJson = JsonConvert.SerializeObject(ev);
             await Response.WriteAsync($"data: {dataJson}\n\n");
             await Response.Body.FlushAsync();
         });
 
-        while (done || HttpContext.RequestAborted.IsCancellationRequested)
+        while (!done && !HttpContext.RequestAborted.IsCancellationRequested)
             await Task.Delay(10);
 
         _gameEventsDispatcher.Unsubscribe(query.Body.PlayerId);
