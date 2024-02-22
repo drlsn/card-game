@@ -5,7 +5,7 @@ using Trinica.Entities.Gameplay.Events;
 
 namespace Trinica.Infrastructure.UseCases.Gameplay;
 
-internal class GameEventsSaver(
+public class GameEventsSaver(
     IEventStore<GameId, GameEvent> eventStore) :
     INotificationHandler<GameStartedEvent>,
     INotificationHandler<GameFinishedEvent>,
