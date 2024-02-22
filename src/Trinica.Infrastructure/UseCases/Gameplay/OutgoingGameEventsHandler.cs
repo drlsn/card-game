@@ -2,13 +2,14 @@
 using Mediator;
 using Trinica.Entities.Gameplay;
 using Trinica.Entities.Gameplay.Events;
-using Trinica.Entities.Users;
 
 namespace Trinica.Infrastructure.UseCases.Gameplay;
 
-public class GameEventsToDispatcherHandler(
-    IEventsDispatcher<GameId, UserId, GameEvent> gameEventsDispatcher) :
+public class OutgoingGameEventsHandler(
+    IRoomEventsDispatcher<GameEvent> gameEventsDispatcher,
+    IRoomSetup<GameId> gameSetup) :
     INotificationHandler<GameStartedEvent>,
+    INotificationHandler<GameFinishedEvent>,
     INotificationHandler<CardsTakenToHandEvent>,
     INotificationHandler<LayCardDownOrderCalculatedEvent>,
     INotificationHandler<CardsLaidDownEvent>,
@@ -19,13 +20,14 @@ public class GameEventsToDispatcherHandler(
     INotificationHandler<AssignTargetToCardEvent>,
     INotificationHandler<AssignTargetsToCardConfirmedEvent>
 {
-    private readonly IEventsDispatcher<GameId, UserId, GameEvent> _gameEventsDispatcher = gameEventsDispatcher;
+    private readonly IRoomEventsDispatcher<GameEvent> _gameEventsDispatcher = gameEventsDispatcher;
+    private readonly IRoomSetup<GameId> _gameSetup = gameSetup;
 
     public ValueTask Handle(GameStartedEvent ev, CancellationToken ct) 
-        => Run(() => _gameEventsDispatcher.AddRoom(ev.GameId));
+        => Run(() => _gameSetup.AddRoom(ev.GameId));
 
     public ValueTask Handle(GameFinishedEvent ev , CancellationToken ct) => 
-        Run(() => _gameEventsDispatcher.AddRoom(ev.GameId));
+        Run(() => _gameSetup.AddRoom(ev.GameId));
 
     public ValueTask Handle(CardsTakenToHandEvent ev, CancellationToken ct) => On(ev, ct);
     public ValueTask Handle(LayCardDownOrderCalculatedEvent ev, CancellationToken ct) => On(ev, ct);

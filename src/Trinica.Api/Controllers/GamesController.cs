@@ -2,12 +2,8 @@
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using Trinica.Api.Extensions;
 using Trinica.ApiContracts.Games;
-using Trinica.Entities.Gameplay;
-using Trinica.Entities.Gameplay.Events;
-using Trinica.Entities.Users;
 using Trinica.UseCases.Gameplay;
 using Trinica.UseCases.Gameplay.Events;
 
@@ -18,10 +14,10 @@ namespace Trinica.Api.Controllers;
 [Authorize]
 public class GamesController(
     IMediator mediator,
-    IEventsDispatcher<GameId, UserId, GameEvent> gameEventsDispatcher) : BaseController
+    IRoomEventsSubscriber gameEventsSubscriber) : BaseController
 {
     private readonly IMediator _mediator = mediator;
-    private readonly IEventsDispatcher<GameId, UserId, GameEvent> _gameEventsDispatcher = gameEventsDispatcher;
+    private readonly IRoomEventsSubscriber _gameEventsSubscriber = gameEventsSubscriber;
 
     //[HttpGet, Route("me")]
     //public Task<IActionResult> Get() =>
@@ -47,26 +43,28 @@ public class GamesController(
         return await _mediator.SendAndGetPostResponse(appCommand);
     }
 
-    [HttpGet("{gameId}/events")]
-    public async Task GetEvents(GetGameEventsApiQuery query)
+    [HttpGet("{gameId}/events/subcribe")]
+    public async Task GetEvents(GetGameEventsApiQuery query, CancellationToken ct)
     {
+        var doneTcs = new TaskCompletionSource();
+
         Response.Headers.Append("Content-Type", "text/event-stream");
 
-        bool done = false;
-        _gameEventsDispatcher.Subscribe(query.GameId, query.Body.PlayerId, onEvent: async ev =>
-        {
-            var dataJson = JsonConvert.SerializeObject(ev);
+        if (!await _gameEventsSubscriber.Subscribe(
+            query.LastEventIndex, query.GameId, UserID, 
+            onEvent: async ev =>
+            {
+                await Response.WriteAsJsonAsync("data: ");
+                await Response.WriteAsJsonAsync(ev);
+                await Response.Body.FlushAsync();
 
-            await Response.WriteAsync($"data: {dataJson}\n\n");
-            await Response.Body.FlushAsync();
+                if (ev is GameFinishedOutEvent)
+                    doneTcs.SetResult();
+            }))
+            return;
 
-            done = ev is GameFinishedOutEvent;
-        });
-
-        while (!done && !HttpContext.RequestAborted.IsCancellationRequested)
-            await Task.Delay(10);
-
-        _gameEventsDispatcher.Unsubscribe(query.Body.PlayerId);
+        ct.Register(() => _gameEventsSubscriber.Unsubscribe(UserID));
+        await doneTcs.Task;
     }
 }
 

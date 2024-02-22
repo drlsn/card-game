@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace Trinica.ApiContracts.Games;
 
@@ -8,11 +9,6 @@ public class GetGameEventsApiQuery
     [FromRoute]
     public string GameId { get; set; }
 
-    [FromBody]
-    public BodyDto Body { get; set; }
-
-    public class BodyDto
-    {
-        public string PlayerId { get; set; }
-    }
+    [FromQuery]
+    public int? LastEventIndex { get; set; }
 }

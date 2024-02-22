@@ -1,10 +1,12 @@
-﻿using Corelibs.Basic.Events;
+﻿using Corelibs.Basic.DDD;
+using Corelibs.Basic.Events;
 using Corelibs.Basic.Repository;
 using Corelibs.Basic.UseCases;
 using Corelibs.MongoDB;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Mediator;
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Security.Claims;
 using Trinica.Api.Authorization;
@@ -47,14 +49,20 @@ public static class Startup
             new BotHubWorker(
                 sp.GetRequiredService<IServiceScopeFactory>()));
 
-        services.AddSingleton<IEventsDispatcher<GameId, UserId, GameEvent>>(
-            new RoomEventsDispatcher<GameId, UserId, GameEvent>(
-                getRoomIdValue: id => id.Value,
-                getUserIdValue: id => id.Value,
-                toRoomId: value => new(value),
-                toUserId: value => new(value),
-                getRoomId: ev => ev.GameId,
-                getUserId: ev => ev.PlayerId));
+        var gameEventStore = new InMemoryEventStore<GameId, GameEvent>();
+        var roomEventsDispatcher = new RoomEventsDispatcher<GameId, UserId, GameEvent>(
+            getRoomIdValue: id => id.Value,
+            getUserIdValue: id => id.Value,
+            toRoomId: value => new(value),
+            toUserId: value => new(value),
+            getRoomId: ev => ev.GameId,
+            getUserId: ev => ev.PlayerId,
+            gameEventStore);
+
+        services.AddSingleton<IEventStore<GameId, GameEvent>>(gameEventStore);
+        services.AddSingleton<IRoomEventsDispatcher<GameEvent>>(roomEventsDispatcher);
+        services.AddSingleton<IRoomSetup<GameId>>(roomEventsDispatcher);
+        services.AddSingleton<IRoomEventsSubscriber>(roomEventsDispatcher);
     }
 
     public static void AddRepositories(this IServiceCollection services, IWebHostEnvironment environment, Assembly assembly)

@@ -366,5 +366,72 @@ namespace Corelibs.Basic.Collections
             
             return cnt.Values.All(c => c == 0);
         }
+
+        public static T[] TakeSinceFromReverse<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        {
+            int index = source.IndexOf(item => predicate(item));
+            if (index < 0)
+                return Array.Empty<T>();
+
+            return source.Skip(index).ToArray();
+        }
+
+        public static T[] TakeSince<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        {
+            int index = source.IndexOf(item => predicate(item));
+            if (index < 0)
+                return Array.Empty<T>();
+
+            return source.Skip(index).ToArray();
+        }
+
+        public static int IndexOf<T>(this IEnumerable<T> source, Func<T, bool> predicate, bool fromReverse = false)
+        {
+            int i = 0;
+            foreach (var item in source)
+            {
+                if (predicate(item))
+                    return i;
+
+                i++;
+            }
+
+            return -1;
+        }
+
+        public static IEnumerable<T> TakeSince<T>(this IList<T> source, Func<T, bool> predicate, bool fromReverse = false)
+        {
+            int index = source.IndexOf(item => predicate(item), fromReverse);
+            if (index < 0)
+                return Enumerable.Empty<T>();
+
+            return source.Skip(index);
+        }
+
+        public static int IndexOf<T>(this IList<T> source, Func<T, bool> predicate, bool fromReverse = false)
+        {
+            int i = fromReverse ? source.Count - 1 : 0;
+            int to = fromReverse ? 0 : source.Count - 1;
+            for (; i < to;)
+            {
+                if (predicate(source[i]))
+                    return i;
+
+                if (fromReverse)
+                    i--;
+                else
+                    i++;
+            }
+
+            return -1;
+        }
+
+        public static IEnumerable<T> SkipOrDefault<T>(this IEnumerable<T> source, int count)
+        {
+            if (source.Count() < count)
+                return Enumerable.Empty<T>();
+
+            return source.Skip(count);
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Corelibs.Basic.Collections;
+using Corelibs.Basic.UseCases.Events;
 using System.Collections.Concurrent;
 
 namespace Corelibs.Basic.Events;
@@ -9,8 +10,12 @@ public class RoomEventsDispatcher<TRoomId, TUserId, TBaseDomainEvent>(
     Func<string, TRoomId> toRoomId,
     Func<string, TUserId> toUserId,
     Func<TBaseDomainEvent, TRoomId> getRoomId,
-    Func<TBaseDomainEvent, TUserId?> getUserId) : IEventsDispatcher<TRoomId, TUserId, TBaseDomainEvent>
-{
+    Func<TBaseDomainEvent, TUserId?> getUserId,
+    IEventStore<TRoomId, TBaseDomainEvent> eventStore) :
+    IRoomSetup<TRoomId>,
+    IRoomEventsSubscriber,
+    IRoomEventsDispatcher<TBaseDomainEvent>
+{   
     private readonly Func<TRoomId, string> _getRoomIdValue = getRoomIdValue;
     private readonly Func<TUserId, string> _getUserIdValue = getUserIdValue;
 
@@ -19,6 +24,8 @@ public class RoomEventsDispatcher<TRoomId, TUserId, TBaseDomainEvent>(
 
     private readonly Func<TBaseDomainEvent, TRoomId> _getRoomId = getRoomId;
     private readonly Func<TBaseDomainEvent, TUserId?> _getUserId = getUserId;
+
+    private readonly IEventStore<TRoomId, TBaseDomainEvent> _eventStore = eventStore;
 
     private readonly ConcurrentDictionary<TRoomId, List<TUserId>> _rooms = new();
     private readonly ConcurrentDictionary<string, Func<object, Task>> _eventHandlers = new();
@@ -54,7 +61,11 @@ public class RoomEventsDispatcher<TRoomId, TUserId, TBaseDomainEvent>(
         return true;
     }
 
-    public bool Subscribe(string roomIdValue, string userIdValue, Func<object, Task> onEvent)
+    public async Task<bool> Dispatch(IEnumerable<TBaseDomainEvent> events) =>
+        (await Task.WhenAll(events.Select(Dispatch).ToArray())).All(x => true);
+
+    public async Task<bool> Subscribe(
+        int? lastEventIndex, string roomIdValue, string userIdValue, Func<object, Task> onEvent)
     {
         var roomId = _toRoomId(roomIdValue);
         var userId = _toUserId(userIdValue);
@@ -62,9 +73,27 @@ public class RoomEventsDispatcher<TRoomId, TUserId, TBaseDomainEvent>(
         if (!_rooms.ContainsKey(roomId))
             return false;
 
+        if (lastEventIndex.HasValue)
+        {
+            _eventStore.LockSave(roomId);
+            try
+            {
+                var events = await _eventStore.GetEvents(roomId, lastEventIndex.Value);
+                if (!await Dispatch(events))
+                    return false;
+            }
+            finally
+            {
+                _eventStore.UnlockSave(roomId);
+            }
+        }
+
         _rooms.AddToListValue(roomId, userId);
 
-        return _eventHandlers.TryAdd(userIdValue, onEvent);
+        if (!_eventHandlers.TryAdd(userIdValue, onEvent))
+            return false;
+
+        return true;
     }
 
     public bool Unsubscribe(string userId)

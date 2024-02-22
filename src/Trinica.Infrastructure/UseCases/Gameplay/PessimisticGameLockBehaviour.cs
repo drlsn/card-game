@@ -7,16 +7,13 @@ namespace Trinica.Infrastructure.UseCases.Gameplay;
 public class PessimisticGameLockBehaviour<TCommand, TResult> : IPipelineBehavior<TCommand, TResult>
     where TCommand : ICommand<Result>, IGameCommand
 {
-    private static Dictionary<string, Mutex> _mutexes = new();
+    private readonly static Dictionary<string, Mutex> _mutexes = new();
 
     public async ValueTask<TResult> Handle(
         TCommand command, CancellationToken cancellationToken, MessageHandlerDelegate<TCommand, TResult> next)
     {
         if (!_mutexes.TryGetValue(command.GameId, out var mutex))
-        {
-            mutex = new();
-            _mutexes.Add(command.GameId, mutex);
-        }
+            _mutexes.Add(command.GameId, mutex = new());
 
         mutex.WaitOne();
         try
