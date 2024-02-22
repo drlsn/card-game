@@ -15,6 +15,7 @@ using Trinica.Entities.Gameplay.Events;
 using Trinica.Entities.Users;
 using Trinica.Infrastructure.UseCases.Gameplay;
 using Trinica.UseCases.Gameplay;
+using Trinica.UseCases.Gameplay.Events;
 
 namespace Trinica.Api;
 
@@ -59,6 +60,10 @@ public static class Startup
             getUserId: ev => ev.PlayerId,
             gameEventStore);
 
+        roomEventsDispatcher.AddEventTransformer<GameStartedEvent, GameStartedOutEvent>(e => new(e.GameId.Value));
+        roomEventsDispatcher.AddEventTransformer<GameFinishedEvent, GameFinishedOutEvent>(e => new(e.GameId.Value));
+        roomEventsDispatcher.AddEventTransformer<CardsTakenToHandEvent, CardsTakenToHandOutEvent>(e => new(e.GameId.Value, e.PlayerId.Value));
+        
         services.AddSingleton<IEventStore<GameId, GameEvent>>(gameEventStore);
         services.AddSingleton<IRoomEventsDispatcher<GameEvent>>(roomEventsDispatcher);
         services.AddSingleton<IRoomSetup<GameId>>(roomEventsDispatcher);

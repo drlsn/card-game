@@ -1,6 +1,7 @@
 ﻿using Corelibs.Basic.Events;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Trinica.Api.Extensions;
 using Trinica.ApiContracts.Games;
@@ -54,7 +55,8 @@ public class GamesController(
             query.LastEventIndex, query.GameId, UserID, 
             onEvent: async ev =>
             {
-                await Response.WriteAsJsonAsync("data: ");
+                await Response.WriteAsync("data: ");
+                await Response.WriteAsync($"{ev.GetType().Name} ");
                 await Response.WriteAsJsonAsync(ev);
                 await Response.Body.FlushAsync();
 
