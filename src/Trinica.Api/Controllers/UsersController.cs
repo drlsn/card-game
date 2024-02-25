@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Trinica.Api.Extensions;
+using Trinica.UseCases.Gameplay;
 using Trinica.UseCases.Users;
 
 namespace Trinica.Api.Controllers;
@@ -26,4 +27,8 @@ public class UsersController(IMediator mediator) : BaseController
         var appCommand = new CreateUserCommand();
         return await _mediator.SendAndGetPostResponse(appCommand);
     }
+
+    [HttpGet, Route("me/game")]
+    public Task<IActionResult> GetCurrentGame() =>
+        _mediator.SendAndGetResponse(new GetCurrentGameQuery(UserID));
 }
