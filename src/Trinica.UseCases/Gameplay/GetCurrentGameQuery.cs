@@ -20,7 +20,7 @@ public class GetCurrentGameQueryHandler : IQueryHandler<GetCurrentGameQuery, Res
         _userRepository = userRepository;
     }
 
-    public async ValueTask<Result<GetCurrentGameQueryResponse>> Handle(GetCurrentGameQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<GetCurrentGameQueryResponse>> Handle(GetCurrentGameQuery query, CancellationToken ct)
     {
         var result = Result<GetCurrentGameQueryResponse>.Success();
 

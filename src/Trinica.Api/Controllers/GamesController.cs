@@ -20,14 +20,17 @@ public class GamesController(
     private readonly IMediator _mediator = mediator;
     private readonly IRoomEventsSubscriber _gameEventsSubscriber = gameEventsSubscriber;
 
-    //[HttpGet, Route("me")]
-    //public Task<IActionResult> Get() =>
-    //    _mediator.SendAndGetResponse(new GetUserQuery(UserID));
+    [HttpGet, Route("me")]
+    public Task<IActionResult> Get(GetGameStateApiQuery query) =>
+        _mediator.SendAndGetResponse(new GetGameStateQuery(query.GameId, UserID));
 
     [HttpPost]
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(StartGameApiCommand command)
     {
         if (!User.Identity.IsAuthenticated)
+            return BadRequest();
+
+        if (!command.Body.Bot || !command.Body.Random)
             return BadRequest();
 
         var appCommand = new StartBotGameCommand(UserID);
